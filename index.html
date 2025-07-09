@@ -36,65 +36,65 @@
         .resource { display:flex; align-items:center; gap:7px; font-weight:bold; font-size:1.12em; }
         .ico { width:1.38em; height:1.38em; vertical-align:middle; }
         #startButton { 
-			position:absolute; 
-			bottom:100px; /* Changed from 20px to 80px to be above tower bar */
-			left:50%; 
-			transform:translateX(-50%);
-			background:#3498db; 
-			color:white; 
-			border:none; 
-			padding:9px 22px; 
-			border-radius:10px;
-			font-size:14px; 
-			cursor:pointer; 
-			transition:all 0.3s; 
-			box-shadow:0 3px 16px #0006; 
-			z-index:1000; 
-		}
-		#startButton:hover { 
-			background:#2980b9; 
-			transform:translateX(-50%) scale(1.05);
-		}
-		#startButton:disabled { 
-			background:#7f8c8d; 
-			cursor:not-allowed; 
-			transform:translateX(-50%);
-		}
-        #towerMenu { 
-            position:absolute; 
-            z-index:1000; 
-            display:none; 
-            background:rgba(0,0,0,0.93); 
-            border-radius:14px; 
-            padding:14px 13px; 
-            min-width:240px; 
-            grid-template-columns:repeat(2, 1fr); 
-            gap:13px; 
-            box-shadow:0 4px 22px #000b; 
+            position:absolute;
+            bottom:100px; /* Changed from 20px to 80px to be above tower bar */
+            left:50%;
+            transform:translateX(-50%);
+            background:#3498db;
+            color:white;
+            border:none;
+            padding:9px 22px;
+            border-radius:10px;
+            font-size:14px;
+            cursor:pointer;
+            transition:all 0.3s;
+            box-shadow:0 3px 16px #0006;
+            z-index:1000;
+        }
+        #startButton:hover {
+            background:#2980b9;
+            transform:translateX(-50%) scale(1.05);
+        }
+        #startButton:disabled {
+            background:#7f8c8d;
+            cursor:not-allowed;
+            transform:translateX(-50%);
+        }
+        #towerMenu {
+            position:absolute;
+            z-index:1000;
+            display:none;
+            background:rgba(0,0,0,0.93);
+            border-radius:14px;
+            padding:14px 13px;
+            min-width:240px;
+            grid-template-columns:repeat(2, 1fr);
+            gap:13px;
+            box-shadow:0 4px 22px #000b;
             border:2px solid #3498db;
         }
-        #upgradeMenu { 
-            position: absolute; 
-            z-index: 1000; 
-            display: none; 
-            background: rgba(0,0,0,0.93); 
-            border-radius: 14px; 
+        #upgradeMenu {
+            position: absolute;
+            z-index: 1000;
+            display: none;
+            background: rgba(0,0,0,0.93);
+            border-radius: 14px;
             padding: 8px;
             grid-template-columns: 1fr;
             gap: 8px;
-            box-shadow: 0 4px 22px #000b; 
+            box-shadow: 0 4px 22px #000b;
             border: 2px solid #f1c40f;
             bottom: 20px;
             left: 20px;
             width: auto;
             max-width: calc(100% - 40px);
         }
-        .tower-option { 
-            background:linear-gradient(135deg, #3498db, #2980b9); 
-            color:white; border:none; border-radius:8px; 
-            padding:12px 3px 10px 3px; cursor:pointer; 
-            font-size:14px; text-align:center; min-height:62px; 
-            display:flex; flex-direction:column; align-items:center; gap:4px; 
+        .tower-option {
+            background:linear-gradient(135deg, #3498db, #2980b9);
+            color:white; border:none; border-radius:8px;
+            padding:12px 3px 10px 3px; cursor:pointer;
+            font-size:14px; text-align:center; min-height:62px;
+            display:flex; flex-direction:column; align-items:center; gap:4px;
             transition:all 0.2s;
         }
         .tower-option.cannon {
@@ -112,12 +112,12 @@
         .tower-option.sniper {
             background:linear-gradient(135deg, #333333, #001f3f);
         }
-        .upgrade-option { 
-            background:linear-gradient(135deg, #f39c12, #e67e22); 
-            color:white; border:none; border-radius:8px; 
-            padding:12px 3px 10px 3px; cursor:pointer; 
-            font-size:14px; text-align:center; min-height:62px; 
-            display:flex; flex-direction:column; align-items:center; gap:4px; 
+        .upgrade-option {
+            background:linear-gradient(135deg, #f39c12, #e67e22);
+            color:white; border:none; border-radius:8px;
+            padding:12px 3px 10px 3px; cursor:pointer;
+            font-size:14px; text-align:center; min-height:62px;
+            display:flex; flex-direction:column; align-items:center; gap:4px;
             transition:all 0.2s;
         }
         .tower-option:hover { background:linear-gradient(135deg, #2980b9, #3498db); transform:scale(1.04);}
@@ -130,6 +130,11 @@
         .tower-option:disabled, .upgrade-option:disabled { background:#7f8c8d; cursor:not-allowed; }
         .tower-name, .upgrade-name { font-weight:bold; margin-bottom:3px; }
         .tower-cost, .upgrade-cost { font-size:11px; color:#f1c40f; margin-top:2px; }
+        .tower-icon svg {
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
 
         #titleScreen {
             position: fixed;
@@ -235,8 +240,11 @@
             cursor: pointer;
             transition: all 0.2s;
             border-radius: 8px;
-            padding: 5px;
+            padding: 2px;
             background: rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .tower-icon:hover {
@@ -263,7 +271,7 @@
 <body>
     <div id="titleScreen">
     <h1>Tower Defense</h1>
-    
+
     <div class="menu-section">
         <div class="menu-title">Difficulty</div>
         <div class="menu-options">
@@ -272,7 +280,7 @@
             <button class="menu-btn locked" data-difficulty="hard">Hard</button>
         </div>
     </div>
-    
+
     <div class="menu-section">
         <div class="menu-title">Select Map</div>
         <div class="menu-options">
@@ -281,7 +289,7 @@
             <button class="menu-btn locked" data-map="3">Mountain</button>
         </div>
     </div>
-    
+
     <button class="menu-btn start-btn">Start Game</button>
 </div>
 <div id="gameContainer">
@@ -404,7 +412,7 @@
     <div id="towerMenu"></div>
     <div id="upgradeMenu"></div>
     <button id="startButton">Next Wave</button>
-</div>  
+</div>
 <script>
     // Game configuration
 let gameConfig = {
@@ -509,7 +517,7 @@ window.addEventListener('resize', function() {
 function initGame() {
     const difficulty = gameConfig.difficulties[gameConfig.difficulty];
     gameState.gold = difficulty.gold;
-    
+
     // Select map based on choice
     switch(gameConfig.map) {
         case 1:
@@ -525,10 +533,10 @@ function initGame() {
             setupMountainMap();
             break;
     }
-    
+
     // Initialize tower bar
     setupTowerBar();
-    
+
     updateUI();
     resizeCanvas(); // Important for correct display
 }
@@ -589,14 +597,14 @@ let dragOffsetY = 0;
 
 // Game state
 let gameState = {
-    gold: 200000, 
-    crystals: 5, 
-    lives: LIFE_MAX, 
+    gold: 200000,
+    crystals: 5,
+    lives: LIFE_MAX,
     wave: 1,
-    enemiesInWave: 0, 
-    enemiesLeft: 0, 
-    enemiesKilled: 0, 
-    enemiesTotal: 0, 
+    enemiesInWave: 0,
+    enemiesLeft: 0,
+    enemiesKilled: 0,
+    enemiesTotal: 0,
     waveActive: false,
     nextWaveEnemies: 10
 };
@@ -608,19 +616,25 @@ const lifeEl = document.getElementById('lifeAmount');
 const waveNumEl = document.getElementById('waveNumber');
 const enemiesKilledEl = document.getElementById('enemiesKilled');
 
-// Path and turret positions
-let path = [];
+const towerIcons = {
+    archer: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><linearGradient id="arch1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#004d00"/><stop offset="100%" stop-color="#6f6"/></linearGradient><marker id="arch2" markerUnits="strokeWidth" markerWidth="4" markerHeight="4" refX="0" refY="2" orient="auto"><path d="m0 0 4 2-4 2Z" fill="#888"/></marker></defs><rect x="10" y="10" width="80" height="80" fill="url(#arch1)" stroke="#000" stroke-width="4" rx="4" ry="4"/><g fill="none" stroke="brown" stroke-width="4" stroke-linecap="round"><path d="M35 25v50M35 25a25 25 0 0 1 0 50" transform="matrix(.85 0 0 .85 3.25 7.5)"/><path stroke="#888" marker-end="url(#arch2)" d="M35 50h40" transform="matrix(.85 0 0 .85 3.25 7.5)"/></g></svg>`,
+    cannon: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><linearGradient id="canon1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#666"/><stop offset="100%" stop-color="#aaa"/></linearGradient></defs><rect x="10" y="10" width="80" height="80" fill="url(#canon1)" stroke="#000" stroke-width="4" rx="4" ry="4"/><circle cx="50" cy="55" r="20" fill="#111" stroke="#000" stroke-width="3"/><path stroke="#fc0" stroke-width="3" stroke-linecap="round" d="M50 35V25"/><path d="m50 23-3-3 2 5 5-2-4 2Z" fill="#fd4"/></svg>`,
+    mage: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><linearGradient id="mage1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="indigo"/><stop offset="100%" stop-color="#9370db"/></linearGradient><linearGradient id="mage2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ddd"/><stop offset="100%" stop-color="#888"/></linearGradient><radialGradient id="mage3" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#a0eaff"/><stop offset="100%" stop-color="#005fbb"/></radialGradient></defs><rect x="10" y="10" width="80" height="80" fill="url(#mage1)" stroke="#000" stroke-width="4" rx="4" ry="4"/><g transform="rotate(20 50 50)" stroke-linecap="round" stroke-linejoin="round"><path stroke="#ccc" stroke-width="3" d="M50 45v30m-5-20h10"/><path d="M48 45h4l2-5h-8Z" fill="url(#mage2)" stroke="#777"/><circle cx="50" cy="35" r="10" fill="url(#mage3)" stroke="#003f7f"/><path d="M50 25c10 0 15 10 7 15m-7-15c-10 0-15 10-7 15" stroke="#a0eaff" stroke-width="2" fill="none"/><path stroke="#a0eaff" stroke-width="2" d="m43 40-4 6"/><circle cx="38" cy="48" r="2" fill="#00ace6" stroke="#005fbb"/><path stroke="#a0eaff" stroke-width="2" d="m57 40 4 6"/><circle cx="62" cy="48" r="2" fill="#00ace6" stroke="#005fbb"/></g></svg>`,
+    fire: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><linearGradient id="fire1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="red"/><stop offset="100%" stop-color="orange"/></linearGradient><symbol id="b" viewBox="0 0 432 640"><g transform="matrix(.85 0 0 .85 -31.35 48)"/><path d="M165.214 571.337c4.185 2.224 8.599-2.593 6.037-6.58-13.906-21.644-27.075-58.063-6.094-104.967 34.987-78.216 56.277-118.726 56.277-118.726s11.324 47.275 42.02 89.31c29.544 40.454 45.714 91.334 19.645 133.72-2.447 3.978 1.867 8.671 6.025 6.544 32.27-16.508 68.464-49.62 72.548-115.512 1.505-20.135-.753-48.324-12.044-83.896-14.52-45.084-32.368-66.121-42.695-75.155-3.089-2.703-7.893-.308-7.64 3.789 3.01 48.646-15.291 60.99-25.708 33.17-4.16-11.112-6.586-30.33-6.586-53.736 0-38.966-11.305-79.077-36.229-111.672-6.48-8.476-14.065-16.397-22.766-23.15-3.15-2.447-7.716.012-7.427 3.99 1.913 26.414.18 102.119-66.237 192.561-60.22 83.896-36.885 148.328-28.605 165.779 15.831 33.43 37.913 53.064 59.479 64.53z" fill="#ff0" fill-rule="evenodd" stroke="#000" stroke-width="2.1"/></symbol></defs><rect x="10" y="10" width="80" height="80" fill="url(#fire1)" stroke="#000" stroke-width="4" rx="4" ry="4"/><svg x="10" y="10" width="80" height="80" viewBox="0 0 432 640"><use href="#b"/></svg></svg>`,
+    ice: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><linearGradient id="ice1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#007acc"/><stop offset="100%" stop-color="#a0e1ff"/></linearGradient><marker id="ice1" markerUnits="strokeWidth" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto"><path d="M2 0v4" stroke="#fff"/></marker></defs><rect x="10" y="10" width="80" height="80" fill="url(#ice1)" stroke="#000" stroke-width="4" rx="4" ry="4"/><g stroke="#fff" stroke-width="2" stroke-linecap="round" marker-end="url(#ice1)"><path d="M50 20v60"/><path d="M20 50h60"/><path d="m30 30 40 40"/><path d="m30 70 40-40"/><path d="m50 30-5-5"/><path d="m50 30 5-5"/><path d="m50 70-5 5"/><path d="m50 70 5 5"/><path d="m70 50 5-5"/><path d="m70 50 5 5"/><path d="m30 50-5-5"/><path d="m30 50-5 5"/><path d="m60 60 5 5"/><path d="m60 60-5 5"/><path d="m40 40-5-5"/><path d="m40 40 5-5"/><path d="m60 40 5-5"/><path d="m60 40 5 5"/><path d="m40 60-5-5"/><path d="m40 60-5 5"/></g></svg>`,
+    sniper: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><linearGradient id="snipe1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#333"/><stop offset="100%" stop-color="#001f3f"/></linearGradient></defs><rect x="10" y="10" width="80" height="80" fill="url(#snipe1)" stroke="#000" stroke-width="4" rx="4" ry="4"/><g fill="none" stroke="#aaa" stroke-width="3"><circle cx="50" cy="50" r="20"/><circle cx="50" cy="50" r="10" stroke-width="2"/><path d="M50 30v40M30 50h40"/><path stroke-width="2" d="M50 18v6m0 52v6M18 50h6m52 0h6"/></g></svg>`
+};
 
 // Tower types
 const towerTypes = [
     {   // Archer - Fast, long range, low damage, cheap
-        name: "Archer", 
-        cost: 25, 
-        color: "#8B4513", 
+        name: "Archer",
+        cost: 25,
+        color: "#8B4513",
         range: 180,
         dmg: 10,
         rate: 300,
-        icon: "🏹",
+        icon: towerIcons.archer,
         upgrades: {
             dmg: 5,
             rate: -50,
@@ -630,13 +644,13 @@ const towerTypes = [
         bulletType: "arrow"
     },
     {   // Cannon - Expensive, AOE damage
-        name: "Cannon", 
+        name: "Cannon",
         cost: 100,
-        color: "#696969", 
-        range: 150, 
-        dmg: 35, 
+        color: "#696969",
+        range: 150,
+        dmg: 35,
         rate: 1200,
-        icon: "💣",
+        icon: towerIcons.cannon,
         upgrades: {
             dmg: 15,
             rate: -150,
@@ -647,13 +661,13 @@ const towerTypes = [
         aoeRadius: 40
     },
     {   // Mage - Slow, high damage with zap upgrade
-        name: "Mage", 
+        name: "Mage",
         cost: 120,
-        color: "#6A5ACD", 
+        color: "#6A5ACD",
         range: 130,
         dmg: 80,
         rate: 2000,
-        icon: "🔮",
+        icon: towerIcons.mage,
         upgrades: {
             dmg: 20,
             rate: -100,
@@ -667,13 +681,13 @@ const towerTypes = [
         bulletType: "magic"
     },
     {   // Fire - Short range, constant damage
-        name: "Fire Tower", 
-        cost: 80, 
-        color: "#FF4500", 
+        name: "Fire Tower",
+        cost: 80,
+        color: "#FF4500",
         range: 60,
         dmg: 20,
         rate: 100,
-        icon: "🔥",
+        icon: towerIcons.fire,
         upgrades: {
             dmg: 5,
             range: 10,
@@ -684,13 +698,13 @@ const towerTypes = [
         flameWidth: 10
     },
     {   // Ice Tower - Slows enemies
-        name: "Ice Tower", 
-        cost: 90, 
-        color: "#007acc", 
+        name: "Ice Tower",
+        cost: 90,
+        color: "#007acc",
         range: 140,
         dmg: 15,
         rate: 800,
-        icon: "❄️",
+        icon: towerIcons.ice,
         upgrades: {
             dmg: 5,
             rate: -100,
@@ -705,13 +719,13 @@ const towerTypes = [
         slowAmount: 0.5
     },
     {   // Sniper Tower - Very long range, slow rate, high damage
-        name: "Sniper", 
-        cost: 150, 
-        color: "#333333", 
+        name: "Sniper",
+        cost: 150,
+        color: "#333333",
         range: 250,
         dmg: 100,
         rate: 2500,
-        icon: "🎯",
+        icon: towerIcons.sniper,
         upgrades: {
             dmg: 30,
             rate: -200,
@@ -739,15 +753,15 @@ function resizeCanvas() {
     const scaleX = window.innerWidth / GAME_WIDTH;
     const scaleY = window.innerHeight / GAME_HEIGHT;
     gameScale = Math.min(scaleX, scaleY);
-    
+
     // Set canvas size
     canvas.width = GAME_WIDTH;
     canvas.height = GAME_HEIGHT;
-    
+
     // Scale the canvas to fit the window while maintaining aspect ratio
     canvas.style.width = `${GAME_WIDTH * gameScale}px`;
     canvas.style.height = `${GAME_HEIGHT * gameScale}px`;
-    
+
     // Recalculate path based on fixed game dimensions
     setupPath();
     generateMapElements();
@@ -796,16 +810,27 @@ function setupTowerBar() {
     });
 }
 
+async function loadSVG(path) {
+    try {
+        const response = await fetch(path);
+        if (!response.ok) throw new Error(`Failed to load SVG: ${path}`);
+        return await response.text();
+    } catch (error) {
+        console.error(error);
+        return ''; // Return empty string if loading fails
+    }
+}
+
 function startDragTower(e) {
     e.preventDefault();
     const index = parseInt(e.currentTarget.dataset.index);
     const towerType = towerTypes[index];
-    
+
     if (gameState.gold < towerType.cost) {
         alert("Not enough gold!");
         return;
     }
-    
+
     draggingTower = {
         type: {...towerType},
         x: 0,
@@ -813,7 +838,7 @@ function startDragTower(e) {
         width: 48,
         height: 48
     };
-    
+
     // Calculate initial position
     const rect = canvas.getBoundingClientRect();
     if (e.type === 'mousedown') {
@@ -823,11 +848,11 @@ function startDragTower(e) {
         dragOffsetX = e.touches[0].clientX - rect.left;
         dragOffsetY = e.touches[0].clientY - rect.top;
     }
-    
+
     // Convert to game coordinates
     draggingTower.x = (dragOffsetX) * (canvas.width / rect.width);
     draggingTower.y = (dragOffsetY) * (canvas.height / rect.height);
-    
+
     // Add event listeners for dragging
     document.addEventListener('mousemove', dragTower);
     document.addEventListener('touchmove', dragTower, { passive: false });
@@ -838,10 +863,10 @@ function startDragTower(e) {
 function dragTower(e) {
     if (!draggingTower) return;
     e.preventDefault();
-    
+
     const rect = canvas.getBoundingClientRect();
     let clientX, clientY;
-    
+
     if (e.type === 'mousemove') {
         clientX = e.clientX;
         clientY = e.clientY;
@@ -849,7 +874,7 @@ function dragTower(e) {
         clientX = e.touches[0].clientX;
         clientY = e.touches[0].clientY;
     }
-    
+
     // Convert to game coordinates
     draggingTower.x = (clientX - rect.left) * (canvas.width / rect.width);
     draggingTower.y = (clientY - rect.top) * (canvas.height / rect.height);
@@ -858,16 +883,16 @@ function dragTower(e) {
 function dropTower(e) {
     if (!draggingTower) return;
     e.preventDefault();
-    
+
     // Remove event listeners
     document.removeEventListener('mousemove', dragTower);
     document.removeEventListener('touchmove', dragTower);
     document.removeEventListener('mouseup', dropTower);
     document.removeEventListener('touchend', dropTower);
-    
+
     // Check if position is valid (not on path or near tower bar)
     const validPosition = isValidTowerPosition(draggingTower.x, draggingTower.y);
-    
+
     if (validPosition) {
         // Place the tower
         gameState.gold -= draggingTower.type.cost;
@@ -876,18 +901,18 @@ function dropTower(e) {
             y: draggingTower.y,
             type: {...draggingTower.type},
             lastShot: 0,
-            upgrades: { 
-                dmg: 0, 
-                rate: 0, 
-                range: 0, 
-                special: draggingTower.type.upgrades.special ? 
-                    {...draggingTower.type.upgrades.special, purchased: false} : 0 
+            upgrades: {
+                dmg: 0,
+                rate: 0,
+                range: 0,
+                special: draggingTower.type.upgrades.special ?
+                    {...draggingTower.type.upgrades.special, purchased: false} : 0
             },
             flameWidth: draggingTower.type.bulletType === "flame" ? 10 : 0
         });
         updateUI();
     }
-    
+
     draggingTower = null;
 }
 
@@ -899,18 +924,18 @@ function isValidTowerPosition(x, y) {
             return false;
         }
     }
-    
+
     // Check if position is too close to start/end
     if (Math.hypot(x - path[0].x, y - path[0].y) < 60) return false;
     if (Math.hypot(x - path[path.length-1].x, y - path[path.length-1].y) < 60) return false;
-    
+
     // Check if position is too close to other towers
     for (const tower of towers) {
         if (Math.hypot(x - tower.x, y - tower.y) < 48) {
             return false;
         }
     }
-    
+
     // Check if position is too close to tower bar area (bottom center)
     const towerBarArea = {
         x: canvas.width / 2,
@@ -918,14 +943,14 @@ function isValidTowerPosition(x, y) {
         width: 300,
         height: 80
     };
-    
-    if (x > towerBarArea.x - towerBarArea.width/2 && 
-        x < towerBarArea.x + towerBarArea.width/2 && 
-        y > towerBarArea.y - towerBarArea.height/2 && 
+
+    if (x > towerBarArea.x - towerBarArea.width/2 &&
+        x < towerBarArea.x + towerBarArea.width/2 &&
+        y > towerBarArea.y - towerBarArea.height/2 &&
         y < towerBarArea.y + towerBarArea.height/2) {
         return false;
     }
-    
+
     return true;
 }
 
@@ -941,11 +966,11 @@ function pointLineDist(px, py, ax, ay, bx, by) {
 function generateMapElements() {
     mapElements = [];
     let count = Math.floor(canvas.width * canvas.height / 42000);
-    
+
     if (theme === 'desert') {
         for (let i = 0; i < count; i++) placeElement('cactus', 20, 0.7);
         for (let i = 0; i < count/2; i++) placeElement('rock', 25, 0.8);
-    } 
+    }
     else if (theme === 'mountain') {
         for (let i = 0; i < count/2; i++) placeElement('rock', 30, 0.9);
         for (let i = 0; i < count/3; i++) placeElement('pine', 40, 0.8);
@@ -956,24 +981,24 @@ function generateMapElements() {
         for (let i = 0; i < count/2; i++) placeElement('tree2', 27, 0.6);
         for (let i = 0; i < count/2; i++) placeElement('tree3', 30, 0.6);
     }
-    
+
     function placeElement(type, rad, alpha) {
         let ok = false, tries = 0, x, y;
         while (!ok && tries < 120) {
             x = rad + Math.random() * (canvas.width - 2 * rad);
             y = rad + Math.random() * (canvas.height - 2 * rad);
             ok = true;
-            
+
             // Check path distance
             for (let i = 0; i < path.length - 1; i++) {
                 let d = pointLineDist(x, y, path[i].x, path[i].y, path[i+1].x, path[i+1].y);
                 if (d < 42) { ok = false; break; }
             }
-            
+
             // Check start/end distance
             if (Math.hypot(x - path[0].x, y - path[0].y) < 60) ok = false;
             if (Math.hypot(x - path[path.length-1].x, y - path[path.length-1].y) < 60) ok = false;
-            
+
             // Check other elements
             for (let el of mapElements) {
                 if (Math.hypot(x - el.x, y - el.y) < el.r + rad + 4) {
@@ -981,10 +1006,10 @@ function generateMapElements() {
                     break;
                 }
             }
-            
+
             tries++;
         }
-        
+
         if (ok) {
             mapElements.push({
                 type: type,
@@ -1002,7 +1027,7 @@ function startWave() {
     gameState.enemiesLeft = gameState.enemiesInWave;
     gameState.enemiesKilled = 0;
     gameState.enemiesTotal = gameState.enemiesInWave;
-    
+
     // Calculate enemies for next wave
     gameState.nextWaveEnemies = 8 + gameState.wave * 3;
     if (gameState.wave < MAX_WAVE) {
@@ -1012,7 +1037,7 @@ function startWave() {
         waveNumEl.textContent = `${gameState.wave}/${MAX_WAVE}`;
         enemiesKilledEl.textContent = `${gameState.enemiesKilled}/${gameState.enemiesTotal}`;
     }
-    
+
     startButton.disabled = true;
     lastSpawn = Date.now() - waveInterval;
 }
@@ -1023,13 +1048,13 @@ function spawnEnemy() {
         Math.floor((gameState.wave - 1) / 2), // Slowly increase tiers every 2 waves
         4 // Never go beyond T5
     );
-    
+
     // Ensure we never spawn higher tiers than intended for the wave
     if (gameState.wave < 3) tierIndex = 0; // Only T1 in waves 1-2
     else if (gameState.wave < 5) tierIndex = 1; // Up to T2 in waves 3-4
     else if (gameState.wave < 7) tierIndex = 2; // Up to T3 in waves 5-6
     else if (gameState.wave < 9) tierIndex = 3; // Up to T4 in waves 7-8
-    
+
     // Small chance to spawn one tier higher (but not beyond T5)
     if (Math.random() < 0.15 && gameState.wave > 1) {
         tierIndex = Math.min(tierIndex + 1, 4);
@@ -1037,14 +1062,14 @@ function spawnEnemy() {
 
     const enemyType = enemyTiers[tierIndex];
     const hpMultiplier = gameConfig.difficulties[gameConfig.difficulty].enemyHpMultiplier;
-    
+
     enemies.push({
-        x: path[0].x, 
-        y: path[0].y, 
-        pathIndex: 0, 
+        x: path[0].x,
+        y: path[0].y,
+        pathIndex: 0,
         hp: enemyType.hp * hpMultiplier * (1 + (gameState.wave-1)*0.1),
         maxHp: enemyType.hp * hpMultiplier * (1 + (gameState.wave-1)*0.1),
-        speed: enemyType.speed, 
+        speed: enemyType.speed,
         alive: true,
         type: enemyType,
         goldValue: enemyType.goldValue,
@@ -1062,14 +1087,14 @@ function update() {
     const now = Date.now();
     const deltaTime = now - lastUpdateTime;
     lastUpdateTime = now;
-    
+
     // Spawn enemies
     if (gameState.waveActive && gameState.enemiesInWave > 0 && Date.now() - lastSpawn > waveInterval) {
-        spawnEnemy(); 
-        lastSpawn = Date.now(); 
-        gameState.enemiesInWave--; 
+        spawnEnemy();
+        lastSpawn = Date.now();
+        gameState.enemiesInWave--;
     }
-    
+
     // Move enemies
     for (const e of enemies) {
         // Handle slow effects
@@ -1079,18 +1104,18 @@ function update() {
                 e.slowAmount = 1; // Reset to normal speed
             }
         }
-        
+
         let tgt = path[e.pathIndex + 1];
         if (!tgt) continue;
-        
+
         let dx = tgt.x - e.x, dy = tgt.y - e.y, dist = Math.hypot(dx, dy);
         let moveSpeed = e.speed * e.slowAmount;
-        
+
         if (dist < moveSpeed) {
-            e.x = tgt.x; 
-            e.y = tgt.y; 
+            e.x = tgt.x;
+            e.y = tgt.y;
             e.pathIndex++;
-            
+
             if (e.pathIndex >= path.length - 1) {
                 e.alive = false;
                 // Remove lives equal to enemy tier
@@ -1099,39 +1124,39 @@ function update() {
                 updateUI();
             }
         } else {
-            e.x += moveSpeed * dx / dist; 
+            e.x += moveSpeed * dx / dist;
             e.y += moveSpeed * dy / dist;
         }
     }
-    
+
     // Towers shoot
     for (const t of towers) {
         if (Date.now() - t.lastShot >= t.type.rate) {
             let tgt = null;
-            
+
             // Special targeting for ice tower
             if (t.type.name === "Ice Tower") {
                 // Find all enemies in range
-                const enemiesInRange = enemies.filter(e => 
+                const enemiesInRange = enemies.filter(e =>
                     e.alive && Math.hypot(e.x - t.x, e.y - t.y) < t.type.range);
-                
+
                 // Find enemies that aren't slowed
                 const unSlowedEnemies = enemiesInRange.filter(e => e.slowAmount >= 1);
-                
+
                 // If there are un-slowed enemies, target the first one
                 if (unSlowedEnemies.length > 0) {
                     tgt = unSlowedEnemies[0];
-                } 
+                }
                 // Otherwise target the first enemy in range
                 else if (enemiesInRange.length > 0) {
                     tgt = enemiesInRange[0];
                 }
-            } 
+            }
             // Standard targeting for other towers
             else {
                 tgt = enemies.find(e => e.alive && Math.hypot(e.x - t.x, e.y - t.y) < t.type.range);
             }
-            
+
             if (tgt) {
                 // Standard projectile for all towers except fire tower
                 if (t.type.bulletType !== "flame") {
@@ -1143,7 +1168,7 @@ function update() {
                         dmg: t.type.dmg,
                         target: tgt,
                         color: t.type.color,
-                        speed: t.type.bulletType === "arrow" ? 12 : 
+                        speed: t.type.bulletType === "arrow" ? 12 :
                               t.type.bulletType === "sniper" ? 20 : 6,
                         aoeRadius: t.type.aoeRadius || 0,
                         type: t.type.bulletType,
@@ -1152,21 +1177,21 @@ function update() {
                         lifetime: t.type.bulletType === "flame" ? 100 : 0
                     });
                 }
-                
+
                 // Special effects based on tower type
                 if (t.type.name === "Mage" && t.type.upgrades.special.purchased) {
                     // Chain lightning effect
                     let chainTargets = [tgt];
                     let currentTarget = tgt;
-                    
+
                     for (let i = 0; i < 5; i++) {
-                        let nextTarget = enemies.find(e => 
-                            e.alive && 
+                        let nextTarget = enemies.find(e =>
+                            e.alive &&
                             e !== currentTarget &&
                             !chainTargets.includes(e) &&
                             Math.hypot(e.x - currentTarget.x, e.y - currentTarget.y) < 100
                         );
-                        
+
                         if (nextTarget) {
                             chainTargets.push(nextTarget);
                             currentTarget = nextTarget;
@@ -1174,7 +1199,7 @@ function update() {
                             break;
                         }
                     }
-                    
+
                     // Create zap effects between targets
                     chainTargets.forEach((target, index) => {
                         if (index > 0) {
@@ -1191,25 +1216,25 @@ function update() {
                             });
                         }
                     });
-                } 
+                }
                 else if (t.type.name === "Sniper" && t.type.upgrades.special.purchased) {
                     // Piercing shot - hit all enemies in line
                     const angle = Math.atan2(tgt.y - t.y, tgt.x - t.x);
                     const maxDist = t.type.range;
-                    
+
                     // Find all enemies in line
                     const piercedEnemies = enemies.filter(e => {
                         if (!e.alive || e === tgt) return false;
-                        
+
                         // Calculate distance from line
                         const distToLine = Math.abs(
                             (tgt.y - t.y) * e.x - (tgt.x - t.x) * e.y + tgt.x * t.y - tgt.y * t.x
                         ) / Math.hypot(tgt.y - t.y, tgt.x - t.x);
-                        
+
                         // Check if enemy is within 20px of the line and in range
                         return distToLine < 20 && Math.hypot(e.x - t.x, e.y - t.y) < maxDist;
                     });
-                    
+
                     // Create projectiles for each pierced enemy
                     piercedEnemies.forEach(enemy => {
                         bullets.push({
@@ -1230,12 +1255,12 @@ function update() {
                     // Fire tower deals damage directly without projectiles
                     tgt.hp -= t.type.dmg;
                 }
-                
+
                 t.lastShot = Date.now();
             }
         }
     }
-    
+
     // Projectile movement and collision
     for (const b of bullets) {
         if (b.type === "zap") {
@@ -1255,9 +1280,9 @@ function update() {
                 b.hit = true;
                 continue;
             }
-            
+
             b.lifetime--;
-            
+
             let dx = b.tx - b.x, dy = b.ty - b.y, dist = Math.hypot(dx, dy);
             if (dist < b.speed) {
                 b.hit = true;
@@ -1270,22 +1295,22 @@ function update() {
             if (dist < b.speed || !b.target?.alive) {
                 // Handle AOE damage
                 if (b.aoeRadius > 0) {
-                    const aoeTargets = enemies.filter(e => 
+                    const aoeTargets = enemies.filter(e =>
                         e.alive && Math.hypot(e.x - b.x, e.y - b.y) < b.aoeRadius);
                     aoeTargets.forEach(e => e.hp -= b.dmg * 0.7); // AOE does 70% damage
-                } 
-                
+                }
+
                 // Handle direct damage
                 if (b.target && b.target.alive) {
                     b.target.hp -= b.dmg;
-                    
+
                     // Apply slow effect for ice tower
                     if (b.slowAmount > 0) {
                         b.target.slowAmount = b.slowAmount;
                         b.target.slowTimer = 2000; // 2 seconds slow
                     }
                 }
-                
+
                 b.hit = true;
             } else {
                 b.x += b.speed * dx / dist;
@@ -1293,22 +1318,22 @@ function update() {
             }
         }
     }
-    
+
     // Cleanup
     bullets = bullets.filter(b => !b.hit);
-    
+
     // Reward for killing enemies and handle tier downgrades
     let killed = enemies.filter(e => e.hp <= 0 && e.alive);
-    if (killed.length > 0) { 
+    if (killed.length > 0) {
         let totalGold = 0;
         let totalCrystals = 0;
-        
+
         for (const e of killed) {
             if (e.currentTier > 1) {
                 // Downgrade the enemy to the next lower tier
                 const newTierIndex = e.currentTier - 2; // Convert to array index (T5=index4, T4=index3, etc.)
                 const newTier = enemyTiers[newTierIndex];
-                
+
                 // Safety check to ensure we don't go below T1
                 if (newTier && newTier.tier < e.currentTier) {
                     e.type = newTier;
@@ -1316,7 +1341,7 @@ function update() {
                     e.hp = newTier.hp * gameConfig.difficulties[gameConfig.difficulty].enemyHpMultiplier * (1 + (gameState.wave-1)*0.1);
                     e.maxHp = e.hp;
                     e.goldValue = newTier.goldValue;
-                    
+
                     // Make the enemy blink when downgraded
                     e.lastBlink = Date.now();
                     e.blinkColor = "#ffffff";
@@ -1337,15 +1362,15 @@ function update() {
                 gameState.enemiesKilled++;
             }
         }
-        
-        gameState.gold += totalGold; 
+
+        gameState.gold += totalGold;
         gameState.crystals += totalCrystals;
         updateUI();
     }
-    
+
     // Clean up dead enemies (only T1 enemies can actually die)
     enemies = enemies.filter(e => e.alive);
-    
+
     // Wave logic
     if (gameState.enemiesInWave == 0 && enemies.length == 0 && gameState.waveActive) {
         if (gameState.wave < MAX_WAVE) {
@@ -1355,14 +1380,14 @@ function update() {
         } else {
             waveNumEl.textContent = `${gameState.wave}/${MAX_WAVE}`;
             enemiesKilledEl.textContent = `${gameState.enemiesKilled}/${gameState.enemiesTotal}`;
-            
+
             // Check if we completed a map and unlock next one
             if (gameConfig.difficulty === 'easy') {
                 if (gameConfig.map === 1 && !gameConfig.unlockedMaps.includes(2)) {
                     gameConfig.unlockedMaps.push(2);
                     document.querySelector('[data-map="2"]').classList.remove('locked');
                     alert("Desert map unlocked!");
-                } 
+                }
                 else if (gameConfig.map === 2 && !gameConfig.unlockedMaps.includes(3)) {
                     gameConfig.unlockedMaps.push(3);
                     document.querySelector('[data-map="3"]').classList.remove('locked');
@@ -1378,11 +1403,11 @@ function update() {
         gameState.waveActive = false;
         startButton.disabled = false;
     }
-    
+
     // Game over
-    if (gameState.lives <= 0) { 
-        alert("Game Over!"); 
-        window.location.reload(); 
+    if (gameState.lives <= 0) {
+        alert("Game Over!");
+        window.location.reload();
     }
 }
 
@@ -1391,13 +1416,13 @@ function updateUI() {
     lifeEl.textContent = `${gameState.lives}/${LIFE_MAX}`;
     goldEl.textContent = gameState.gold;
     crystalEl.textContent = gameState.crystals;
-    
+
     // Update tower icons availability
     const icons = towerBar.querySelectorAll('.tower-icon');
     icons.forEach((icon, index) => {
         icon.disabled = gameState.gold < towerTypes[index].cost;
     });
-    
+
     if (gameState.waveActive) {
         waveNumEl.textContent = `${gameState.wave}/${MAX_WAVE}`;
         enemiesKilledEl.textContent = `${gameState.enemiesKilled}/${gameState.enemiesTotal}`;
@@ -1415,7 +1440,7 @@ function updateUI() {
 function showUpgradeMenu(tower, clickX, clickY) {
     const upgradeCost = 30 + gameState.wave * 5;
     let upgradeOptions = '';
-    
+
     if (tower.type.name === "Mage") {
         upgradeOptions = `
             <button class="upgrade-option" data-upgrade="dmg" ${gameState.gold < upgradeCost ? "disabled" : ""}>
@@ -1433,14 +1458,14 @@ function showUpgradeMenu(tower, clickX, clickY) {
                 <span class="upgrade-name">Range +${tower.type.upgrades.range}</span>
                 <span class="upgrade-cost">${upgradeCost} Gold</span>
             </button>
-            <button class="upgrade-option" data-upgrade="special" 
+            <button class="upgrade-option" data-upgrade="special"
                 ${(gameState.crystals < tower.type.upgrades.special.cost || tower.type.upgrades.special.purchased) ? "disabled" : ""}>
                 <span style="font-size:1.2em;">⚡</span>
                 <span class="upgrade-name">${tower.type.upgrades.special.name}</span>
                 <span class="upgrade-cost">${tower.type.upgrades.special.cost} Crystals</span>
             </button>
         `;
-    } 
+    }
     else if (tower.type.name === "Ice Tower") {
         upgradeOptions = `
             <button class="upgrade-option" data-upgrade="dmg" ${gameState.gold < upgradeCost ? "disabled" : ""}>
@@ -1458,7 +1483,7 @@ function showUpgradeMenu(tower, clickX, clickY) {
                 <span class="upgrade-name">Range +${tower.type.upgrades.range}</span>
                 <span class="upgrade-cost">${upgradeCost} Gold</span>
             </button>
-            <button class="upgrade-option" data-upgrade="special" 
+            <button class="upgrade-option" data-upgrade="special"
                 ${(gameState.crystals < tower.type.upgrades.special.cost || tower.type.upgrades.special.purchased) ? "disabled" : ""}>
                 <span style="font-size:1.2em;">❄️</span>
                 <span class="upgrade-name">${tower.type.upgrades.special.name}</span>
@@ -1483,31 +1508,6 @@ function showUpgradeMenu(tower, clickX, clickY) {
                 <span class="upgrade-name">Range +${tower.type.upgrades.range}</span>
                 <span class="upgrade-cost">${upgradeCost} Gold</span>
             </button>
-            <button class="upgrade-option" data-upgrade="special" 
-                ${(gameState.crystals < tower.type.upgrades.special.cost || tower.type.upgrades.special.purchased) ? "disabled" : ""}>
-                <span style="font-size:1.2em;">🎯</span>
-                <span class="upgrade-name">${tower.type.upgrades.special.name}</span>
-                <span class="upgrade-cost">${tower.type.upgrades.special.cost} Crystals</span>
-            </button>
-        `;
-    }
-    else {
-        upgradeOptions = `
-            <button class="upgrade-option" data-upgrade="dmg" ${gameState.gold < upgradeCost ? "disabled" : ""}>
-                <span style="font-size:1.2em;">💥</span>
-                <span class="upgrade-name">Damage +${tower.type.upgrades.dmg}</span>
-                <span class="upgrade-cost">${upgradeCost} Gold</span>
-            </button>
-            <button class="upgrade-option" data-upgrade="rate" ${gameState.gold < upgradeCost ? "disabled" : ""}>
-                <span style="font-size:1.2em;">⏱️</span>
-                <span class="upgrade-name">Speed +${-tower.type.upgrades.rate/10}</span>
-                <span class="upgrade-cost">${upgradeCost} Gold</span>
-            </button>
-            <button class="upgrade-option" data-upgrade="range" ${gameState.gold < upgradeCost ? "disabled" : ""}>
-                <span style="font-size:1.2em;">📏</span>
-                <span class="upgrade-name">Range +${tower.type.upgrades.range}</span>
-                <span class="upgrade-cost">${upgradeCost} Gold</span>
-            </button>
             <button class="upgrade-option" disabled>
                 <span style="font-size:1.2em;">❓</span>
                 <span class="upgrade-name">Coming Soon</span>
@@ -1515,7 +1515,7 @@ function showUpgradeMenu(tower, clickX, clickY) {
             </button>
         `;
     }
-    
+
     upgradeMenu.innerHTML = upgradeOptions;
     upgradeMenu.style.display = 'grid';
     upgradeMenu.style.left = '20px';
@@ -1525,9 +1525,9 @@ function showUpgradeMenu(tower, clickX, clickY) {
     buttons.forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
-            
+
             const upgradeType = this.getAttribute('data-upgrade');
-            
+
             if (upgradeType === 'special') {
                 if (gameState.crystals < tower.type.upgrades.special.cost) {
                     alert("Not enough crystals!");
@@ -1540,9 +1540,9 @@ function showUpgradeMenu(tower, clickX, clickY) {
                     alert("Not enough gold!");
                     return;
                 }
-                
+
                 gameState.gold -= upgradeCost;
-                
+
                 switch(upgradeType) {
                     case 'dmg':
                         tower.type.dmg += tower.type.upgrades.dmg;
@@ -1558,7 +1558,7 @@ function showUpgradeMenu(tower, clickX, clickY) {
                         break;
                 }
             }
-            
+
             updateUI();
             upgradeMenu.style.display = 'none';
         });
@@ -1570,19 +1570,19 @@ function showUpgradeMenu(tower, clickX, clickY) {
             document.removeEventListener('mousedown', closeMenu);
         }
     };
-    
+
     document.addEventListener('mousedown', closeMenu);
 }
 
 // Click handler
 function handleCanvasClick(evt) {
     evt.preventDefault();
-    
+
     // Calculate coordinates
     const rect = canvas.getBoundingClientRect();
     const x = (evt.clientX - rect.left) * (canvas.width / rect.width);
     const y = (evt.clientY - rect.top) * (canvas.height / rect.height);
-    
+
     // Check if a tower was clicked
     for (let t of towers) {
         const dist = Math.hypot(x - t.x, y - t.y);
@@ -1592,7 +1592,7 @@ function handleCanvasClick(evt) {
             return;
         }
     }
-    
+
     // If no tower clicked, hide menus
     upgradeMenu.style.display = 'none';
     selectedTower = null;
@@ -1601,7 +1601,7 @@ function handleCanvasClick(evt) {
 // Drawing functions
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+
     // Draw path (for all maps)
     ctx.save();
     ctx.strokeStyle = "#5a3310";
@@ -1615,23 +1615,23 @@ function draw() {
     ctx.shadowColor = "#40240a";
     ctx.shadowBlur = 18;
     ctx.stroke();
-    
+
     ctx.strokeStyle = "#7B4A20";
     ctx.lineWidth = 24;
     ctx.shadowColor = "transparent";
     ctx.stroke();
     ctx.restore();
-    
+
     // Decorative elements
     for (const el of mapElements) {
         ctx.save();
         ctx.globalAlpha = el.a;
-        
+
         if (el.type.includes('rock')) {
             ctx.save();
             ctx.globalAlpha = el.a;
             ctx.beginPath();
-            
+
             switch(el.shape) {
                 case 0: // Round rock
                     ctx.arc(el.x, el.y, el.r, 0, Math.PI * 2);
@@ -1647,7 +1647,7 @@ function draw() {
                     ctx.ellipse(el.x, el.y, el.r, el.r * 0.7, 0, 0, Math.PI * 2);
                     break;
             }
-            
+
             ctx.fillStyle = '#a0a0a0';
             ctx.fill();
             ctx.strokeStyle = '#707070';
@@ -1663,7 +1663,7 @@ function draw() {
                 ctx.shadowColor = "#1a3819";
                 ctx.shadowBlur = 13;
                 ctx.fill();
-                
+
                 ctx.beginPath();
                 ctx.rect(el.x-3, el.y+el.r*0.4, 6, 10);
                 ctx.fillStyle = "#86592d";
@@ -1680,7 +1680,7 @@ function draw() {
                 ctx.shadowColor = "#0c3c16";
                 ctx.shadowBlur = 11;
                 ctx.fill();
-                
+
                 ctx.beginPath();
                 ctx.rect(el.x-2.5, el.y+el.r*0.27, 5, 11);
                 ctx.fillStyle = "#68481d";
@@ -1694,7 +1694,7 @@ function draw() {
                 ctx.shadowColor = "#1a3819";
                 ctx.shadowBlur = 8;
                 ctx.fill();
-                
+
                 ctx.beginPath();
                 ctx.rect(el.x-2.5, el.y+el.r*0.2, 5, 8);
                 ctx.fillStyle = "#ad8323";
@@ -1704,300 +1704,87 @@ function draw() {
         }
         ctx.restore();
     }
-    
+
     // Draw towers
     for (const t of towers) {
+        if (!t) continue; // Skip if tower is null
+
         ctx.save();
-        
+
         // Tower base
         ctx.beginPath();
         ctx.roundRect(t.x - 24, t.y - 24, 48, 48, 12);
         ctx.fillStyle = t.type.color;
         ctx.fill();
-        
+
         // Black outline
         ctx.beginPath();
         ctx.roundRect(t.x - 24, t.y - 24, 48, 48, 12);
         ctx.strokeStyle = "#222";
         ctx.lineWidth = 3;
         ctx.stroke();
-        
-        // Tower-specific graphics
-        if (t.type.name === "Cannon") {
-            // Draw cannon centered in the slot
+
+        // Draw the tower icon
+        if (t.type.icon) {
+            // Create a temporary div to parse the SVG
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = t.type.icon;
+            const svgElement = tempDiv.firstChild;
+
+            // Draw the SVG directly to canvas
             ctx.save();
-            ctx.translate(t.x, t.y);
-            
-            // Bomb body
-            ctx.beginPath();
-            ctx.arc(0, 0, 16, 0, Math.PI * 2);
-            const bombGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 16);
-            bombGrad.addColorStop(0, '#666');
-            bombGrad.addColorStop(1, '#222');
-            ctx.fillStyle = bombGrad;
-            ctx.fill();
-            
-            // Fuse
-            ctx.beginPath();
-            ctx.moveTo(0, -16);
-            ctx.bezierCurveTo(0, -22, -8, -24, -16, -26);
-            ctx.strokeStyle = '#222';
-            ctx.lineWidth = 3;
-            ctx.lineCap = 'round';
-            ctx.stroke();
-            
-            // Fuse flame
-            ctx.beginPath();
-            ctx.moveTo(-16, -26);
-            ctx.bezierCurveTo(-14, -28, -8, -24, -16, -22);
-            ctx.bezierCurveTo(-18, -24, -20, -28, -16, -26);
-            const flameGrad = ctx.createRadialGradient(-16, -26, 0, -16, -26, 8);
-            flameGrad.addColorStop(0, '#ff9e00');
-            flameGrad.addColorStop(1, '#ff3000');
-            ctx.fillStyle = flameGrad;
-            ctx.fill();
-            
-            ctx.restore();
-        } 
-        else if (t.type.name === "Fire Tower") {
-            ctx.save();
-            ctx.translate(t.x, t.y);
-            
-            // Tower base with fiery gradient
-            ctx.beginPath();
-            ctx.roundRect(-18, -18, 36, 36, 8);
-            
-            const fireGrad = ctx.createLinearGradient(0, -18, 0, 18);
-            fireGrad.addColorStop(0, 'black');
-            fireGrad.addColorStop(0.3, '#8B0000');
-            fireGrad.addColorStop(0.7, '#B22222');
-            fireGrad.addColorStop(1, '#FF4500');
-            ctx.fillStyle = fireGrad;
-            ctx.fill();
-            
-            // Only show attack flame when targeting
-            if (Date.now() - t.lastShot < 100) {
-                const tgt = enemies.find(e => e.alive && Math.hypot(e.x-t.x, e.y-t.y) < t.type.range);
-                if (tgt) {
-                    const angle = Math.atan2(tgt.y - t.y, tgt.x - t.x);
-                    const distance = Math.hypot(tgt.x - t.x, tgt.y - t.y);
-                    const flameLength = Math.min(t.type.range, distance);
-                    
-                    ctx.save();
-                    ctx.rotate(angle);
-                    
-                    // Main flame
-                    const flameGradient = ctx.createLinearGradient(0, 0, flameLength, 0);
-                    flameGradient.addColorStop(0, 'rgba(255, 200, 0, 0.8)');
-                    flameGradient.addColorStop(0.7, 'rgba(255, 100, 0, 0.7)');
-                    flameGradient.addColorStop(1, 'rgba(255, 50, 0, 0)');
-                    
-                    ctx.beginPath();
-                    ctx.moveTo(18, 0);
-                    ctx.lineTo(flameLength, -t.type.flameWidth);
-                    ctx.lineTo(flameLength, t.type.flameWidth);
-                    ctx.closePath();
-                    ctx.fillStyle = flameGradient;
-                    ctx.fill();
-                    
-                    // Inner brighter flame
-                    ctx.beginPath();
-                    ctx.moveTo(18, 0);
-                    ctx.lineTo(flameLength, -t.type.flameWidth * 0.6);
-                    ctx.lineTo(flameLength, t.type.flameWidth * 0.6);
-                    ctx.closePath();
-                    ctx.fillStyle = 'rgba(255, 255, 200, 0.6)';
-                    ctx.fill();
-                    
-                    ctx.restore();
-                }
-            }
-            
-            // Draw animated flame on top of tower
-            ctx.save();
-            ctx.translate(0, -10);
-            
-            // Flame core
-            ctx.beginPath();
-            ctx.moveTo(-8, 0);
-            ctx.quadraticCurveTo(0, -25, 8, 0);
-            ctx.quadraticCurveTo(4, -10, 0, -20);
-            ctx.quadraticCurveTo(-4, -10, -8, 0);
-            
-            const coreGrad = ctx.createRadialGradient(0, -10, 0, 0, -10, 20);
-            coreGrad.addColorStop(0, '#FFFF00');
-            coreGrad.addColorStop(0.5, '#FF8C00');
-            coreGrad.addColorStop(1, '#FF4500');
-            ctx.fillStyle = coreGrad;
-            ctx.fill();
-            
-            // Flame tips
-            ctx.fillStyle = '#FFFF00';
-            ctx.beginPath();
-            ctx.moveTo(-2, -25);
-            ctx.lineTo(2, -25);
-            ctx.quadraticCurveTo(0, -30, -2, -25);
-            ctx.fill();
-            
-            ctx.restore();
+            ctx.translate(t.x - 12, t.y - 12); // Position the icon
+            const svgString = new XMLSerializer().serializeToString(svgElement);
+            const img = new Image();
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0, 24, 24);
+            };
+            img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
             ctx.restore();
         }
-        else if (t.type.name === "Ice Tower") {
-            ctx.save();
-            ctx.translate(t.x, t.y);
-            
-            // Tower base with ice gradient
-            ctx.beginPath();
-            ctx.roundRect(-18, -18, 36, 36, 8);
-            
-            const iceGrad = ctx.createLinearGradient(-18, -18, 18, 18);
-            iceGrad.addColorStop(0, '#007acc');
-            iceGrad.addColorStop(1, '#a0e1ff');
-            ctx.fillStyle = iceGrad;
-            ctx.fill();
-            
-            // Snowflake design
-            ctx.strokeStyle = "white";
-            ctx.lineWidth = 2;
-            ctx.lineCap = "round";
-            
-            // Main axes
-            ctx.beginPath();
-            ctx.moveTo(0, -12);
-            ctx.lineTo(0, 12);
-            ctx.moveTo(-12, 0);
-            ctx.lineTo(12, 0);
-            ctx.moveTo(-8, -8);
-            ctx.lineTo(8, 8);
-            ctx.moveTo(-8, 8);
-            ctx.lineTo(8, -8);
-            ctx.stroke();
-            
-            // Small ticks
-            ctx.beginPath();
-            ctx.moveTo(0, -15);
-            ctx.lineTo(0, -18);
-            ctx.moveTo(0, 15);
-            ctx.lineTo(0, 18);
-            ctx.moveTo(-15, 0);
-            ctx.lineTo(-18, 0);
-            ctx.moveTo(15, 0);
-            ctx.lineTo(18, 0);
-            ctx.stroke();
-            
-            ctx.restore();
-        }
-        else if (t.type.name === "Sniper") {
-            ctx.save();
-            ctx.translate(t.x, t.y);
-            
-            // Tower base with sniper gradient
-            ctx.beginPath();
-            ctx.roundRect(-18, -18, 36, 36, 8);
-            
-            const sniperGrad = ctx.createLinearGradient(-18, -18, 18, 18);
-            sniperGrad.addColorStop(0, '#333333');
-            sniperGrad.addColorStop(1, '#001f3f');
-            ctx.fillStyle = sniperGrad;
-            ctx.fill();
-            
-            // Crosshair design
-            ctx.strokeStyle = "#aaaaaa";
-            ctx.lineWidth = 2;
-            
-            // Outer circle
-            ctx.beginPath();
-            ctx.arc(0, 0, 12, 0, Math.PI * 2);
-            ctx.stroke();
-            
-            // Inner circle
-            ctx.beginPath();
-            ctx.arc(0, 0, 6, 0, Math.PI * 2);
-            ctx.stroke();
-            
-            // Cross lines
-            ctx.beginPath();
-            ctx.moveTo(0, -12);
-            ctx.lineTo(0, 12);
-            ctx.moveTo(-12, 0);
-            ctx.lineTo(12, 0);
-            ctx.stroke();
-            
-            // Small ticks
-            ctx.beginPath();
-            ctx.moveTo(0, -15);
-            ctx.lineTo(0, -18);
-            ctx.moveTo(0, 15);
-            ctx.lineTo(0, 18);
-            ctx.moveTo(-15, 0);
-            ctx.lineTo(-18, 0);
-            ctx.moveTo(15, 0);
-            ctx.lineTo(18, 0);
-            ctx.stroke();
-            
-            ctx.restore();
-        }
-        else if (t.type.name === "Mage") {
-            ctx.save();
-            ctx.translate(t.x, t.y);
-            
-            // Tower base with mage gradient
-            ctx.beginPath();
-            ctx.roundRect(-18, -18, 36, 36, 8);
-            
-            const mageGrad = ctx.createLinearGradient(-18, -18, 18, 18);
-            mageGrad.addColorStop(0, '#6A5ACD');
-            mageGrad.addColorStop(1, '#4B0082');
-            ctx.fillStyle = mageGrad;
-            ctx.fill();
-            
-            // Mage orb design
-            ctx.beginPath();
-            ctx.arc(0, 0, 12, 0, Math.PI * 2);
-            
-            const orbGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 12);
-            orbGrad.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
-            orbGrad.addColorStop(0.7, 'rgba(200, 180, 255, 0.6)');
-            orbGrad.addColorStop(1, 'rgba(150, 100, 255, 0.4)');
-            ctx.fillStyle = orbGrad;
-            ctx.fill();
-            
-            // Inner glow
-            ctx.beginPath();
-            ctx.arc(0, 0, 8, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            ctx.fill();
-            
-            // Sparkles
-            ctx.fillStyle = 'white';
-            for (let i = 0; i < 5; i++) {
-                const angle = Math.PI * 2 * i / 5;
-                const dist = 6 + Math.sin(Date.now() / 200 + i) * 2;
+
+        // Tower-specific effects
+        if (t.type.name === "Fire Tower" && Date.now() - t.lastShot < 100) {
+            const tgt = enemies.find(e => e.alive && Math.hypot(e.x-t.x, e.y-t.y) < t.type.range);
+            if (tgt) {
+                const angle = Math.atan2(tgt.y - t.y, tgt.x - t.x);
+                const distance = Math.hypot(tgt.x - t.x, tgt.y - t.y);
+                const flameLength = Math.min(t.type.range, distance);
+
+                ctx.save();
+                ctx.translate(t.x, t.y);
+                ctx.rotate(angle);
+
+                // Flame gradient
+                const flameGradient = ctx.createLinearGradient(0, 0, flameLength, 0);
+                flameGradient.addColorStop(0, 'rgba(255, 200, 0, 0.8)');
+                flameGradient.addColorStop(0.7, 'rgba(255, 100, 0, 0.7)');
+                flameGradient.addColorStop(1, 'rgba(255, 50, 0, 0)');
+
                 ctx.beginPath();
-                ctx.arc(
-                    Math.cos(angle) * dist, 
-                    Math.sin(angle) * dist, 
-                    1.5, 
-                    0, 
-                    Math.PI * 2
-                );
+                ctx.moveTo(24, 0);
+                ctx.lineTo(flameLength, -t.type.flameWidth);
+                ctx.lineTo(flameLength, t.type.flameWidth);
+                ctx.closePath();
+                ctx.fillStyle = flameGradient;
                 ctx.fill();
+
+                // Inner flame
+                ctx.beginPath();
+                ctx.moveTo(24, 0);
+                ctx.lineTo(flameLength, -t.type.flameWidth * 0.6);
+                ctx.lineTo(flameLength, t.type.flameWidth * 0.6);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(255, 255, 200, 0.6)';
+                ctx.fill();
+
+                ctx.restore();
             }
-            
-            ctx.restore();
         }
-        else {
-            // Default tower icon (centered)
-            ctx.fillStyle = "#fff";
-            ctx.font = "bold 20px Arial";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(t.type.icon, t.x, t.y);
-        }
-        
+
         ctx.restore();
     }
-    
+
     // Attack radius of selected tower
     if (selectedTower) {
         ctx.strokeStyle = 'rgba(200, 200, 200, 0.5)';
@@ -2006,86 +1793,96 @@ function draw() {
         ctx.arc(selectedTower.x, selectedTower.y, selectedTower.type.range, 0, Math.PI * 2);
         ctx.stroke();
     }
-    
+
     // Draw dragging tower
     if (draggingTower) {
         ctx.save();
         ctx.globalAlpha = 0.8;
-        
+
         // Check if position is valid
         const valid = isValidTowerPosition(draggingTower.x, draggingTower.y);
         ctx.strokeStyle = valid ? "#0f0" : "#f00";
         ctx.lineWidth = 3;
         ctx.setLineDash([5, 5]);
-        
+
         // Draw tower base
         ctx.beginPath();
         ctx.roundRect(
-            draggingTower.x - draggingTower.width/2, 
-            draggingTower.y - draggingTower.height/2, 
-            draggingTower.width, 
-            draggingTower.height, 
+            draggingTower.x - draggingTower.width/2,
+            draggingTower.y - draggingTower.height/2,
+            draggingTower.width,
+            draggingTower.height,
             12
         );
         ctx.fillStyle = draggingTower.type.color;
         ctx.fill();
         ctx.stroke();
-        
-        // Draw icon
-        ctx.fillStyle = "#fff";
-        ctx.font = "bold 20px Arial";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(draggingTower.type.icon, draggingTower.x, draggingTower.y);
-        
+
+        // Draw the tower icon
+        if (draggingTower.type.icon) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = draggingTower.type.icon;
+            const svgElement = tempDiv.firstChild;
+
+            ctx.save();
+            ctx.translate(draggingTower.x - 12, draggingTower.y - 12);
+            const svgString = new XMLSerializer().serializeToString(svgElement);
+            const img = new Image();
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0, 24, 24);
+            };
+            img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
+            ctx.restore();
+        }
+
         ctx.restore();
     }
-    
+
     // Enemies - first draw all non-blinking enemies
     for (const e of enemies) {
         if (e.lastBlink && Date.now() - e.lastBlink < 100) continue;
-        
+
         // Draw enemy body - use proper color based on tier
         ctx.fillStyle = e.type.color;
-        ctx.beginPath(); 
-        ctx.arc(e.x, e.y, 15, 0, 2*Math.PI); 
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, 15, 0, 2*Math.PI);
         ctx.fill();
-        
+
         // Draw health bar background
-        ctx.fillStyle = "#222"; 
+        ctx.fillStyle = "#222";
         ctx.fillRect(e.x-16, e.y-18, 32, 5);
-        
+
         // Draw health bar
         ctx.fillStyle = "#4CAF50";
         ctx.fillRect(e.x-16, e.y-18, 32*e.hp/e.maxHp, 5);
-        
+
         // Draw tier indicator
         ctx.fillStyle = "#fff";
         ctx.beginPath();
         ctx.arc(e.x, e.y, 6, 0, 2*Math.PI);
         ctx.fill();
-        
+
         ctx.fillStyle = "#000";
         ctx.font = "bold 10px Arial";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(e.currentTier, e.x, e.y);
     }
-    
+
     // Draw blinking enemies (white) on top
     for (const e of enemies) {
         if (e.lastBlink && Date.now() - e.lastBlink < 100) {
             ctx.fillStyle = "#ffffff";
-            ctx.beginPath(); 
-            ctx.arc(e.x, e.y, 15, 0, 2*Math.PI); 
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 15, 0, 2*Math.PI);
             ctx.fill();
-            
+
             // Keep health bar visible during blink
-            ctx.fillStyle = "#222"; 
+            ctx.fillStyle = "#222";
             ctx.fillRect(e.x-16, e.y-18, 32, 5);
             ctx.fillStyle = "#4CAF50";
             ctx.fillRect(e.x-16, e.y-18, 32*e.hp/e.maxHp, 5);
-            
+
             // Keep tier number visible
             ctx.fillStyle = "#000";
             ctx.beginPath();
@@ -2099,7 +1896,7 @@ function draw() {
             ctx.fillText(e.currentTier, e.x, e.y);
         }
     }
-    
+
     // Projectiles
     for (const b of bullets) {
         if (b.type === "arrow") {
@@ -2115,20 +1912,20 @@ function draw() {
             ctx.fillStyle = b.color;
             ctx.fill();
             ctx.restore();
-        } 
+        }
         else if (b.type === "flame") {
             const angle = Math.atan2(b.ty - b.y, b.tx - b.x);
             const distance = Math.hypot(b.tx - b.x, b.ty - b.y);
-            
+
             ctx.save();
             ctx.translate(b.x, b.y);
             ctx.rotate(angle);
-            
+
             const flameGradient = ctx.createLinearGradient(0, 0, distance, 0);
             flameGradient.addColorStop(0, 'rgba(255, 200, 0, 0.8)');
             flameGradient.addColorStop(0.7, 'rgba(255, 100, 0, 0.7)');
             flameGradient.addColorStop(1, 'rgba(255, 50, 0, 0)');
-            
+
             ctx.beginPath();
             ctx.moveTo(0, 0);
             ctx.lineTo(distance, -b.tower.type.flameWidth);
@@ -2136,7 +1933,7 @@ function draw() {
             ctx.closePath();
             ctx.fillStyle = flameGradient;
             ctx.fill();
-            
+
             // Inner brighter flame
             ctx.beginPath();
             ctx.moveTo(0, 0);
@@ -2145,7 +1942,7 @@ function draw() {
             ctx.closePath();
             ctx.fillStyle = 'rgba(255, 255, 200, 0.6)';
             ctx.fill();
-            
+
             ctx.restore();
         }
         else if (b.type === "cannonball") {
@@ -2153,7 +1950,8 @@ function draw() {
             ctx.arc(b.x, b.y, 8, 0, Math.PI * 2);
             const cannonGrad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, 8);
             cannonGrad.addColorStop(0, '#666');
-            cannonGrad.addColorStop(1, '#222');
+            cannonGrad.addColorStop(0.5, '#FF8C00');
+            cannonGrad.addColorStop(1, '#FF4500');
             ctx.fillStyle = cannonGrad;
             ctx.fill();
             
