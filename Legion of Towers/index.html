@@ -142,7 +142,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #1a2f3a 0%, #3a5f77 100%);
+            background: url('https://bodenbac.github.io/GameList-Luis/Assets/LOT/Other/background.svg') center/cover no-repeat;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -150,6 +150,11 @@
             z-index: 1000;
             color: white;
             font-family: 'Arial', sans-serif;
+        }
+
+        #titleScreen ~ #gameContainer #startButton {
+            display: none;
+            pointer-events: none;
         }
 
         #titleScreen h1 {
@@ -341,6 +346,7 @@ let gameConfig = {
     }
 };
 
+
 // Enemy tier system - T1 (green) to T5 (black)
 const enemyTiers = [
     {   // T1 - Green (weakest)
@@ -414,8 +420,11 @@ function mainLoop() {
     requestAnimationFrame(mainLoop);
 }
 
+
 document.querySelector('.start-btn').addEventListener('click', function() {
     document.getElementById('titleScreen').style.display = 'none';
+    document.getElementById('startButton').style.display = 'block';
+    document.getElementById('startButton').style.pointerEvents = 'auto';
     initGame();
     mainLoop(); // Now this will work
 });
@@ -428,9 +437,11 @@ window.addEventListener('resize', function() {
 });
 
 // Initialize the game with selected settings
-function initGame() {
+async function initGame() {
     const difficulty = gameConfig.difficulties[gameConfig.difficulty];
     gameState.gold = difficulty.gold;
+
+    document.body.classList.remove('in-title-screen');
 
     // Select map based on choice
     switch(gameConfig.map) {
@@ -453,6 +464,14 @@ function initGame() {
 
     updateUI();
     resizeCanvas(); // Important for correct display
+
+    try {
+        await preloadTowerIcons();
+        console.log("All tower icons loaded");
+    } catch (error) {
+        console.error("Failed to load tower icons:", error);
+        // Fallback: will use colored rectangles instead of icons
+    }
 }
 
 // Map definitions
@@ -531,12 +550,12 @@ const waveNumEl = document.getElementById('waveNumber');
 const enemiesKilledEl = document.getElementById('enemiesKilled');
 
 const towerIcons = {
-    archer: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><linearGradient id="arch1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#004d00"/><stop offset="100%" stop-color="#6f6"/></linearGradient><marker id="arch2" markerUnits="strokeWidth" markerWidth="4" markerHeight="4" refX="0" refY="2" orient="auto"><path d="m0 0 4 2-4 2Z" fill="#888"/></marker></defs><rect x="10" y="10" width="80" height="80" fill="url(#arch1)" stroke="#000" stroke-width="4" rx="4" ry="4"/><g fill="none" stroke="brown" stroke-width="4" stroke-linecap="round"><path d="M35 25v50M35 25a25 25 0 0 1 0 50" transform="matrix(.85 0 0 .85 3.25 7.5)"/><path stroke="#888" marker-end="url(#arch2)" d="M35 50h40" transform="matrix(.85 0 0 .85 3.25 7.5)"/></g></svg>`,
-    cannon: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><linearGradient id="canon1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#666"/><stop offset="100%" stop-color="#aaa"/></linearGradient></defs><rect x="10" y="10" width="80" height="80" fill="url(#canon1)" stroke="#000" stroke-width="4" rx="4" ry="4"/><circle cx="50" cy="55" r="20" fill="#111" stroke="#000" stroke-width="3"/><path stroke="#fc0" stroke-width="3" stroke-linecap="round" d="M50 35V25"/><path d="m50 23-3-3 2 5 5-2-4 2Z" fill="#fd4"/></svg>`,
-    mage: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><linearGradient id="mage1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="indigo"/><stop offset="100%" stop-color="#9370db"/></linearGradient><linearGradient id="mage2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ddd"/><stop offset="100%" stop-color="#888"/></linearGradient><radialGradient id="mage3" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#a0eaff"/><stop offset="100%" stop-color="#005fbb"/></radialGradient></defs><rect x="10" y="10" width="80" height="80" fill="url(#mage1)" stroke="#000" stroke-width="4" rx="4" ry="4"/><g transform="rotate(20 50 50)" stroke-linecap="round" stroke-linejoin="round"><path stroke="#ccc" stroke-width="3" d="M50 45v30m-5-20h10"/><path d="M48 45h4l2-5h-8Z" fill="url(#mage2)" stroke="#777"/><circle cx="50" cy="35" r="10" fill="url(#mage3)" stroke="#003f7f"/><path d="M50 25c10 0 15 10 7 15m-7-15c-10 0-15 10-7 15" stroke="#a0eaff" stroke-width="2" fill="none"/><path stroke="#a0eaff" stroke-width="2" d="m43 40-4 6"/><circle cx="38" cy="48" r="2" fill="#00ace6" stroke="#005fbb"/><path stroke="#a0eaff" stroke-width="2" d="m57 40 4 6"/><circle cx="62" cy="48" r="2" fill="#00ace6" stroke="#005fbb"/></g></svg>`,
-    fire: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><linearGradient id="fire1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="red"/><stop offset="100%" stop-color="orange"/></linearGradient><symbol id="b" viewBox="0 0 432 640"><g transform="matrix(.85 0 0 .85 -31.35 48)"/><path d="M165.214 571.337c4.185 2.224 8.599-2.593 6.037-6.58-13.906-21.644-27.075-58.063-6.094-104.967 34.987-78.216 56.277-118.726 56.277-118.726s11.324 47.275 42.02 89.31c29.544 40.454 45.714 91.334 19.645 133.72-2.447 3.978 1.867 8.671 6.025 6.544 32.27-16.508 68.464-49.62 72.548-115.512 1.505-20.135-.753-48.324-12.044-83.896-14.52-45.084-32.368-66.121-42.695-75.155-3.089-2.703-7.893-.308-7.64 3.789 3.01 48.646-15.291 60.99-25.708 33.17-4.16-11.112-6.586-30.33-6.586-53.736 0-38.966-11.305-79.077-36.229-111.672-6.48-8.476-14.065-16.397-22.766-23.15-3.15-2.447-7.716.012-7.427 3.99 1.913 26.414.18 102.119-66.237 192.561-60.22 83.896-36.885 148.328-28.605 165.779 15.831 33.43 37.913 53.064 59.479 64.53z" fill="#ff0" fill-rule="evenodd" stroke="#000" stroke-width="2.1"/></symbol></defs><rect x="10" y="10" width="80" height="80" fill="url(#fire1)" stroke="#000" stroke-width="4" rx="4" ry="4"/><svg x="10" y="10" width="80" height="80" viewBox="0 0 432 640"><use href="#b"/></svg></svg>`,
-    ice: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><linearGradient id="ice1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#007acc"/><stop offset="100%" stop-color="#a0e1ff"/></linearGradient><marker id="ice1" markerUnits="strokeWidth" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto"><path d="M2 0v4" stroke="#fff"/></marker></defs><rect x="10" y="10" width="80" height="80" fill="url(#ice1)" stroke="#000" stroke-width="4" rx="4" ry="4"/><g stroke="#fff" stroke-width="2" stroke-linecap="round" marker-end="url(#ice1)"><path d="M50 20v60"/><path d="M20 50h60"/><path d="m30 30 40 40"/><path d="m30 70 40-40"/><path d="m50 30-5-5"/><path d="m50 30 5-5"/><path d="m50 70-5 5"/><path d="m50 70 5 5"/><path d="m70 50 5-5"/><path d="m70 50 5 5"/><path d="m30 50-5-5"/><path d="m30 50-5 5"/><path d="m60 60 5 5"/><path d="m60 60-5 5"/><path d="m40 40-5-5"/><path d="m40 40 5-5"/><path d="m60 40 5-5"/><path d="m60 40 5 5"/><path d="m40 60-5-5"/><path d="m40 60-5 5"/></g></svg>`,
-    sniper: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><linearGradient id="snipe1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#333"/><stop offset="100%" stop-color="#001f3f"/></linearGradient></defs><rect x="10" y="10" width="80" height="80" fill="url(#snipe1)" stroke="#000" stroke-width="4" rx="4" ry="4"/><g fill="none" stroke="#aaa" stroke-width="3"><circle cx="50" cy="50" r="20"/><circle cx="50" cy="50" r="10" stroke-width="2"/><path d="M50 30v40M30 50h40"/><path stroke-width="2" d="M50 18v6m0 52v6M18 50h6m52 0h6"/></g></svg>`
+    archer: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><linearGradient id="arch1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#004d00"/><stop offset="100%" stop-color="#6f6"/></linearGradient><marker id="arch2" markerUnits="strokeWidth" markerWidth="4" markerHeight="4" refX="0" refY="2" orient="auto"><path d="m0 0 4 2-4 2Z" fill="#888"/></marker></defs><rect x="10" y="10" width="80" height="80" fill="url(#arch1)" stroke="#000" stroke-width="4" rx="16" ry="16"/><g fill="none" stroke="brown" stroke-width="4" stroke-linecap="round"><path d="M35 25v50M35 25a25 25 0 0 1 0 50" transform="matrix(.85 0 0 .85 3.25 7.5)"/><path stroke="#888" marker-end="url(#arch2)" d="M35 50h40" transform="matrix(.85 0 0 .85 3.25 7.5)"/></g></svg>`,
+    cannon: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><linearGradient id="canon1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#666"/><stop offset="100%" stop-color="#aaa"/></linearGradient></defs><rect x="10" y="10" width="80" height="80" fill="url(#canon1)" stroke="#000" stroke-width="4" rx="16" ry="16"/><circle cx="50" cy="55" r="20" fill="#111" stroke="#000" stroke-width="3"/><path stroke="#fc0" stroke-width="3" stroke-linecap="round" d="M50 35V25"/><path d="m50 23-3-3 2 5 5-2-4 2Z" fill="#fd4"/></svg>`,
+    mage: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><linearGradient id="mage1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="indigo"/><stop offset="100%" stop-color="#9370db"/></linearGradient><linearGradient id="mage2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ddd"/><stop offset="100%" stop-color="#888"/></linearGradient><radialGradient id="mage3" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#a0eaff"/><stop offset="100%" stop-color="#005fbb"/></radialGradient></defs><rect x="10" y="10" width="80" height="80" fill="url(#mage1)" stroke="#000" stroke-width="4" rx="16" ry="16"/><g transform="rotate(20 50 50)" stroke-linecap="round" stroke-linejoin="round"><path stroke="#ccc" stroke-width="3" d="M50 45v30m-5-20h10"/><path d="M48 45h4l2-5h-8Z" fill="url(#mage2)" stroke="#777"/><circle cx="50" cy="35" r="10" fill="url(#mage3)" stroke="#003f7f"/><path d="M50 25c10 0 15 10 7 15m-7-15c-10 0-15 10-7 15" stroke="#a0eaff" stroke-width="2" fill="none"/><path stroke="#a0eaff" stroke-width="2" d="m43 40-4 6"/><circle cx="38" cy="48" r="2" fill="#00ace6" stroke="#005fbb"/><path stroke="#a0eaff" stroke-width="2" d="m57 40 4 6"/><circle cx="62" cy="48" r="2" fill="#00ace6" stroke="#005fbb"/></g></svg>`,
+    fire: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><linearGradient id="fire1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="red"/><stop offset="100%" stop-color="orange"/></linearGradient><symbol id="b" viewBox="0 0 432 640"><g transform="matrix(.85 0 0 .85 -31.35 48)"/><path d="M165.214 571.337c4.185 2.224 8.599-2.593 6.037-6.58-13.906-21.644-27.075-58.063-6.094-104.967 34.987-78.216 56.277-118.726 56.277-118.726s11.324 47.275 42.02 89.31c29.544 40.454 45.714 91.334 19.645 133.72-2.447 3.978 1.867 8.671 6.025 6.544 32.27-16.508 68.464-49.62 72.548-115.512 1.505-20.135-.753-48.324-12.044-83.896-14.52-45.084-32.368-66.121-42.695-75.155-3.089-2.703-7.893-.308-7.64 3.789 3.01 48.646-15.291 60.99-25.708 33.17-4.16-11.112-6.586-30.33-6.586-53.736 0-38.966-11.305-79.077-36.229-111.672-6.48-8.476-14.065-16.397-22.766-23.15-3.15-2.447-7.716.012-7.427 3.99 1.913 26.414.18 102.119-66.237 192.561-60.22 83.896-36.885 148.328-28.605 165.779 15.831 33.43 37.913 53.064 59.479 64.53z" fill="#ff0" fill-rule="evenodd" stroke="#000" stroke-width="2.1"/></symbol></defs><rect x="10" y="10" width="80" height="80" fill="url(#fire1)" stroke="#000" stroke-width="4" rx="16" ry="16"/><svg x="10" y="10" width="80" height="80" viewBox="0 0 432 640"><use href="#b"/></svg></svg>`,
+    ice: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><linearGradient id="ice1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#007acc"/><stop offset="100%" stop-color="#a0e1ff"/></linearGradient><marker id="ice1" markerUnits="strokeWidth" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto"><path d="M2 0v4" stroke="#fff"/></marker></defs><rect x="10" y="10" width="80" height="80" fill="url(#ice1)" stroke="#000" stroke-width="4" rx="16" ry="16"/><g stroke="#fff" stroke-width="2" stroke-linecap="round" marker-end="url(#ice1)"><path d="M50 20v60"/><path d="M20 50h60"/><path d="m30 30 40 40"/><path d="m30 70 40-40"/><path d="m50 30-5-5"/><path d="m50 30 5-5"/><path d="m50 70-5 5"/><path d="m50 70 5 5"/><path d="m70 50 5-5"/><path d="m70 50 5 5"/><path d="m30 50-5-5"/><path d="m30 50-5 5"/><path d="m60 60 5 5"/><path d="m60 60-5 5"/><path d="m40 40-5-5"/><path d="m40 40 5-5"/><path d="m60 40 5-5"/><path d="m60 40 5 5"/><path d="m40 60-5-5"/><path d="m40 60-5 5"/></g></svg>`,
+    sniper: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><linearGradient id="snipe1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#333"/><stop offset="100%" stop-color="#001f3f"/></linearGradient></defs><rect x="10" y="10" width="80" height="80" fill="url(#snipe1)" stroke="#000" stroke-width="4" rx="16" ry="16"/><g fill="none" stroke="#aaa" stroke-width="3"><circle cx="50" cy="50" r="20"/><circle cx="50" cy="50" r="10" stroke-width="2"/><path d="M50 30v40M30 50h40"/><path stroke-width="2" d="M50 18v6m0 52v6M18 50h6m52 0h6"/></g></svg>`
 };
 
 // Tower types
@@ -544,7 +563,7 @@ const towerTypes = [
     {   // Archer - Fast, long range, low damage, cheap
         name: "Archer",
         cost: 25,
-        color: "#8B4513",
+        color: "#228b22",
         range: 180,
         dmg: 10,
         rate: 300,
@@ -577,7 +596,7 @@ const towerTypes = [
     {   // Mage - Slow, high damage with zap upgrade
         name: "Mage",
         cost: 120,
-        color: "#6A5ACD",
+        color: "#5a006c",
         range: 130,
         dmg: 80,
         rate: 2000,
@@ -679,6 +698,17 @@ function resizeCanvas() {
     // Recalculate path based on fixed game dimensions
     setupPath();
     generateMapElements();
+}
+
+function preloadTowerIcons() {
+    return Promise.all(towerTypes.map(tower => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve();
+            img.src = 'data:image/svg+xml,' + encodeURIComponent(tower.icon);
+            tower.iconImage = img;
+        });
+    }));
 }
 
 function setupPath() {
@@ -826,7 +856,6 @@ function dropTower(e) {
         });
         updateUI();
     }
-
     draggingTower = null;
 }
 
@@ -1638,24 +1667,17 @@ function draw() {
         ctx.lineWidth = 3;
         ctx.stroke();
 
-        // Draw the tower icon
-        if (t.type.icon) {
-            // Create a temporary div to parse the SVG
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = t.type.icon;
-            const svgElement = tempDiv.firstChild;
-
-            // Draw the SVG directly to canvas
-            ctx.save();
-            ctx.translate(t.x - 12, t.y - 12); // Position the icon
-            const svgString = new XMLSerializer().serializeToString(svgElement);
-            const img = new Image();
-            img.onload = function() {
-                ctx.drawImage(img, 0, 0, 24, 24);
-            };
-            img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
-            ctx.restore();
+        // Draw icon if loaded, otherwise fallback
+        if (t.type.iconImage) {
+            ctx.drawImage(t.type.iconImage, t.x - 25, t.y - 25, 50, 50);
+        } else {
+            // Fallback: simple "T" shape
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(t.x - 8, t.y - 12, 16, 24); // Vertical
+            ctx.fillRect(t.x - 12, t.y + 4, 24, 8);   // Horizontal
         }
+
+        ctx.restore();
 
         // Tower-specific effects
         if (t.type.name === "Fire Tower" && Date.now() - t.lastShot < 100) {
