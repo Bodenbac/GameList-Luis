@@ -7,7 +7,7 @@ Welcome to my collection of games! This repository serves as a central hub for a
 
 ## 🎯 Games
 
-- **[Legion of Towers](https://bodenbac.github.io/Legion-of-Towers/)** - Simple Tower Defense (work in progress)
+- **[Legion of Towers](https://bodenbac.github.io/GameList-Luis/Legion%20of%20Towers/)** - Simple Tower Defense (work in progress)
 - More coming soon
 
 
