@@ -113,6 +113,7 @@
             background:linear-gradient(135deg, #333333, #001f3f);
         }
         .upgrade-option {
+            width: 100%;
             background:linear-gradient(135deg, #f39c12, #e67e22);
             color:white; border:none; border-radius:8px;
             padding:12px 3px 10px 3px; cursor:pointer;
@@ -134,6 +135,36 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
+        }
+
+        .tower-stats {
+            grid-column: 1 / -1;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            color: white;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+
+        .stat-name {
+            font-weight: bold;
+            color: #f5a742;
+        }
+
+        .stat-value {
+            color: white;
+        }
+
+        .upgrade-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
         #titleScreen {
@@ -562,17 +593,21 @@ const towerIcons = {
 const towerTypes = [
     {   // Archer - Fast, long range, low damage, cheap
         name: "Archer",
-        cost: 25,
         color: "#228b22",
-        range: 180,
+        cost: 25,
         dmg: 10,
         rate: 300,
+        range: 180,
         icon: towerIcons.archer,
         upgrades: {
             dmg: 5,
             rate: -50,
             range: 20,
-            special: 0
+            special: {
+                name: "MultiShot!",
+                cost: 5,
+                purchased: false
+            }
         },
         bulletType: "arrow"
     },
@@ -588,7 +623,11 @@ const towerTypes = [
             dmg: 15,
             rate: -150,
             range: 15,
-            special: 0
+            special: {
+                name: "Explode!",
+                cost: 5,
+                purchased: false
+            }
         },
         bulletType: "cannonball",
         aoeRadius: 40
@@ -607,7 +646,7 @@ const towerTypes = [
             range: 15,
             special: {
                 name: "Zap!",
-                cost: 3,
+                cost: 5,
                 purchased: false
             }
         },
@@ -625,7 +664,11 @@ const towerTypes = [
             dmg: 5,
             range: 10,
             size: 5,
-            special: 0
+            special: {
+                name: "AOE!",
+                cost: 5,
+                purchased: false
+            }
         },
         bulletType: "flame",
         flameWidth: 10
@@ -639,12 +682,13 @@ const towerTypes = [
         rate: 800,
         icon: towerIcons.ice,
         upgrades: {
-            dmg: 5,
+            slow: 0.5,
             rate: -100,
             range: 15,
             special: {
                 name: "Freeze!",
-                cost: 3,
+                cost: 5,
+                duration: 5000,
                 purchased: false
             }
         },
@@ -653,9 +697,9 @@ const towerTypes = [
     },
     {   // Sniper Tower - Very long range, slow rate, high damage
         name: "Sniper",
-        cost: 150,
         color: "#333333",
-        range: 250,
+        cost: 150,
+        range: 9999,
         dmg: 100,
         rate: 2500,
         icon: towerIcons.sniper,
@@ -665,7 +709,7 @@ const towerTypes = [
             range: 25,
             special: {
                 name: "Pierce!",
-                cost: 4,
+                cost: 5,
                 purchased: false
             }
         },
@@ -845,10 +889,12 @@ function dropTower(e) {
             y: draggingTower.y,
             type: {...draggingTower.type},
             lastShot: 0,
+            level: 1,
             upgrades: {
                 dmg: 0,
                 rate: 0,
                 range: 0,
+                slow: 0,
                 special: draggingTower.type.upgrades.special ?
                     {...draggingTower.type.upgrades.special, purchased: false} : 0
             },
@@ -1382,84 +1428,89 @@ function updateUI() {
 
 function showUpgradeMenu(tower, clickX, clickY) {
     const upgradeCost = 30 + gameState.wave * 5;
+
+    // Create stats display section
+    let statsHTML = `
+    <div class="tower-stats">
+        <h3>${tower.type.name} (Level ${tower.level || 1})</h3>
+        <div class="stat-row">
+            <span class="stat-name">Damage:</span>
+            <span class="stat-value">${tower.type.dmg + (tower.upgrades.dmg || 0)}</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-name">Range:</span>
+            <span class="stat-value">${tower.type.range + (tower.upgrades.range || 0)}</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-name">Attack Speed:</span>
+            <span class="stat-value">${(1000/(tower.type.rate + (tower.upgrades.rate || 0))).toFixed(1)}/s</span>
+        </div>`;
+
+    // Add slow stats if applicable
+    if ('slowAmount' in tower.type) {
+        statsHTML += `
+        <div class="stat-row">
+            <span class="stat-name">Slow:</span>
+            <span class="stat-value">${(tower.type.slowAmount * 100).toFixed(0)}%</span>
+        </div>`;
+    }
+
+    statsHTML += `</div><div class="upgrade-options">`;
+
     let upgradeOptions = '';
-
-    if (tower.type.name === "Mage") {
-        upgradeOptions = `
-            <button class="upgrade-option" data-upgrade="dmg" ${gameState.gold < upgradeCost ? "disabled" : ""}>
-                <span style="font-size:1.2em;">💥</span>
-                <span class="upgrade-name">Damage +${tower.type.upgrades.dmg}</span>
-                <span class="upgrade-cost">${upgradeCost} Gold</span>
-            </button>
-            <button class="upgrade-option" data-upgrade="rate" ${gameState.gold < upgradeCost ? "disabled" : ""}>
-                <span style="font-size:1.2em;">⏱️</span>
-                <span class="upgrade-name">Speed +${-tower.type.upgrades.rate/10}</span>
-                <span class="upgrade-cost">${upgradeCost} Gold</span>
-            </button>
-            <button class="upgrade-option" data-upgrade="range" ${gameState.gold < upgradeCost ? "disabled" : ""}>
-                <span style="font-size:1.2em;">📏</span>
-                <span class="upgrade-name">Range +${tower.type.upgrades.range}</span>
-                <span class="upgrade-cost">${upgradeCost} Gold</span>
-            </button>
-            <button class="upgrade-option" data-upgrade="special"
-                ${(gameState.crystals < tower.type.upgrades.special.cost || tower.type.upgrades.special.purchased) ? "disabled" : ""}>
-                <span style="font-size:1.2em;">⚡</span>
-                <span class="upgrade-name">${tower.type.upgrades.special.name}</span>
-                <span class="upgrade-cost">${tower.type.upgrades.special.cost} Crystals</span>
-            </button>
-        `;
-    }
-    else if (tower.type.name === "Ice Tower") {
-        upgradeOptions = `
-            <button class="upgrade-option" data-upgrade="dmg" ${gameState.gold < upgradeCost ? "disabled" : ""}>
-                <span style="font-size:1.2em;">💥</span>
-                <span class="upgrade-name">Damage +${tower.type.upgrades.dmg}</span>
-                <span class="upgrade-cost">${upgradeCost} Gold</span>
-            </button>
-            <button class="upgrade-option" data-upgrade="rate" ${gameState.gold < upgradeCost ? "disabled" : ""}>
-                <span style="font-size:1.2em;">⏱️</span>
-                <span class="upgrade-name">Speed +${-tower.type.upgrades.rate/10}</span>
-                <span class="upgrade-cost">${upgradeCost} Gold</span>
-            </button>
-            <button class="upgrade-option" data-upgrade="range" ${gameState.gold < upgradeCost ? "disabled" : ""}>
-                <span style="font-size:1.2em;">📏</span>
-                <span class="upgrade-name">Range +${tower.type.upgrades.range}</span>
-                <span class="upgrade-cost">${upgradeCost} Gold</span>
-            </button>
-            <button class="upgrade-option" data-upgrade="special"
-                ${(gameState.crystals < tower.type.upgrades.special.cost || tower.type.upgrades.special.purchased) ? "disabled" : ""}>
-                <span style="font-size:1.2em;">❄️</span>
-                <span class="upgrade-name">${tower.type.upgrades.special.name}</span>
-                <span class="upgrade-cost">${tower.type.upgrades.special.cost} Crystals</span>
-            </button>
-        `;
-    }
-    else if (tower.type.name === "Sniper") {
-        upgradeOptions = `
-            <button class="upgrade-option" data-upgrade="dmg" ${gameState.gold < upgradeCost ? "disabled" : ""}>
-                <span style="font-size:1.2em;">💥</span>
-                <span class="upgrade-name">Damage +${tower.type.upgrades.dmg}</span>
-                <span class="upgrade-cost">${upgradeCost} Gold</span>
-            </button>
-            <button class="upgrade-option" data-upgrade="rate" ${gameState.gold < upgradeCost ? "disabled" : ""}>
-                <span style="font-size:1.2em;">⏱️</span>
-                <span class="upgrade-name">Speed +${-tower.type.upgrades.rate/10}</span>
-                <span class="upgrade-cost">${upgradeCost} Gold</span>
-            </button>
-            <button class="upgrade-option" data-upgrade="range" ${gameState.gold < upgradeCost ? "disabled" : ""}>
-                <span style="font-size:1.2em;">📏</span>
-                <span class="upgrade-name">Range +${tower.type.upgrades.range}</span>
-                <span class="upgrade-cost">${upgradeCost} Gold</span>
-            </button>
-            <button class="upgrade-option" disabled>
-                <span style="font-size:1.2em;">❓</span>
-                <span class="upgrade-name">Coming Soon</span>
-                <span class="upgrade-cost">-</span>
-            </button>
-        `;
+    // Damage Upgrade Button (if exists)
+    if ('dmg' in tower.type.upgrades) {
+        upgradeOptions += `
+        <button class="upgrade-option" data-upgrade="dmg" ${gameState.gold < upgradeCost ? "disabled" : ""}>
+            <span>💥</span>
+            <span class="upgrade-name">Attack Damage +${tower.type.upgrades.dmg}</span>
+            <span class="upgrade-cost">${upgradeCost} Gold</span>
+        </button>`;
     }
 
-    upgradeMenu.innerHTML = upgradeOptions;
+    // Attack Speed Upgrade Button (if exists)
+    if ('rate' in tower.type.upgrades) {
+        upgradeOptions += `
+        <button class="upgrade-option" data-upgrade="rate" ${gameState.gold < upgradeCost ? "disabled" : ""}>
+            <span>⏱️</span>
+            <span class="upgrade-name">Attack Speed (${-tower.type.upgrades.rate/1000}s)</span>
+            <span class="upgrade-cost">${upgradeCost} Gold</span>
+        </button>`;
+    }
+
+    // Attack Range Upgrade Button (if exists)
+    if ('range' in tower.type.upgrades) {
+        upgradeOptions += `
+        <button class="upgrade-option" data-upgrade="range" ${gameState.gold < upgradeCost ? "disabled" : ""}>
+            <span>📏</span>
+            <span class="upgrade-name">Attack Range +${tower.type.upgrades.range}</span>
+            <span class="upgrade-cost">${upgradeCost} Gold</span>
+        </button>`;
+    }
+
+    // Slow Upgrade Button (if exists)
+    if ('slow' in tower.type.upgrades) {
+        upgradeOptions += `
+        <button class="upgrade-option" data-upgrade="slow" ${gameState.gold < upgradeCost ? "disabled" : ""}>
+            <span>❄️</span>
+            <span class="upgrade-name">Slow +${(tower.type.upgrades.slow*100).toFixed(0)}%</span>
+            <span class="upgrade-cost">${upgradeCost} Gold</span>
+        </button>`;
+    }
+
+    // Special Ability Button (if exists)
+    if (tower.type.upgrades.special) {
+        upgradeOptions += `
+        <button class="upgrade-option" data-upgrade="special"
+            ${(gameState.crystals < tower.type.upgrades.special.cost || tower.upgrades.special?.purchased) ? "disabled" : ""}>
+            <span>✨</span>
+            <span class="upgrade-name">${tower.type.upgrades.special.name}</span>
+            <span class="upgrade-cost">${tower.type.upgrades.special.cost} Crystals</span>
+        </button>`;
+    }
+
+    // Combine stats and upgrade options
+    upgradeMenu.innerHTML = statsHTML + upgradeOptions + '</div>';
     upgradeMenu.style.display = 'grid';
     upgradeMenu.style.left = '20px';
     upgradeMenu.style.bottom = '80px';
@@ -1477,7 +1528,7 @@ function showUpgradeMenu(tower, clickX, clickY) {
                     return;
                 }
                 gameState.crystals -= tower.type.upgrades.special.cost;
-                tower.type.upgrades.special.purchased = true;
+                tower.upgrades.special.purchased = true;
             } else {
                 if (gameState.gold < upgradeCost) {
                     alert("Not enough gold!");
@@ -1488,22 +1539,25 @@ function showUpgradeMenu(tower, clickX, clickY) {
 
                 switch(upgradeType) {
                     case 'dmg':
-                        tower.type.dmg += tower.type.upgrades.dmg;
+                        tower.upgrades.dmg += tower.type.upgrades.dmg;
                         break;
                     case 'rate':
-                        tower.type.rate += tower.type.upgrades.rate;
+                        tower.upgrades.rate += tower.type.upgrades.rate;
                         break;
                     case 'range':
-                        tower.type.range += tower.type.upgrades.range;
+                        tower.upgrades.range += tower.type.upgrades.range;
                         break;
                     case 'size':
                         tower.type.flameWidth += tower.type.upgrades.size;
+                        break;
+                    case 'slow':
+                        tower.type.slowAmount += tower.type.upgrades.slow;
                         break;
                 }
             }
 
             updateUI();
-            upgradeMenu.style.display = 'none';
+            showUpgradeMenu(tower, clickX, clickY); // Refresh the menu to show updated stats
         });
     });
 
