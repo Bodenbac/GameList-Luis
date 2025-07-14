@@ -176,11 +176,12 @@
             background: url('https://bodenbac.github.io/GameList-Luis/Assets/LOT/Other/background.svg') center/cover no-repeat;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start; /* Changed from center to flex-start */
             align-items: center;
             z-index: 1000;
             color: white;
             font-family: 'Arial', sans-serif;
+            padding-top: 30px; /* Added padding at the top */
         }
 
         #titleScreen ~ #gameContainer #startButton {
@@ -189,8 +190,8 @@
         }
 
         #titleScreen h1 {
-            font-size: 4rem;
-            margin-bottom: 2rem;
+            font-size: 3.5rem; /* Slightly smaller */
+            margin-bottom: 1rem; /* Reduced margin */
             text-shadow: 0 0 10px rgba(255,255,255,0.5);
             background: linear-gradient(to right, #f5d742, #f5a742);
             -webkit-background-clip: text;
@@ -200,11 +201,18 @@
 
         .menu-section {
             background: rgba(0,0,0,0.7);
-            padding: 2rem;
+            padding: 1.5rem; /* Slightly less padding */
             border-radius: 15px;
-            margin: 1rem;
-            width: 400px;
+            margin: 0.5rem; /* Reduced margin */
+            width: 600px; /* Wider to accommodate grid */
             max-width: 90%;
+        }
+
+        .maps-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
         }
 
         .menu-title {
@@ -217,6 +225,11 @@
             display: flex;
             justify-content: space-around;
             margin-top: 1rem;
+        }
+
+        [data-map] {
+            width: 100%;
+            margin: 0;
         }
 
         .menu-btn {
@@ -302,6 +315,68 @@
             #towerBar { gap: 8px; padding: 5px; }
             .tower-icon { width: 40px; height: 40px; }
         }
+
+        @media (max-width: 768px) {
+            #titleScreen h1 {
+                font-size: 2.5rem;
+            }
+            
+            .menu-section {
+                width: 90%;
+                padding: 1rem;
+            }
+            
+            .maps-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .menu-options {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .menu-btn {
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+            }
+            
+            .start-btn {
+                padding: 0.8rem 2rem;
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 500px) {
+            #titleScreen h1 {
+                font-size: 2rem;
+            }
+            
+            .menu-section {
+                width: 100%;
+                padding: 0.8rem;
+            }
+            
+            .maps-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .menu-options {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .menu-btn {
+                width: 100%;
+                padding: 0.5rem;
+                font-size: 0.9rem;
+            }
+            
+            .start-btn {
+                width: 100%;
+                padding: 0.7rem;
+                font-size: 0.9rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -319,10 +394,13 @@
 
     <div class="menu-section">
         <div class="menu-title">Select Map</div>
-        <div class="menu-options">
+        <div class="maps-container"> <!-- Changed to grid layout -->
             <button class="menu-btn selected" data-map="1">Forest</button>
             <button class="menu-btn locked" data-map="2">Desert</button>
-            <button class="menu-btn locked" data-map="3">Mountain</button>
+            <button class="menu-btn locked" data-map="3">Mountains</button>
+            <button class="menu-btn locked" data-map="4">Canyon</button>
+            <button class="menu-btn locked" data-map="5">Valley</button>
+            <button class="menu-btn locked" data-map="6">Hexagon</button>
         </div>
     </div>
 
@@ -371,12 +449,11 @@ let gameConfig = {
     unlockedMaps: [1],
     unlockedDifficulties: ['easy'],
     difficulties: {
-        easy: { gold: 300, enemyHpMultiplier: 3.0 }, // Changed from 1.0 to 3.0 for 3x HP
-        medium: { gold: 200, enemyHpMultiplier: 4.5 }, // Changed from 1.5 to 4.5 for 3x HP
-        hard: { gold: 150, enemyHpMultiplier: 6.0 } // Changed from 2.0 to 6.0 for 3x HP
+        easy: { gold: 300, enemyHpMultiplier: 2.0 }, // Changed from 1.0 to 3.0 for 3x HP
+        medium: { gold: 200, enemyHpMultiplier: 3.5 }, // Changed from 1.5 to 4.5 for 3x HP
+        hard: { gold: 150, enemyHpMultiplier: 5.0 } // Changed from 2.0 to 6.0 for 3x HP
     }
 };
-
 
 // Enemy tier system - T1 (green) to T5 (black)
 const enemyTiers = [
@@ -422,10 +499,7 @@ const enemyTiers = [
     }
 ];
 
-// Theme variable
-let theme = 'forest';
-
-// Title screen logic
+// Title screen logic (difficulty and map selection)
 document.querySelectorAll('[data-difficulty]').forEach(btn => {
     btn.addEventListener('click', function() {
         if (this.classList.contains('locked')) return;
@@ -437,10 +511,12 @@ document.querySelectorAll('[data-difficulty]').forEach(btn => {
 
 document.querySelectorAll('[data-map]').forEach(btn => {
     btn.addEventListener('click', function() {
-        if (this.classList.contains('locked')) return;
+        const mapNum = parseInt(this.dataset.map);
+        if (this.classList.contains('locked') || !gameConfig.unlockedMaps.includes(mapNum)) return;
+        
         document.querySelectorAll('[data-map]').forEach(b => b.classList.remove('selected'));
         this.classList.add('selected');
-        gameConfig.map = parseInt(this.dataset.map);
+        gameConfig.map = mapNum;
     });
 });
 
@@ -451,7 +527,7 @@ function mainLoop() {
     requestAnimationFrame(mainLoop);
 }
 
-
+// Update function to handle game logic
 document.querySelector('.start-btn').addEventListener('click', function() {
     document.getElementById('titleScreen').style.display = 'none';
     document.getElementById('startButton').style.display = 'block';
@@ -476,18 +552,12 @@ async function initGame() {
 
     // Select map based on choice
     switch(gameConfig.map) {
-        case 1:
-            theme = 'forest';
-            setupForestMap();
-            break;
-        case 2:
-            theme = 'desert';
-            setupDesertMap();
-            break;
-        case 3:
-            theme = 'mountain';
-            setupMountainMap();
-            break;
+        case 1: setupMap1(); break;
+        case 2: setupMap2(); break;
+        case 3: setupMap3(); break;
+        case 4: setupMap4(); break;
+        case 5: setupMap5(); break;
+        case 6: setupMap6(); break;
     }
 
     // Initialize tower bar
@@ -505,42 +575,116 @@ async function initGame() {
     }
 }
 
-// Map definitions
-function setupForestMap() {
-    const w = canvas.width, h = canvas.height;
+// Path variable that will be used by all map functions
+let path = [];
+
+function setupMap1() {
+    // Scale coordinates to fit game canvas
+    const scaleX = GAME_WIDTH / 1600;
+    const scaleY = GAME_HEIGHT / 900;
+    
     path = [
-        {x: 40, y: h*0.09}, {x: w*0.22, y: h*0.14}, {x: w*0.34, y: h*0.30},
-        {x: w*0.42, y: h*0.21}, {x: w*0.54, y: h*0.35},
-        {x: w*0.36, y: h*0.50}, {x: w*0.20, y: h*0.66}, {x: w*0.38, y: h*0.80},
-        {x: w*0.62, y: h*0.84}, {x: w*0.76, y: h*0.68}, {x: w*0.82, y: h*0.52},
-        {x: w*0.90, y: h*0.32}, {x: w-40, y: h*0.91}
+        {x: 100 * scaleX, y: 200 * scaleY}, 
+        {x: 600 * scaleX, y: 200 * scaleY}, 
+        {x: 600 * scaleX, y: 400 * scaleY}, 
+        {x: 400 * scaleX, y: 400 * scaleY},
+        {x: 400 * scaleX, y: 600 * scaleY}, 
+        {x: 800 * scaleX, y: 600 * scaleY},
+        {x: 800 * scaleX, y: 350 * scaleY}, 
+        {x: 1200 * scaleX, y: 350 * scaleY},
+        {x: 1200 * scaleX, y: 750 * scaleY}, 
+        {x: 1500 * scaleX, y: 750 * scaleY}
     ];
-    document.body.style.background = 'linear-gradient(135deg, #356c3c 0%, #467943 100%)';
     generateMapElements();
 }
 
-function setupDesertMap() {
-    const w = canvas.width, h = canvas.height;
+function setupMap2() {
+    const scaleX = GAME_WIDTH / 1600;
+    const scaleY = GAME_HEIGHT / 900;
+    
     path = [
-        {x: w*0.1, y: h*0.5}, {x: w*0.3, y: h*0.5}, {x: w*0.4, y: h*0.3},
-        {x: w*0.6, y: h*0.4}, {x: w*0.5, y: h*0.6},
-        {x: w*0.7, y: h*0.7}, {x: w*0.9, y: h*0.5}
+        {x: 100 * scaleX, y: 450 * scaleY}, 
+        {x: 100 * scaleX, y: 150 * scaleY}, 
+        {x: 700 * scaleX, y: 150 * scaleY}, 
+        {x: 700 * scaleX, y: 350 * scaleY},
+        {x: 300 * scaleX, y: 350 * scaleY}, 
+        {x: 300 * scaleX, y: 650 * scaleY},
+        {x: 1100 * scaleX, y: 650 * scaleY}, 
+        {x: 1100 * scaleX, y: 250 * scaleY},
+        {x: 500 * scaleX, y: 250 * scaleY}, 
+        {x: 500 * scaleX, y: 750 * scaleY},
+        {x: 1500 * scaleX, y: 750 * scaleY}
     ];
-    document.body.style.background = 'linear-gradient(135deg, #e6b980 0%, #eacda3 100%)';
     generateMapElements();
 }
 
-function setupMountainMap() {
-    const w = canvas.width, h = canvas.height;
+function setupMap3() {
+    const scaleX = GAME_WIDTH / 1600;
+    const scaleY = GAME_HEIGHT / 900;
+    
     path = [
-        {x: w*0.1, y: h*0.8}, {x: w*0.25, y: h*0.6}, {x: w*0.4, y: h*0.7},
-        {x: w*0.55, y: h*0.5}, {x: w*0.7, y: h*0.6},
-        {x: w*0.85, y: h*0.4}, {x: w*0.8, y: h*0.2}
+        {x: 50 * scaleX, y: 850 * scaleY}, 
+        {x: 300 * scaleX, y: 600 * scaleY},
+        {x: 550 * scaleX, y: 850 * scaleY}, 
+        {x: 800 * scaleX, y: 600 * scaleY},
+        {x: 1050 * scaleX, y: 850 * scaleY}, 
+        {x: 1300 * scaleX, y: 600 * scaleY},
+        {x: 1550 * scaleX, y: 850 * scaleY}
     ];
-    document.body.style.background = 'linear-gradient(135deg, #5d6d7e 0%, #34495e 100%)';
     generateMapElements();
 }
 
+function setupMap4() {
+    const scaleX = GAME_WIDTH / 400;  // Map4 has different dimensions (400x400)
+    const scaleY = GAME_HEIGHT / 400;
+    
+    path = [
+        {x: 20 * scaleX, y: 200 * scaleY}, 
+        {x: 200 * scaleX, y: 200 * scaleY},
+        {x: 200 * scaleX, y: 50 * scaleY}, 
+        {x: 350 * scaleX, y: 50 * scaleY},
+        {x: 350 * scaleX, y: 150 * scaleY}, 
+        {x: 100 * scaleX, y: 150 * scaleY},
+        {x: 100 * scaleX, y: 250 * scaleY}, 
+        {x: 300 * scaleX, y: 250 * scaleY},
+        {x: 300 * scaleX, y: 100 * scaleY}, 
+        {x: 150 * scaleX, y: 100 * scaleY},
+        {x: 150 * scaleX, y: 300 * scaleY}, 
+        {x: 380 * scaleX, y: 300 * scaleY}
+    ];
+    generateMapElements();
+}
+
+function setupMap5() {
+    const scaleX = GAME_WIDTH / 1600;
+    const scaleY = GAME_HEIGHT / 900;
+    
+    path = [
+        {x: 50 * scaleX, y: 100 * scaleY}, 
+        {x: 550 * scaleX, y: 100 * scaleY},
+        {x: 550 * scaleX, y: 300 * scaleY}, 
+        {x: 1050 * scaleX, y: 300 * scaleY},
+        {x: 1050 * scaleX, y: 500 * scaleY}, 
+        {x: 1550 * scaleX, y: 500 * scaleY}
+    ];
+    generateMapElements();
+}
+
+function setupMap6() {
+    const scaleX = GAME_WIDTH / 1600;
+    const scaleY = GAME_HEIGHT / 900;
+    
+    path = [
+        {x: 800 * scaleX, y: 100 * scaleY}, 
+        {x: 1100 * scaleX, y: 100 * scaleY},
+        {x: 1400 * scaleX, y: 450 * scaleY}, 
+        {x: 1100 * scaleX, y: 800 * scaleY},
+        {x: 800 * scaleX, y: 800 * scaleY}, 
+        {x: 500 * scaleX, y: 450 * scaleY},
+        {x: 800 * scaleX, y: 100 * scaleY}
+    ];
+    generateMapElements();
+}
 // Canvas and UI elements
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -756,32 +900,21 @@ function preloadTowerIcons() {
 }
 
 function setupPath() {
-    const w = canvas.width, h = canvas.height;
-    switch(theme) {
-        case 'forest':
-            path = [
-                {x: 40, y: h*0.09}, {x: w*0.22, y: h*0.14}, {x: w*0.34, y: h*0.30},
-                {x: w*0.42, y: h*0.21}, {x: w*0.54, y: h*0.35},
-                {x: w*0.36, y: h*0.50}, {x: w*0.20, y: h*0.66}, {x: w*0.38, y: h*0.80},
-                {x: w*0.62, y: h*0.84}, {x: w*0.76, y: h*0.68}, {x: w*0.82, y: h*0.52},
-                {x: w*0.90, y: h*0.32}, {x: w-40, y: h*0.91}
-            ];
-            break;
-        case 'desert':
-            path = [
-                {x: w*0.1, y: h*0.5}, {x: w*0.3, y: h*0.5}, {x: w*0.4, y: h*0.3},
-                {x: w*0.6, y: h*0.4}, {x: w*0.5, y: h*0.6},
-                {x: w*0.7, y: h*0.7}, {x: w*0.9, y: h*0.5}
-            ];
-            break;
-        case 'mountain':
-            path = [
-                {x: w*0.1, y: h*0.8}, {x: w*0.25, y: h*0.6}, {x: w*0.4, y: h*0.7},
-                {x: w*0.55, y: h*0.5}, {x: w*0.7, y: h*0.6},
-                {x: w*0.85, y: h*0.4}, {x: w*0.8, y: h*0.2}
-            ];
-            break;
+    // Clear previous path
+    path = [];
+    
+    // Define the path based on the selected map
+    switch(gameConfig.map) {
+        case 1: setupMap1(); break;
+        case 2: setupMap2(); break;
+        case 3: setupMap3(); break;
+        case 4: setupMap4(); break;
+        case 5: setupMap5(); break;
+        case 6: setupMap6(); break;
     }
+    
+    // Generate map elements based on the new path
+    generateMapElements();
 }
 
 function setupTowerBar() {
@@ -956,20 +1089,10 @@ function generateMapElements() {
     mapElements = [];
     let count = Math.floor(canvas.width * canvas.height / 42000);
 
-    if (theme === 'desert') {
-        for (let i = 0; i < count; i++) placeElement('cactus', 20, 0.7);
-        for (let i = 0; i < count/2; i++) placeElement('rock', 25, 0.8);
-    }
-    else if (theme === 'mountain') {
-        for (let i = 0; i < count/2; i++) placeElement('rock', 30, 0.9);
-        for (let i = 0; i < count/3; i++) placeElement('pine', 40, 0.8);
-    }
-    else {
-        // Default forest theme
-        for (let i = 0; i < count; i++) placeElement('tree1', 34, 0.54);
-        for (let i = 0; i < count/2; i++) placeElement('tree2', 27, 0.6);
-        for (let i = 0; i < count/2; i++) placeElement('tree3', 30, 0.6);
-    }
+    for (let i = 0; i < count; i++) placeElement('tree1', 34, 0.54);
+    for (let i = 0; i < count/2; i++) placeElement('tree2', 27, 0.6);
+    for (let i = 0; i < count/2; i++) placeElement('tree3', 30, 0.6);
+    for (let i = 0; i < count/3; i++) placeElement('rock', 25, 0.8);
 
     function placeElement(type, rad, alpha) {
         let ok = false, tries = 0, x, y;
@@ -1360,7 +1483,7 @@ function update() {
     // Clean up dead enemies (only T1 enemies can actually die)
     enemies = enemies.filter(e => e.alive);
 
-    // Wave logic
+    // Check if wave is complete, reward system for maps and difficulties
     if (gameState.enemiesInWave == 0 && enemies.length == 0 && gameState.waveActive) {
         if (gameState.wave < MAX_WAVE) {
             gameState.wave++;
@@ -1375,17 +1498,64 @@ function update() {
                 if (gameConfig.map === 1 && !gameConfig.unlockedMaps.includes(2)) {
                     gameConfig.unlockedMaps.push(2);
                     document.querySelector('[data-map="2"]').classList.remove('locked');
-                    alert("Desert map unlocked!");
+                    alert("Map 2 unlocked!");
                 }
                 else if (gameConfig.map === 2 && !gameConfig.unlockedMaps.includes(3)) {
                     gameConfig.unlockedMaps.push(3);
                     document.querySelector('[data-map="3"]').classList.remove('locked');
-                    alert("Mountain map unlocked!");
+                    alert("Map 3 unlocked!");
                 }
-                else if (gameConfig.map === 3 && !gameConfig.unlockedDifficulties.includes('medium')) {
+                else if (gameConfig.map === 3 && !gameConfig.unlockedMaps.includes(4)) {
+                    gameConfig.unlockedMaps.push(4);
+                    document.querySelector('[data-map="4"]').classList.remove('locked');
+                    alert("Map 4 unlocked!");
+                }
+                else if (gameConfig.map === 4 && !gameConfig.unlockedMaps.includes(5)) {
+                    gameConfig.unlockedMaps.push(5);
+                    document.querySelector('[data-map="5"]').classList.remove('locked');
+                    alert("Map 5 unlocked!");
+                }
+                else if (gameConfig.map === 5 && !gameConfig.unlockedMaps.includes(6)) {
+                    gameConfig.unlockedMaps.push(6);
+                    document.querySelector('[data-map="6"]').classList.remove('locked');
+                    alert("Map 6 unlocked!");
+                }
+                else if (gameConfig.map === 6 && !gameConfig.unlockedDifficulties.includes('medium')) {
                     gameConfig.unlockedDifficulties.push('medium');
                     document.querySelector('[data-difficulty="medium"]').classList.remove('locked');
                     alert("Medium difficulty unlocked!");
+                }
+            }
+            else if (gameConfig.difficulty === 'medium') {
+                if (gameConfig.map === 1 && !gameConfig.unlockedMaps.includes(2)) {
+                    gameConfig.unlockedMaps.push(2);
+                    document.querySelector('[data-map="2"]').classList.remove('locked');
+                    alert("Map 2 unlocked!");
+                }
+                else if (gameConfig.map === 2 && !gameConfig.unlockedMaps.includes(3)) {
+                    gameConfig.unlockedMaps.push(3);
+                    document.querySelector('[data-map="3"]').classList.remove('locked');
+                    alert("Map 3 unlocked!");
+                }
+                else if (gameConfig.map === 3 && !gameConfig.unlockedMaps.includes(4)) {
+                    gameConfig.unlockedMaps.push(4);
+                    document.querySelector('[data-map="4"]').classList.remove('locked');
+                    alert("Map 4 unlocked!");
+                }
+                else if (gameConfig.map === 4 && !gameConfig.unlockedMaps.includes(5)) {
+                    gameConfig.unlockedMaps.push(5);
+                    document.querySelector('[data-map="5"]').classList.remove('locked');
+                    alert("Map 5 unlocked!");
+                }
+                else if (gameConfig.map === 5 && !gameConfig.unlockedMaps.includes(6)) {
+                    gameConfig.unlockedMaps.push(6);
+                    document.querySelector('[data-map="6"]').classList.remove('locked');
+                    alert("Map 6 unlocked!");
+                }
+                else if (gameConfig.map === 6 && !gameConfig.unlockedDifficulties.includes('hard')) {
+                    gameConfig.unlockedDifficulties.push('hard');
+                    document.querySelector('[data-difficulty="hard"]').classList.remove('locked');
+                    alert("Hard difficulty unlocked!");
                 }
             }
         }
