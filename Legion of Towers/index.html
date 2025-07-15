@@ -5,378 +5,574 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Legion of Towers</title>
     <style>
-        html, body {
-            margin:0; padding:0; width:100vw; height:100vh; overflow:hidden;
-            background:linear-gradient(135deg, #356c3c 0%, #467943 100%);
-        }
-        #gameContainer { 
-            position:relative; 
-            width:100vw; 
-            height:100vh; 
-            overflow:hidden;
-        }
-        #gameCanvas { 
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background:transparent; 
-            pointer-events:auto;
-            z-index: 10;
-        }
-        #ui {
-            position:absolute; top:10px; left:10px; right:10px; z-index:100;
-            display:flex; justify-content:space-between; align-items:center;
-            background:rgba(0,0,0,0.75); padding:10px 18px; border-radius:12px; color:white;
-        }
-        #resources-left, #resources-right {
-            display:flex; align-items:center; gap:18px;
-        }
-        #resources-right .resource { margin-left:18px; }
-        .resource { display:flex; align-items:center; gap:7px; font-weight:bold; font-size:1.12em; }
-        .ico { width:1.38em; height:1.38em; vertical-align:middle; }
-        #startButton { 
-            position:absolute;
-            bottom:100px; /* Changed from 20px to 80px to be above tower bar */
-            left:50%;
-            transform:translateX(-50%);
-            background:#3498db;
-            color:white;
-            border:none;
-            padding:9px 22px;
-            border-radius:10px;
-            font-size:14px;
-            cursor:pointer;
-            transition:all 0.3s;
-            box-shadow:0 3px 16px #0006;
-            z-index:1000;
-        }
-        #startButton:hover {
-            background:#2980b9;
-            transform:translateX(-50%) scale(1.05);
-        }
-        #startButton:disabled {
-            background:#7f8c8d;
-            cursor:not-allowed;
-            transform:translateX(-50%);
-        }
-        #towerMenu {
-            position:absolute;
-            z-index:1000;
-            display:none;
-            background:rgba(0,0,0,0.93);
-            border-radius:14px;
-            padding:14px 13px;
-            min-width:240px;
-            grid-template-columns:repeat(2, 1fr);
-            gap:13px;
-            box-shadow:0 4px 22px #000b;
-            border:2px solid #3498db;
-        }
-        #upgradeMenu {
-            position: absolute;
-            z-index: 1000;
-            display: none;
-            background: rgba(0,0,0,0.93);
-            border-radius: 14px;
-            padding: 8px;
-            grid-template-columns: 1fr;
-            gap: 8px;
-            box-shadow: 0 4px 22px #000b;
-            border: 2px solid #f1c40f;
-            bottom: 20px;
-            left: 20px;
-            width: auto;
-            max-width: calc(100% - 40px);
-        }
-        .tower-option {
-            background:linear-gradient(135deg, #3498db, #2980b9);
-            color:white; border:none; border-radius:8px;
-            padding:12px 3px 10px 3px; cursor:pointer;
-            font-size:14px; text-align:center; min-height:62px;
-            display:flex; flex-direction:column; align-items:center; gap:4px;
-            transition:all 0.2s;
-        }
-        .tower-option.cannon {
-            background:linear-gradient(135deg, #696969, #555555);
-        }
-        .tower-option.mage {
-            background:linear-gradient(135deg, #6A5ACD, #4B0082);
-        }
-        .tower-option.fire {
-            background:linear-gradient(135deg, #FF4500, #8B0000);
-        }
-        .tower-option.ice {
-            background:linear-gradient(135deg, #007acc, #a0e1ff);
-        }
-        .tower-option.sniper {
-            background:linear-gradient(135deg, #333333, #001f3f);
-        }
-        .upgrade-option {
-            width: 100%;
-            background:linear-gradient(135deg, #f39c12, #e67e22);
-            color:white; border:none; border-radius:8px;
-            padding:12px 3px 10px 3px; cursor:pointer;
-            font-size:14px; text-align:center; min-height:62px;
-            display:flex; flex-direction:column; align-items:center; gap:4px;
-            transition:all 0.2s;
-        }
-        .tower-option:hover { background:linear-gradient(135deg, #2980b9, #3498db); transform:scale(1.04);}
-        .tower-option.cannon:hover { background:linear-gradient(135deg, #555555, #696969); }
-        .tower-option.mage:hover { background:linear-gradient(135deg, #4B0082, #6A5ACD); }
-        .tower-option.fire:hover { background:linear-gradient(135deg, #8B0000, #FF4500); }
-        .tower-option.ice:hover { background:linear-gradient(135deg, #a0e1ff, #007acc); }
-        .tower-option.sniper:hover { background:linear-gradient(135deg, #001f3f, #333333); }
-        .upgrade-option:hover { background:linear-gradient(135deg, #e67e22, #f39c12); transform:scale(1.04);}
-        .tower-option:disabled, .upgrade-option:disabled { background:#7f8c8d; cursor:not-allowed; }
-        .tower-name, .upgrade-name { font-weight:bold; margin-bottom:3px; }
-        .tower-cost, .upgrade-cost { font-size:11px; color:#f1c40f; margin-top:2px; }
-        .tower-icon svg {
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-
-        .tower-stats {
-            grid-column: 1 / -1;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            color: white;
-        }
-
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            margin: 5px 0;
-        }
-
-        .stat-name {
-            font-weight: bold;
-            color: #f5a742;
-        }
-
-        .stat-value {
-            color: white;
-        }
-
-        .upgrade-options {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        #titleScreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: url('https://bodenbac.github.io/GameList-Luis/Assets/LOT/Other/background.svg') center/cover no-repeat;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start; /* Changed from center to flex-start */
-            align-items: center;
-            z-index: 1000;
-            color: white;
-            font-family: 'Arial', sans-serif;
-            padding-top: 30px; /* Added padding at the top */
-        }
-
-        #titleScreen ~ #gameContainer #startButton {
-            display: none;
-            pointer-events: none;
-        }
-
-        #titleScreen h1 {
-            font-size: 3.5rem; /* Slightly smaller */
-            margin-bottom: 1rem; /* Reduced margin */
-            text-shadow: 0 0 10px rgba(255,255,255,0.5);
-            background: linear-gradient(to right, #f5d742, #f5a742);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-
-        .menu-section {
-            background: rgba(0,0,0,0.7);
-            padding: 1.5rem; /* Slightly less padding */
-            border-radius: 15px;
-            margin: 0.5rem; /* Reduced margin */
-            width: 600px; /* Wider to accommodate grid */
-            max-width: 90%;
-        }
-
-        .maps-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .menu-title {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            color: #f5a742;
-        }
-
-        .menu-options {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 1rem;
-        }
-
-        [data-map] {
-            width: 100%;
-            margin: 0;
-        }
-
-        .menu-btn {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
-            border: none;
-            padding: 0.8rem 1.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 1rem;
-        }
-
-        .menu-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 15px rgba(52, 152, 219, 0.6);
-        }
-
-        .menu-btn.selected {
-            background: linear-gradient(135deg, #f39c12, #e67e22);
-            box-shadow: 0 0 15px rgba(243, 156, 18, 0.6);
-        }
-
-        .menu-btn.locked {
-            background: linear-gradient(135deg, #555, #333);
-            color: #999;
-            cursor: not-allowed;
-        }
-
-        .start-btn {
-            background: linear-gradient(135deg, #27ae60, #2ecc71);
-            padding: 1rem 3rem;
-            font-size: 1.2rem;
-            margin-top: 2rem;
-        }
-
-        .start-btn:hover {
-            box-shadow: 0 0 20px rgba(46, 204, 113, 0.7);
-        }
-
-        #towerBar {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 15px;
-            padding: 10px;
-            background: rgba(0,0,0,0.7);
-            border-radius: 12px;
-            z-index: 50;
-        }
-
-        .tower-icon {
-            width: 50px;
-            height: 50px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border-radius: 8px;
-            padding: 2px;
-            background: rgba(0,0,0,0.3);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .tower-icon:hover {
-            transform: scale(1.1);
-            background: rgba(255,255,255,0.2);
-        }
-
-        .tower-icon:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        @media (max-width:700px) {
-            #ui { font-size:0.97em; padding:7px 7px; }
-            #resources-left, #resources-right { gap:10px; }
-            .resource { font-size:0.98em; }
-            #towerMenu, #upgradeMenu { min-width:130px; }
-            .tower-option, .upgrade-option { font-size:12px; min-height:52px; }
-            #towerBar { gap: 8px; padding: 5px; }
-            .tower-icon { width: 40px; height: 40px; }
-        }
-
-        @media (max-width: 768px) {
-            #titleScreen h1 {
-                font-size: 2.5rem;
+        /* ======================
+            BASE STYLES 
+            ====================== */
+            html, body {
+                margin: 0; 
+                padding: 0; 
+                width: 100vw; 
+                height: 100vh; 
+                overflow: hidden;
+                background: linear-gradient(135deg, #356c3c 0%, #467943 100%);
             }
-            
-            .menu-section {
-                width: 90%;
-                padding: 1rem;
+
+            /* ======================
+            GAME CONTAINER & CANVAS 
+            ====================== */
+            #gameContainer { 
+                position: relative; 
+                width: 100vw; 
+                height: 100vh; 
+                overflow: hidden;
             }
-            
-            .maps-container {
+
+            #gameCanvas { 
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: transparent; 
+                pointer-events: auto;
+                z-index: 10;
+            }
+
+            /* ======================
+            USER INTERFACE (UI) 
+            ====================== */
+            #ui {
+                position: absolute; 
+                top: 10px; 
+                left: 10px; 
+                right: 10px; 
+                z-index: 100;
+                display: flex; 
+                justify-content: space-between; 
+                align-items: center;
+                background: rgba(0,0,0,0.75); 
+                padding: 10px 18px; 
+                border-radius: 12px; 
+                color: white;
+            }
+
+            #resources-left, #resources-right {
+                display: flex; 
+                align-items: center; 
+                gap: 18px;
+            }
+
+            #resources-right .resource { 
+                margin-left: 18px; 
+            }
+
+            .resource { 
+                display: flex; 
+                align-items: center; 
+                gap: 7px; 
+                font-weight: bold; 
+                font-size: 1.12em; 
+            }
+
+            .ico { 
+                width: 1.38em; 
+                height: 1.38em; 
+                vertical-align: middle; 
+            }
+
+            /* ======================
+            BUTTONS 
+            ====================== */
+            #startButton { 
+                position: absolute;
+                bottom: 100px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #3498db;
+                color: white;
+                border: none;
+                padding: 9px 22px;
+                border-radius: 10px;
+                font-size: 14px;
+                cursor: pointer;
+                transition: all 0.3s;
+                box-shadow: 0 3px 16px #0006;
+                z-index: 1000;
+            }
+
+            #startButton:hover {
+                background: #2980b9;
+                transform: translateX(-50%) scale(1.05);
+            }
+
+            #startButton:disabled {
+                background: #7f8c8d;
+                cursor: not-allowed;
+                transform: translateX(-50%);
+            }
+
+            /* ======================
+            MENUS (TOWER & UPGRADE) 
+            ====================== */
+            #towerMenu {
+                position: absolute;
+                z-index: 1000;
+                display: none;
+                background: rgba(0,0,0,0.93);
+                border-radius: 14px;
+                padding: 14px 13px;
+                min-width: 240px;
                 grid-template-columns: repeat(2, 1fr);
+                gap: 13px;
+                box-shadow: 0 4px 22px #000b;
+                border: 2px solid #3498db;
             }
-            
-            .menu-options {
+
+            #upgradeMenu {
+                position: absolute;
+                z-index: 1000;
+                display: none;
+                background: rgba(0,0,0,0.93);
+                border-radius: 14px;
+                padding: 8px;
+                grid-template-columns: 1fr;
+                gap: 8px;
+                box-shadow: 0 4px 22px #000b;
+                border: 2px solid #f1c40f;
+                bottom: 20px;
+                left: 20px;
+                width: auto;
+                max-width: calc(100% - 40px);
+            }
+
+            /* ======================
+            TOWER OPTIONS 
+            ====================== */
+            .tower-option {
+                background: linear-gradient(135deg, #3498db, #2980b9);
+                color: white; 
+                border: none; 
+                border-radius: 8px;
+                padding: 12px 3px 10px 3px; 
+                cursor: pointer;
+                font-size: 14px; 
+                text-align: center; 
+                min-height: 62px;
+                display: flex; 
+                flex-direction: column; 
+                align-items: center; 
+                gap: 4px;
+                transition: all 0.2s;
+            }
+
+            /* Tower type variants */
+            .tower-option.cannon {
+                background: linear-gradient(135deg, #696969, #555555);
+            }
+
+            .tower-option.mage {
+                background: linear-gradient(135deg, #6A5ACD, #4B0082);
+            }
+
+            .tower-option.fire {
+                background: linear-gradient(135deg, #FF4500, #8B0000);
+            }
+
+            .tower-option.ice {
+                background: linear-gradient(135deg, #007acc, #a0e1ff);
+            }
+
+            .tower-option.sniper {
+                background: linear-gradient(135deg, #333333, #001f3f);
+            }
+
+            .tower-option:hover { 
+                background: linear-gradient(135deg, #2980b9, #3498db); 
+                transform: scale(1.04);
+            }
+
+            .tower-option.cannon:hover { 
+                background: linear-gradient(135deg, #555555, #696969); 
+            }
+
+            .tower-option.mage:hover { 
+                background: linear-gradient(135deg, #4B0082, #6A5ACD); 
+            }
+
+            .tower-option.fire:hover { 
+                background: linear-gradient(135deg, #8B0000, #FF4500); 
+            }
+
+            .tower-option.ice:hover { 
+                background: linear-gradient(135deg, #a0e1ff, #007acc); 
+            }
+
+            .tower-option.sniper:hover { 
+                background: linear-gradient(135deg, #001f3f, #333333); 
+            }
+
+            /* ======================
+            UPGRADE OPTIONS 
+            ====================== */
+            .upgrade-option {
+                width: 100%;
+                background: linear-gradient(135deg, #f39c12, #e67e22);
+                color: white; 
+                border: none; 
+                border-radius: 8px;
+                padding: 12px 3px 10px 3px; 
+                cursor: pointer;
+                font-size: 14px; 
+                text-align: center; 
+                min-height: 62px;
+                display: flex; 
+                flex-direction: column; 
+                align-items: center; 
+                gap: 4px;
+                transition: all 0.2s;
+            }
+
+            .upgrade-option:hover { 
+                background: linear-gradient(135deg, #e67e22, #f39c12); 
+                transform: scale(1.04);
+            }
+
+            .tower-option:disabled, 
+            .upgrade-option:disabled { 
+                background: #7f8c8d; 
+                cursor: not-allowed; 
+            }
+
+            /* ======================
+            TYPOGRAPHY & TEXT ELEMENTS
+            ====================== */
+            .tower-name, 
+            .upgrade-name { 
+                font-weight: bold; 
+                margin-bottom: 3px; 
+            }
+
+            .tower-cost, 
+            .upgrade-cost { 
+                font-size: 11px; 
+                color: #f1c40f; 
+                margin-top: 2px; 
+            }
+
+            /* ======================
+            TOWER ICONS
+            ====================== */
+            .tower-icon svg {
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+            }
+
+            /* ======================
+            STATS DISPLAYS
+            ====================== */
+            .tower-stats {
+                grid-column: 1 / -1;
+                background: rgba(0, 0, 0, 0.7);
+                padding: 10px;
+                border-radius: 8px;
+                margin-bottom: 10px;
+                color: white;
+            }
+
+            .enemy-info {
+                background: rgba(0,0,0,0.93);
+                border-radius: 14px;
+                padding: 14px;
+                border: 2px solid #f44336;
+            }
+
+            .enemy-info .stat-name {
+                color: #f5a742;
+            }
+
+            .enemy-info .stat-value {
+                color: white;
+            }
+
+            .enemy-info h3 {
+                color: #f44336;
+                margin-top: 0;
+                margin-bottom: 10px;
+            }
+
+            .stat-row {
+                display: flex;
+                justify-content: space-between;
+                margin: 5px 0;
+            }
+
+            .stat-name {
+                font-weight: bold;
+                color: #f5a742;
+            }
+
+            .stat-value {
+                color: white;
+            }
+
+            /* ======================
+            UPGRADE OPTIONS CONTAINER
+            ====================== */
+            .upgrade-options {
+                display: flex;
                 flex-direction: column;
+                gap: 8px;
+            }
+
+            /* ======================
+            TITLE SCREEN
+            ====================== */
+            #titleScreen {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: url('https://bodenbac.github.io/GameList-Luis/Assets/LOT/Other/background.svg') center/cover no-repeat;
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-start;
+                align-items: center;
+                z-index: 1000;
+                color: white;
+                font-family: 'Arial', sans-serif;
+                padding-top: 30px;
+            }
+
+            #titleScreen ~ #gameContainer #startButton {
+                display: none;
+                pointer-events: none;
+            }
+
+            #titleScreen h1 {
+                font-size: 3.5rem;
+                margin-bottom: 1rem;
+                text-shadow: 0 0 10px rgba(255,255,255,0.5);
+                background: linear-gradient(to right, #f5d742, #f5a742);
+                -webkit-background-clip: text;
+                background-clip: text;
+                color: transparent;
+            }
+
+            /* ======================
+            MENU SECTIONS
+            ====================== */
+            .menu-section {
+                background: rgba(0,0,0,0.7);
+                padding: 1.5rem;
+                border-radius: 15px;
+                margin: 0.5rem;
+                width: 600px;
+                max-width: 90%;
+            }
+
+            .maps-container {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
                 gap: 10px;
+                margin-top: 10px;
             }
-            
+
+            .menu-title {
+                font-size: 1.5rem;
+                margin-bottom: 1rem;
+                color: #f5a742;
+            }
+
+            .menu-options {
+                display: flex;
+                justify-content: space-around;
+                margin-top: 1rem;
+            }
+
+            [data-map] {
+                width: 100%;
+                margin: 0;
+            }
+
+            /* ======================
+            MENU BUTTONS
+            ====================== */
             .menu-btn {
-                padding: 0.6rem 1rem;
-                font-size: 0.9rem;
-            }
-            
-            .start-btn {
-                padding: 0.8rem 2rem;
+                background: linear-gradient(135deg, #3498db, #2980b9);
+                color: white;
+                border: none;
+                padding: 0.8rem 1.5rem;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.3s;
                 font-size: 1rem;
             }
-        }
 
-        @media (max-width: 500px) {
-            #titleScreen h1 {
-                font-size: 2rem;
+            .menu-btn:hover {
+                transform: scale(1.05);
+                box-shadow: 0 0 15px rgba(52, 152, 219, 0.6);
             }
-            
-            .menu-section {
-                width: 100%;
-                padding: 0.8rem;
+
+            .menu-btn.selected {
+                background: linear-gradient(135deg, #f39c12, #e67e22);
+                box-shadow: 0 0 15px rgba(243, 156, 18, 0.6);
             }
-            
-            .maps-container {
-                grid-template-columns: 1fr;
+
+            .menu-btn.locked {
+                background: linear-gradient(135deg, #555, #333);
+                color: #999;
+                cursor: not-allowed;
             }
-            
-            .menu-options {
-                flex-direction: column;
+
+            .start-btn {
+                background: linear-gradient(135deg, #27ae60, #2ecc71);
+                padding: 1rem 3rem;
+                font-size: 1.2rem;
+                margin-top: 2rem;
+            }
+
+            .start-btn:hover {
+                box-shadow: 0 0 20px rgba(46, 204, 113, 0.7);
+            }
+
+            /* ======================
+            TOWER BAR
+            ====================== */
+            #towerBar {
+                position: absolute;
+                bottom: 10px;
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                gap: 15px;
+                padding: 10px;
+                background: rgba(0,0,0,0.7);
+                border-radius: 12px;
+                z-index: 50;
+            }
+
+            .tower-icon {
+                width: 50px;
+                height: 50px;
+                cursor: pointer;
+                transition: all 0.2s;
+                border-radius: 8px;
+                padding: 2px;
+                background: rgba(0,0,0,0.3);
+                display: flex;
+                justify-content: center;
                 align-items: center;
             }
-            
-            .menu-btn {
-                width: 100%;
-                padding: 0.5rem;
-                font-size: 0.9rem;
+
+            .tower-icon:hover {
+                transform: scale(1.1);
+                background: rgba(255,255,255,0.2);
             }
-            
-            .start-btn {
-                width: 100%;
-                padding: 0.7rem;
-                font-size: 0.9rem;
+
+            .tower-icon:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
             }
-        }
+
+            /* ======================
+            MEDIA QUERIES
+            ====================== */
+            @media (max-width:700px) {
+                #ui { 
+                    font-size: 0.97em; 
+                    padding: 7px 7px; 
+                }
+                
+                #resources-left, #resources-right { 
+                    gap: 10px; 
+                }
+                
+                .resource { 
+                    font-size: 0.98em; 
+                }
+                
+                #towerMenu, #upgradeMenu { 
+                    min-width: 130px; 
+                }
+                
+                .tower-option, .upgrade-option { 
+                    font-size: 12px; 
+                    min-height: 52px; 
+                }
+                
+                #towerBar { 
+                    gap: 8px; 
+                    padding: 5px; 
+                }
+                
+                .tower-icon { 
+                    width: 40px; 
+                    height: 40px; 
+                }
+            }
+
+            @media (max-width: 768px) {
+                #titleScreen h1 {
+                    font-size: 2.5rem;
+                }
+                
+                .menu-section {
+                    width: 90%;
+                    padding: 1rem;
+                }
+                
+                .maps-container {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+                
+                .menu-options {
+                    flex-direction: column;
+                    gap: 10px;
+                }
+                
+                .menu-btn {
+                    padding: 0.6rem 1rem;
+                    font-size: 0.9rem;
+                }
+                
+                .start-btn {
+                    padding: 0.8rem 2rem;
+                    font-size: 1rem;
+                }
+            }
+
+            @media (max-width: 500px) {
+                #titleScreen h1 {
+                    font-size: 2rem;
+                }
+                
+                .menu-section {
+                    width: 100%;
+                    padding: 0.8rem;
+                }
+                
+                .maps-container {
+                    grid-template-columns: 1fr;
+                }
+                
+                .menu-options {
+                    flex-direction: column;
+                    align-items: center;
+                }
+                
+                .menu-btn {
+                    width: 100%;
+                    padding: 0.5rem;
+                    font-size: 0.9rem;
+                }
+                
+                .start-btn {
+                    width: 100%;
+                    padding: 0.7rem;
+                    font-size: 0.9rem;
+                }
+            }
     </style>
 </head>
 <body>
@@ -446,7 +642,7 @@
 let gameConfig = {
     difficulty: 'easy',
     map: 1,
-    unlockedMaps: [1],
+    unlockedMaps: [1, 2, 3, 4, 5, 6],
     unlockedDifficulties: ['easy'],
     difficulties: {
         easy: { gold: 300, enemyHpMultiplier: 2.0 }, // Changed from 1.0 to 3.0 for 3x HP
@@ -891,10 +1087,15 @@ function resizeCanvas() {
 function preloadTowerIcons() {
     return Promise.all(towerTypes.map(tower => {
         return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => resolve();
-            img.src = 'data:image/svg+xml,' + encodeURIComponent(tower.icon);
-            tower.iconImage = img;
+            // Only create new image if not already created
+            if (!tower.iconImage) {
+                const img = new Image();
+                img.onload = () => resolve();
+                img.src = 'data:image/svg+xml,' + encodeURIComponent(tower.icon);
+                tower.iconImage = img;
+            } else {
+                resolve();  // Already loaded
+            }
         });
     }));
 }
@@ -957,7 +1158,8 @@ function startDragTower(e) {
         x: 0,
         y: 0,
         width: 48,
-        height: 48
+        height: 48,
+        range: towerType.range
     };
 
     // Calculate initial position
@@ -1132,7 +1334,7 @@ function generateMapElements() {
     }
 }
 
-// Game mechanics
+// Start the wave
 function startWave() {
     gameState.waveActive = true;
     gameState.enemiesInWave = gameState.nextWaveEnemies;
@@ -1154,6 +1356,7 @@ function startWave() {
     lastSpawn = Date.now() - waveInterval;
 }
 
+// Spawn an enemy based on the current wave
 function spawnEnemy() {
     // Determine enemy tier based on wave number
     let tierIndex = Math.min(
@@ -1244,47 +1447,63 @@ function update() {
     // Towers shoot
     for (const t of towers) {
         if (Date.now() - t.lastShot >= t.type.rate) {
-            let tgt = null;
+            let target = null;
+            let highestPathIndex = -1;
+
+            // Find all enemies in range
+            const enemiesInRange = enemies.filter(e => 
+                e.alive && Math.hypot(e.x - t.x, e.y - t.y) < t.type.range);
 
             // Special targeting for ice tower
             if (t.type.name === "Ice Tower") {
-                // Find all enemies in range
-                const enemiesInRange = enemies.filter(e =>
-                    e.alive && Math.hypot(e.x - t.x, e.y - t.y) < t.type.range);
-
-                // Find enemies that aren't slowed
+                // Find un-slowed enemies first
                 const unSlowedEnemies = enemiesInRange.filter(e => e.slowAmount >= 1);
-
-                // If there are un-slowed enemies, target the first one
-                if (unSlowedEnemies.length > 0) {
-                    tgt = unSlowedEnemies[0];
+                
+                // Find furthest un-slowed enemy
+                for (const e of unSlowedEnemies) {
+                    if (e.pathIndex > highestPathIndex) {
+                        highestPathIndex = e.pathIndex;
+                        target = e;
+                    }
                 }
-                // Otherwise target the first enemy in range
-                else if (enemiesInRange.length > 0) {
-                    tgt = enemiesInRange[0];
+                
+                // If no un-slowed enemies, find furthest enemy in range
+                if (!target) {
+                    for (const e of enemiesInRange) {
+                        if (e.pathIndex > highestPathIndex) {
+                            highestPathIndex = e.pathIndex;
+                            target = e;
+                        }
+                    }
                 }
             }
             // Standard targeting for other towers
             else {
-                tgt = enemies.find(e => e.alive && Math.hypot(e.x - t.x, e.y - t.y) < t.type.range);
+                // Find enemy furthest along path
+                for (const e of enemiesInRange) {
+                    if (e.pathIndex > highestPathIndex) {
+                        highestPathIndex = e.pathIndex;
+                        target = e;
+                    }
+                }
             }
 
-            if (tgt) {
+            if (target) {
                 // Standard projectile for all towers except fire tower
                 if (t.type.bulletType !== "flame") {
                     bullets.push({
                         x: t.x,
                         y: t.y,
-                        tx: tgt.x,
-                        ty: tgt.y,
+                        tx: target.x,
+                        ty: target.y,
                         dmg: t.type.dmg,
-                        target: tgt,
+                        target: target,
                         color: t.type.color,
                         speed: t.type.bulletType === "arrow" ? 12 :
-                              t.type.bulletType === "sniper" ? 20 : 6,
+                            t.type.bulletType === "sniper" ? 20 : 6,
                         aoeRadius: t.type.aoeRadius || 0,
                         type: t.type.bulletType,
-                        tower: t, // Reference to the firing tower
+                        tower: t,
                         slowAmount: t.type.slowAmount || 0,
                         lifetime: t.type.bulletType === "flame" ? 100 : 0
                     });
@@ -1293,8 +1512,8 @@ function update() {
                 // Special effects based on tower type
                 if (t.type.name === "Mage" && t.type.upgrades.special.purchased) {
                     // Chain lightning effect
-                    let chainTargets = [tgt];
-                    let currentTarget = tgt;
+                    let chainTargets = [target];
+                    let currentTarget = target;
 
                     for (let i = 0; i < 5; i++) {
                         let nextTarget = enemies.find(e =>
@@ -1313,13 +1532,13 @@ function update() {
                     }
 
                     // Create zap effects between targets
-                    chainTargets.forEach((target, index) => {
+                    chainTargets.forEach((tgt, index) => {
                         if (index > 0) {
                             bullets.push({
                                 x: chainTargets[index-1].x,
                                 y: chainTargets[index-1].y,
-                                tx: target.x,
-                                ty: target.y,
+                                tx: tgt.x,
+                                ty: tgt.y,
                                 dmg: t.type.dmg * (1.0 - (index * 0.15)),
                                 color: "#FFFF00",
                                 speed: 20,
@@ -1331,17 +1550,17 @@ function update() {
                 }
                 else if (t.type.name === "Sniper" && t.type.upgrades.special.purchased) {
                     // Piercing shot - hit all enemies in line
-                    const angle = Math.atan2(tgt.y - t.y, tgt.x - t.x);
+                    const angle = Math.atan2(target.y - t.y, target.x - t.x);
                     const maxDist = t.type.range;
 
                     // Find all enemies in line
                     const piercedEnemies = enemies.filter(e => {
-                        if (!e.alive || e === tgt) return false;
+                        if (!e.alive || e === target) return false;
 
                         // Calculate distance from line
                         const distToLine = Math.abs(
-                            (tgt.y - t.y) * e.x - (tgt.x - t.x) * e.y + tgt.x * t.y - tgt.y * t.x
-                        ) / Math.hypot(tgt.y - t.y, tgt.x - t.x);
+                            (target.y - t.y) * e.x - (target.x - t.x) * e.y + target.x * t.y - target.y * t.x
+                        ) / Math.hypot(target.y - t.y, target.x - t.x);
 
                         // Check if enemy is within 20px of the line and in range
                         return distToLine < 20 && Math.hypot(e.x - t.x, e.y - t.y) < maxDist;
@@ -1354,7 +1573,7 @@ function update() {
                             y: t.y,
                             tx: enemy.x,
                             ty: enemy.y,
-                            dmg: t.type.dmg * 0.7, // 70% damage to secondary targets
+                            dmg: t.type.dmg * 0.7,
                             target: enemy,
                             color: t.type.color,
                             speed: 20,
@@ -1364,15 +1583,14 @@ function update() {
                     });
                 }
                 else if (t.type.name === "Fire Tower") {
-                    // Fire tower deals damage directly without projectiles
-                    tgt.hp -= t.type.dmg;
+                    // Fire tower deals damage directly to the target
+                    target.hp -= (t.type.dmg + t.upgrades.dmg);
                 }
 
                 t.lastShot = Date.now();
             }
         }
     }
-
     // Projectile movement and collision
     for (const b of bullets) {
         if (b.type === "zap") {
@@ -1596,6 +1814,7 @@ function updateUI() {
     }
 }
 
+// Upgrade menu
 function showUpgradeMenu(tower, clickX, clickY) {
     const upgradeCost = 30 + gameState.wave * 5;
 
@@ -1750,6 +1969,15 @@ function handleCanvasClick(evt) {
     const x = (evt.clientX - rect.left) * (canvas.width / rect.width);
     const y = (evt.clientY - rect.top) * (canvas.height / rect.height);
 
+    // Check if an enemy was clicked
+    for (let e of enemies) {
+        const dist = Math.hypot(x - e.x, y - e.y);
+        if (dist <= 15) {  // Enemy click radius
+            showEnemyInfo(e);
+            return;
+        }
+    }
+
     // Check if a tower was clicked
     for (let t of towers) {
         const dist = Math.hypot(x - t.x, y - t.y);
@@ -1763,6 +1991,54 @@ function handleCanvasClick(evt) {
     // If no tower clicked, hide menus
     upgradeMenu.style.display = 'none';
     selectedTower = null;
+}
+
+// Draw enemy info when clicked
+function showEnemyInfo(enemy) {
+    const hpMultiplier = gameConfig.difficulties[gameConfig.difficulty].enemyHpMultiplier;
+    const baseHp = enemy.type.hp;
+    const currentHp = enemy.hp;
+    const maxHp = enemy.maxHp;
+
+    upgradeMenu.innerHTML = `
+        <div class="tower-stats">
+            <h3>${enemy.type.name}</h3>
+            <div class="stat-row">
+                <span class="stat-name">Tier:</span>
+                <span class="stat-value">${enemy.type.tier}</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-name">HP:</span>
+                <span class="stat-value">${Math.round(currentHp)}/${Math.round(maxHp)} (Base: ${baseHp})</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-name">Speed:</span>
+                <span class="stat-value">${enemy.type.speed.toFixed(2)} ${enemy.slowAmount < 1 ? `(Slowed: ${(enemy.type.speed * enemy.slowAmount).toFixed(2)})` : ''}</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-name">Gold Reward:</span>
+                <span class="stat-value">${enemy.type.goldValue}</span>
+            </div>
+            ${enemy.currentTier !== enemy.originalTier ? `
+            <div class="stat-row">
+                <span class="stat-name">Downgraded:</span>
+                <span class="stat-value">T${enemy.currentTier} (from T${enemy.originalTier})</span>
+            </div>` : ''}
+        </div>
+    `;
+
+    upgradeMenu.style.display = 'grid';
+    upgradeMenu.style.left = '20px';
+    upgradeMenu.style.bottom = '80px';
+
+    const closeMenu = function(e) {
+        if (!upgradeMenu.contains(e.target)) {
+            upgradeMenu.style.display = 'none';
+            document.removeEventListener('mousedown', closeMenu);
+        }
+    };
+
+    document.addEventListener('mousedown', closeMenu);
 }
 
 // Drawing functions
@@ -1783,6 +2059,7 @@ function draw() {
     ctx.shadowBlur = 18;
     ctx.stroke();
 
+    // Draw path outline
     ctx.strokeStyle = "#7B4A20";
     ctx.lineWidth = 24;
     ctx.shadowColor = "transparent";
@@ -1815,6 +2092,7 @@ function draw() {
                     break;
             }
 
+            // Fill and stroke
             ctx.fillStyle = '#a0a0a0';
             ctx.fill();
             ctx.strokeStyle = '#707070';
@@ -1979,45 +2257,73 @@ function draw() {
         ctx.stroke();
 
         // Draw the tower icon
-        if (draggingTower.type.icon) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = draggingTower.type.icon;
-            const svgElement = tempDiv.firstChild;
-
-            ctx.save();
-            ctx.translate(draggingTower.x - 12, draggingTower.y - 12);
-            const svgString = new XMLSerializer().serializeToString(svgElement);
-            const img = new Image();
-            img.onload = function() {
-                ctx.drawImage(img, 0, 0, 24, 24);
-            };
-            img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
-            ctx.restore();
+        if (draggingTower.type.iconImage) {
+            ctx.drawImage(draggingTower.type.iconImage, draggingTower.x - 25, draggingTower.y - 25, 50, 50);
+        } else {
+            // Fallback: draw SVG icon
+            ctx.fillStyle = "#fff";
+            //ctx.fillRect(draggingTower.x - 12, draggingTower.y - 12, 24, 24);
+            ctx.fillRect(draggingTower.x - 8, draggingTower.y - 12, 16, 24);
+            ctx.fillRect(draggingTower.x - 12, draggingTower.y + 4, 24, 8);
         }
+
+        // Draw attack radius
+        ctx.strokeStyle = valid ? 'rgba(0, 255, 0, 0.3)' : 'rgba(255, 0, 0, 0.3)';
+        ctx.fillStyle = valid ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 0, 0, 0.1)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.arc(draggingTower.x, draggingTower.y, draggingTower.range, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Optional pulsating effect
+        const pulseSize = Math.sin(Date.now() / 200) * 5 + 5;
+        ctx.strokeStyle = valid ? 'rgba(0, 255, 0, 0.6)' : 'rgba(255, 0, 0, 0.6)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(draggingTower.x, draggingTower.y, draggingTower.range + pulseSize, 0, Math.PI * 2);
+        ctx.stroke();
+
 
         ctx.restore();
     }
 
-    // Enemies - first draw all non-blinking enemies
+    // Draw all enemies with optimized code
     for (const e of enemies) {
-        if (e.lastBlink && Date.now() - e.lastBlink < 100) continue;
+        const isBlinking = e.lastBlink && Date.now() - e.lastBlink < 100;
+        const isSelected = upgradeMenu.style.display !== 'none' && 
+                        upgradeMenu.textContent.includes(e.type.name);
 
-        // Draw enemy body - use proper color based on tier
-        ctx.fillStyle = e.type.color;
-        ctx.beginPath();
-        ctx.arc(e.x, e.y, 15, 0, 2*Math.PI);
-        ctx.fill();
+        // Draw enemy body
+        if (isSelected) {
+            // Highlight selected enemy with yellow glow
+            ctx.fillStyle = "#ffff00";
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 18, 0, 2*Math.PI);
+            ctx.fill();
+            
+            // Draw actual enemy color inside highlight
+            ctx.fillStyle = isBlinking ? "#ffffff" : e.type.color;
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 15, 0, 2*Math.PI);
+            ctx.fill();
+        } else {
+            // Normal enemy drawing
+            ctx.fillStyle = isBlinking ? "#ffffff" : e.type.color;
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 15, 0, 2*Math.PI);
+            ctx.fill();
+        }
 
-        // Draw health bar background
+        // Draw health bar (always visible)
         ctx.fillStyle = "#222";
         ctx.fillRect(e.x-16, e.y-18, 32, 5);
-
-        // Draw health bar
         ctx.fillStyle = "#4CAF50";
         ctx.fillRect(e.x-16, e.y-18, 32*e.hp/e.maxHp, 5);
 
-        // Draw tier indicator
-        ctx.fillStyle = "#fff";
+        // Draw tier indicator (always visible)
+        ctx.fillStyle = isBlinking ? "#fff" : "#fff";
         ctx.beginPath();
         ctx.arc(e.x, e.y, 6, 0, 2*Math.PI);
         ctx.fill();
@@ -2027,34 +2333,6 @@ function draw() {
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(e.currentTier, e.x, e.y);
-    }
-
-    // Draw blinking enemies (white) on top
-    for (const e of enemies) {
-        if (e.lastBlink && Date.now() - e.lastBlink < 100) {
-            ctx.fillStyle = "#ffffff";
-            ctx.beginPath();
-            ctx.arc(e.x, e.y, 15, 0, 2*Math.PI);
-            ctx.fill();
-
-            // Keep health bar visible during blink
-            ctx.fillStyle = "#222";
-            ctx.fillRect(e.x-16, e.y-18, 32, 5);
-            ctx.fillStyle = "#4CAF50";
-            ctx.fillRect(e.x-16, e.y-18, 32*e.hp/e.maxHp, 5);
-
-            // Keep tier number visible
-            ctx.fillStyle = "#000";
-            ctx.beginPath();
-            ctx.arc(e.x, e.y, 6, 0, 2*Math.PI);
-            ctx.fillStyle = "#fff";
-            ctx.fill();
-            ctx.fillStyle = "#000";
-            ctx.font = "bold 10px Arial";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(e.currentTier, e.x, e.y);
-        }
     }
 
     // Projectiles
