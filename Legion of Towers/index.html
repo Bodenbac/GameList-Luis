@@ -1615,6 +1615,10 @@
 
                         // Create zap effects between targets
                         chainTargets.forEach((tgt, index) => {
+                            tgt.hp -= (t.type.dmg + (t.upgrades.dmg || 0)) * (1.0 - (index * 0.2));
+                            tgt.lastBlink = Date.now();
+                            tgt.blinkColor = "#ffff00";
+                            
                             if (index > 0) {
                                 bullets.push({
                                     x: chainTargets[index-1].x,
@@ -1693,8 +1697,12 @@
                     if (b.aoeRadius > 0 && b.tower?.upgrades.special?.purchased) {
                         const aoeTargets = enemies.filter(e =>
                             e.alive && Math.hypot(e.x - b.x, e.y - b.y) < b.aoeRadius);
-                        aoeTargets.forEach(e => e.hp -= b.dmg * 0.7); // AOE does 70% damage
-                        
+                        aoeTargets.forEach(e => {
+                            e.hp -= b.dmg * 0.7; // AOE does 70% damage
+                            e.lastBlink = Date.now(); // Visual feedback
+                            e.blinkColor = "#ff0000";
+                        });
+
                         // Create explosion effect
                         bullets.push({
                             x: b.x,
