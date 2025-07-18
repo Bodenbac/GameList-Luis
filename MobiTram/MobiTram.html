@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MobiTram - Nahverkehr in Tramstadt</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #111827;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1rem;
+            touch-action: manipulation;
+        }
+        
+        .phone-frame {
+            width: 400px;
+            height: 700px;
+            background: #000;
+            border-radius: 3rem;
+            padding: 8px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: #f9fafb;
+            border-radius: 2.5rem;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .status-bar {
+            background: white;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+        
+        .notch {
+            width: 24px;
+            height: 12px;
+            background: #000;
+            border-radius: 50px;
+        }
+        
+        .signal-dots {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+        
+        .dot {
+            width: 4px;
+            height: 4px;
+            background: #000;
+            border-radius: 50%;
+        }
+        
+        .dot.weak { background: #9ca3af; }
+        
+        .battery {
+            width: 24px;
+            height: 12px;
+            border: 1px solid #000;
+            border-radius: 2px;
+            position: relative;
+        }
+        
+        .battery-level {
+            width: 16px;
+            height: 4px;
+            background: #000;
+            border-radius: 1px;
+            margin: 2px;
+        }
+        
+        .app-header {
+            background: white;
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: center;
+            flex-shrink: 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .app-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1f2937;
+        }
+        
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .content {
+            padding: 1rem;
+        }
+        
+        .screen {
+            display: none;
+        }
+        
+        .screen.active {
+            display: block;
+        }
+        
+        .bottom-nav {
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            padding: 12px;
+            flex-shrink: 0;
+            box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+        }
+        
+        .nav-button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 10px;
+            line-height: 1.2;
+            min-height: 44px;
+        }
+        
+        .nav-button.active {
+            background: #2563eb;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .nav-button:hover:not(.active) {
+            background: #f3f4f6;
+        }
+        
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            margin-bottom: 4px;
+        }
+        
+        .home-indicator {
+            display: flex;
+            justify-content: center;
+            padding: 8px;
+            flex-shrink: 0;
+        }
+        
+        .indicator {
+            width: 128px;
+            height: 4px;
+            background: #9ca3af;
+            border-radius: 2px;
+        }
+        
+        /* Content Styles */
+        .hero-card {
+            background: linear-gradient(to right, #2563eb, #10b981);
+            color: white;
+            padding: 24px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .hero-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .hero-subtitle {
+            opacity: 0.9;
+            margin-bottom: 16px;
+        }
+        
+        .points-badge {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .points-badge i {
+            color: #86efac;
+            margin-right: 8px;
+        }
+        
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .action-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .action-card:active {
+            transform: scale(0.98);
+        }
+        
+        .action-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+        }
+        
+        .action-card.green:hover {
+            border-color: #10b981;
+        }
+        
+        .action-card i {
+            color: #2563eb;
+            margin-bottom: 8px;
+        }
+        
+        .action-card.green i {
+            color: #10b981;
+        }
+        
+        .action-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+        
+        .action-subtitle {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .card-title {
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 16px;
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .activity-left {
+            display: flex;
+            align-items: center;
+        }
+        
+        .activity-left i {
+            margin-right: 12px;
+        }
+        
+        .activity-title {
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+        
+        .activity-time {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .points-earned {
+            color: #10b981;
+            font-weight: 600;
+        }
+        
+        .btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            width: 100%;
+            transition: background 0.2s;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn:active {
+            transform: scale(0.98);
+        }
+        
+        .btn:hover {
+            background: #1d4ed8;
+        }
+        
+        .btn-green {
+            background: #10b981;
+        }
+        
+        .btn-green:hover {
+            background: #059669;
+        }
+        
+        .btn-purple {
+            background: #7c3aed;
+        }
+        
+        .btn-purple:hover {
+            background: #6d28d9;
+        }
+        
+        .btn-points {
+            background: #f59e0b;
+            margin-top: 8px;
+        }
+        
+        .btn-points:hover {
+            background: #d97706;
+        }
+        
+        .ticket-card {
+            background: linear-gradient(to right, #2563eb, #7c3aed);
+            color: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .ticket-type {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .ticket-validity {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 4px;
+        }
+        
+        .ticket-zones {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .purchase-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 2px solid transparent;
+        }
+        
+        .purchase-card.recommended {
+            border-color: #10b981;
+        }
+        
+        .purchase-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        
+        .purchase-title {
+            font-weight: 600;
+        }
+        
+        .purchase-subtitle {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .purchase-price {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .price-points {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 4px;
+            color: #f59e0b;
+            font-weight: 600;
+        }
+        
+        .price-points i {
+            color: #f59e0b;
+        }
+        
+        .recommended-badge {
+            background: #d1fae5;
+            color: #065f46;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            margin-top: 4px;
+            display: inline-block;
+        }
+        
+        /* Map Styles */
+        .map-container {
+            position: relative;
+            height: 300px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+        
+        .map-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background-color: #e5e7eb;
+        }
+        
+        .map-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+        
+        .map-vehicle {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            pointer-events: auto;
+        }
+        
+        .map-parking {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #f59e0b;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .map-controls {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .map-control {
+            background: white;
+            border: none;
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            min-height: 36px;
+            min-width: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .map-control:active {
+            transform: scale(0.95);
+        }
+        
+        .map-footer {
+            padding: 16px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 14px;
+        }
+        
+        .location-text {
+            color: #6b7280;
+        }
+        
+        .fullscreen-btn {
+            color: #2563eb;
+            background: none;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 8px;
+        }
+        
+        .vehicle-item {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .vehicle-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        
+        .vehicle-info {
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+        
+        .vehicle-info i {
+            margin-right: 12px;
+        }
+        
+        .vehicle-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .vehicle-location {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .vehicle-price {
+            text-align: right;
+        }
+        
+        .price-amount {
+            font-weight: bold;
+        }
+        
+        .price-unit {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        .battery-badge {
+            background: #d1fae5;
+            color: #065f46;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            margin-top: 4px;
+            display: inline-block;
+        }
+        
+        .search-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px 12px 12px 40px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            position: relative;
+            font-size: 16px;
+        }
+        
+        .search-input-container {
+            position: relative;
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 12px;
+            color: #9ca3af;
+        }
+        
+        .route-item {
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .route-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .route-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .route-lines {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .route-time {
+            text-align: right;
+        }
+        
+        .time-duration {
+            font-weight: 600;
+        }
+        
+        .next-departure {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .departure-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .departure-item:last-child {
+            border-bottom: none;
+        }
+        
+        .departure-left {
+            display: flex;
+            align-items: center;
+        }
+        
+        .departure-left i {
+            margin-right: 8px;
+        }
+        
+        .line-number {
+            font-weight: 600;
+        }
+        
+        .destination {
+            margin-left: 8px;
+            font-size: 14px;
+        }
+        
+        .departure-time {
+            font-weight: 600;
+            color: #10b981;
+        }
+        
+        .departure-time.delayed {
+            color: #f59e0b;
+        }
+        
+        .profile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .avatar {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(to right, #2563eb, #10b981);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            margin-right: 16px;
+        }
+        
+        .user-name {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 4px;
+        }
+        
+        .user-email {
+            color: #6b7280;
+            margin-bottom: 2px;
+        }
+        
+        .member-since {
+            font-size: 14px;
+            color: #9ca3af;
+        }
+        
+        .points-card {
+            background: linear-gradient(to right, #10b981, #2563eb);
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .points-header {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+        
+        .points-display {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .current-points {
+            font-size: 36px;
+            font-weight: bold;
+        }
+        
+        .points-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .points-leaf {
+            opacity: 0.6;
+        }
+        
+        .progress-container {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+        }
+        
+        .progress-text {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            height: 8px;
+        }
+        
+        .progress-fill {
+            background: white;
+            height: 8px;
+            border-radius: 8px;
+            width: 83%;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 16px;
+            border-radius: 8px;
+        }
+        
+        .stat-blue {
+            background: #dbeafe;
+        }
+        
+        .stat-green {
+            background: #d1fae5;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .stat-number.blue {
+            color: #2563eb;
+        }
+        
+        .stat-number.green {
+            color: #10b981;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .reward-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .reward-yellow {
+            background: #fef3c7;
+        }
+        
+        .reward-purple {
+            background: #ede9fe;
+        }
+        
+        .reward-left {
+            display: flex;
+            align-items: center;
+        }
+        
+        .reward-left i {
+            margin-right: 12px;
+        }
+        
+        .reward-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .reward-cost {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .redeem-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            min-height: 36px;
+        }
+        
+        .redeem-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .redeem-yellow {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .redeem-purple {
+            background: #7c3aed;
+            color: white;
+        }
+        
+        .settings-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .settings-item:active {
+            background: #f3f4f6;
+        }
+        
+        .parking-tabs {
+            display: flex;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .parking-tab {
+            padding: 12px 16px;
+            border: none;
+            background: none;
+            font-weight: 500;
+            color: #6b7280;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .parking-tab.active {
+            color: #2563eb;
+            font-weight: 600;
+        }
+        
+        .parking-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #2563eb;
+        }
+        
+        .parking-content {
+            display: none;
+        }
+        
+        .parking-content.active {
+            display: block;
+        }
+        
+        .parking-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .parking-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .parking-icon {
+            margin-right: 12px;
+            color: #f59e0b;
+        }
+        
+        .parking-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .parking-location {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .parking-price {
+            font-weight: bold;
+            margin-top: 8px;
+        }
+        
+        .eco-card {
+            background: linear-gradient(to right, #10b981, #2563eb);
+            color: white;
+            padding: 24px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .eco-title {
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        
+        .eco-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        .eco-stat {
+            text-align: center;
+        }
+        
+        .eco-number {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .eco-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .payment-options {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .payment-option {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="phone-screen">
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <span>9:41</span>
+                <div class="notch"></div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="signal-dots">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot weak"></div>
+                    </div>
+                    <div class="battery">
+                        <div class="battery-level"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- App Header -->
+            <div class="app-header">
+                <h1 class="app-title">MobiTram</h1>
+            </div>
+            
+            <!-- Content Area -->
+            <div class="content-area">
+                <div class="content">
+                    <!-- Home Screen -->
+                    <div id="home" class="screen active">
+                        <!-- Hero Card -->
+                        <div class="hero-card">
+                            <h1 class="hero-title">Willkommen in Tramstadt! 👋</h1>
+                            <p class="hero-subtitle">Dein smarter Begleiter für nachhaltige Mobilität</p>
+                            <div class="points-badge">
+                                <i data-lucide="leaf"></i>
+                                <span style="font-weight: 600;">1247 Umweltpunkte</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Actions -->
+                        <div class="quick-actions">
+                            <div class="action-card" onclick="switchTab('tickets')">
+                                <i data-lucide="ticket"></i>
+                                <h3 class="action-title">Ticket kaufen</h3>
+                                <p class="action-subtitle">Einzeltickets & Abos</p>
+                            </div>
+                            <div class="action-card green" onclick="switchTab('rental')">
+                                <i data-lucide="bike"></i>
+                                <h3 class="action-title">Bike & Scooter</h3>
+                                <p class="action-subtitle">Jetzt mieten</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Recent Activity -->
+                        <div class="card">
+                            <h3 class="card-title">Letzte Aktivitäten</h3>
+                            <div class="activity-item">
+                                <div class="activity-left">
+                                    <i data-lucide="tram-front" style="color: #2563eb;"></i>
+                                    <div>
+                                        <p class="activity-title">Tram Linie 5 → Zentrum</p>
+                                        <p class="activity-time">Gestern, 09:15</p>
+                                    </div>
+                                </div>
+                                <div class="points-earned">+25 Punkte</div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-left">
+                                    <i data-lucide="bus" style="color: #2563eb;"></i>
+                                    <div>
+                                        <p class="activity-title">Bus 42 → Hauptbahnhof</p>
+                                        <p class="activity-time">Heute, 14:30</p>
+                                    </div>
+                                </div>
+                                <div class="points-earned">+15 Punkte</div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-left">
+                                    <i data-lucide="train" style="color: #10b981;"></i>
+                                    <div>
+                                        <p class="activity-title">S-Bahn S1 → Nordstadt</p>
+                                        <p class="activity-time">Heute, 12:45</p>
+                                    </div>
+                                </div>
+                                <div class="points-earned">+20 Punkte</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Environmental Impact -->
+                        <div class="eco-card">
+                            <h3 class="eco-title">🌱 Dein Umweltbeitrag</h3>
+                            <div class="eco-grid">
+                                <div class="eco-stat">
+                                    <p class="eco-number">1.2t</p>
+                                    <p class="eco-label">CO₂ gespart</p>
+                                </div>
+                                <div class="eco-stat">
+                                    <p class="eco-number">342</p>
+                                    <p class="eco-label">Nachhaltige Fahrten</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tickets Screen -->
+                    <div id="tickets" class="screen">
+                        <h2 style="font-size: 24px; font-weight: bold; color: #1f2937; margin-bottom: 24px;">Tickets & Abos</h2>
+                        
+                        <!-- Active Tickets -->
+                        <div class="card">
+                            <h3 class="card-title">Aktive Tickets</h3>
+                            <div class="ticket-card">
+                                <h4 class="ticket-type">Monatsabo Tramstadt</h4>
+                                <p class="ticket-validity">Gültig bis: 28.08.2025</p>
+                                <p class="ticket-zones">Alle Zonen • Tram, Bus, Bahn</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Purchase Options -->
+                        <h3 style="font-weight: bold; color: #1f2937; margin-bottom: 16px;">Tickets kaufen</h3>
+                        
+                        <div class="purchase-card">
+                            <div class="purchase-header">
+                                <div>
+                                    <h4 class="purchase-title">Einzelticket</h4>
+                                    <p class="purchase-subtitle">2 Stunden gültig</p>
+                                </div>
+                                <div class="purchase-price">1,60€</div>
+                            </div>
+                            <div class="price-points">
+                                <i data-lucide="leaf"></i>
+                                <span>100 Punkte</span>
+                            </div>
+                            <button class="btn">Mit Karte zahlen</button>
+                            <button class="btn btn-points">
+                                <i data-lucide="leaf"></i>
+                                Mit Punkten zahlen
+                            </button>
+                        </div>
+                        
+                        <div class="purchase-card">
+                            <div class="purchase-header">
+                                <div>
+                                    <h4 class="purchase-title">Tageskarte</h4>
+                                    <p class="purchase-subtitle">Bis 3:00 Uhr gültig</p>
+                                </div>
+                                <div class="purchase-price">4,25€</div>
+                            </div>
+                            <div class="price-points">
+                                <i data-lucide="leaf"></i>
+                                <span>250 Punkte</span>
+                            </div>
+                            <button class="btn">Mit Karte zahlen</button>
+                            <button class="btn btn-points">
+                                <i data-lucide="leaf"></i>
+                                Mit Punkten zahlen
+                            </button>
+                        </div>
+                        
+                        <div class="purchase-card recommended">
+                            <div class="purchase-header">
+                                <div>
+                                    <h4 class="purchase-title">Monatsabo Tramstadt</h4>
+                                    <p class="purchase-subtitle">Alle Zonen • Beste Ersparnis</p>
+                                    <span class="recommended-badge">Empfohlen</span>
+                                </div>
+                                <div class="purchase-price">34,95€</div>
+                            </div>
+                            <div class="price-points">
+                                <i data-lucide="leaf"></i>
+                                <span>2000 Punkte</span>
+                            </div>
+                            <button class="btn btn-green">Mit Karte zahlen</button>
+                            <button class="btn btn-points">
+                                <i data-lucide="leaf"></i>
+                                Mit Punkten zahlen
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Rental Screen -->
+                    <div id="rental" class="screen">
+                        <h2 style="font-size: 24px; font-weight: bold; color: #1f2937; margin-bottom: 24px;">Leihfahrzeuge</h2>
+                        
+                        <!-- Interactive Map -->
+                        <div class="map-container">
+                            <img src="https://maps.googleapis.com/maps/api/staticmap?center=Tramstadt&zoom=15&size=600x300&maptype=roadmap&markers=color:blue%7CTramstadt&key=YOUR_API_KEY" 
+                                 alt="Karte von Tramstadt" class="map-image">
+                            <div class="map-overlay">
+                                <!-- Fahrzeug-Marker -->
+                                <div class="map-vehicle" style="top: 40%; left: 30%; background: #2563eb;">
+                                    <i data-lucide="bike"></i>
+                                </div>
+                                <div class="map-vehicle" style="top: 60%; left: 70%; background: #7c3aed;">
+                                    <i data-lucide="zap"></i>
+                                </div>
+                                <!-- Parkplätze -->
+                                <div class="map-parking" style="top: 50%; left: 50%;">
+                                    <i data-lucide="parking-square" width="12" height="12"></i>
+                                </div>
+                                <div class="map-parking" style="top: 30%; left: 20%;">
+                                    <i data-lucide="parking-square" width="12" height="12"></i>
+                                </div>
+                            </div>
+                            <div class="map-controls">
+                                <button class="map-control" aria-label="Vergrößern">
+                                    <i data-lucide="plus"></i>
+                                </button>
+                                <button class="map-control" aria-label="Suchen">
+                                    <i data-lucide="search"></i>
+                                </button>
+                            </div>
+                            <div class="map-footer">
+                                <span class="location-text">📍 Zentrum Tramstadt</span>
+                                <button class="fullscreen-btn">Vollbild</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Available Vehicles -->
+                        <h3 style="font-weight: bold; color: #1f2937; margin-bottom: 16px;">Verfügbare Fahrzeuge in deiner Nähe</h3>
+                        
+                        <div class="vehicle-item">
+                            <div class="vehicle-header">
+                                <div class="vehicle-info">
+                                    <i data-lucide="bike" style="color: #2563eb;"></i>
+                                    <div>
+                                        <h4 class="vehicle-name">StadtRad #4821</h4>
+                                        <p class="vehicle-location">120m entfernt • Hauptstraße 45</p>
+                                    </div>
+                                </div>
+                                <div class="vehicle-price">
+                                    <p class="price-amount">0,75€</p>
+                                    <p class="price-unit">pro 15 Min</p>
+                                </div>
+                            </div>
+                            <div class="price-points">
+                                <i data-lucide="leaf"></i>
+                                <span>15 Punkte / 15 Min</span>
+                            </div>
+                            <div class="payment-options">
+                                <button class="btn payment-option">Reservieren</button>
+                                <button class="btn btn-points payment-option">
+                                    <i data-lucide="leaf"></i>
+                                    Punkte
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="vehicle-item">
+                            <div class="vehicle-header">
+                                <div class="vehicle-info">
+                                    <i data-lucide="zap" style="color: #7c3aed;"></i>
+                                    <div>
+                                        <h4 class="vehicle-name">TramScooter #7293</h4>
+                                        <p class="vehicle-location">85m entfernt • Bahnhofplatz</p>
+                                    </div>
+                                </div>
+                                <div class="vehicle-price">
+                                    <p class="price-amount">1,00€</p>
+                                    <p class="price-unit">pro 15 Min</p>
+                                </div>
+                            </div>
+                            <div class="price-points">
+                                <i data-lucide="leaf"></i>
+                                <span>20 Punkte / 15 Min</span>
+                            </div>
+                            <div class="payment-options">
+                                <button class="btn btn-purple payment-option">Reservieren</button>
+                                <button class="btn btn-points payment-option">
+                                    <i data-lucide="leaf"></i>
+                                    Punkte
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Schedule Screen -->
+                    <div id="schedule" class="screen">
+                        <h2 style="font-size: 24px; font-weight: bold; color: #1f2937; margin-bottom: 24px;">Fahrpläne</h2>
+                        
+                        <!-- Search -->
+                        <div class="search-container">
+                            <div class="search-input-container">
+                                <i data-lucide="search" class="search-icon"></i>
+                                <input type="text" class="search-input" placeholder="Von..." aria-label="Startpunkt">
+                            </div>
+                            <div class="search-input-container">
+                                <i data-lucide="search" class="search-icon"></i>
+                                <input type="text" class="search-input" placeholder="Nach..." aria-label="Ziel">
+                            </div>
+                            <button class="btn">Route suchen</button>
+                        </div>
+                        
+                        <!-- Quick Routes -->
+                        <div class="card">
+                            <h3 class="card-title">Häufige Routen</h3>
+                            <div class="route-item">
+                                <div class="route-header">
+                                    <div>
+                                        <p class="route-name">Hauptbahnhof → Stadtmitte</p>
+                                        <p class="route-lines">Tram 5, Bus 42</p>
+                                    </div>
+                                    <div class="route-time">
+                                        <p class="time-duration">12 Min</p>
+                                        <p class="next-departure">Nächste: 14:25</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="route-item">
+                                <div class="route-header">
+                                    <div>
+                                        <p class="route-name">Zuhause → Arbeit</p>
+                                        <p class="route-lines">Tram 3, S-Bahn S1</p>
+                                    </div>
+                                    <div class="route-time">
+                                        <p class="time-duration">28 Min</p>
+                                        <p class="next-departure">Nächste: 14:30</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Live Departures -->
+                        <div class="card">
+                            <h3 class="card-title">Live Abfahrten - Hauptbahnhof</h3>
+                            <div class="departure-item">
+                                <div class="departure-left">
+                                    <i data-lucide="tram-front" style="color: #2563eb;"></i>
+                                    <span class="line-number">5</span>
+                                    <span class="destination">Stadtmitte</span>
+                                </div>
+                                <div class="departure-time">2 Min</div>
+                            </div>
+                            <div class="departure-item">
+                                <div class="departure-left">
+                                    <i data-lucide="train" style="color: #10b981;"></i>
+                                    <span class="line-number">S1</span>
+                                    <span class="destination">Nordstadt</span>
+                                </div>
+                                <div class="departure-time">5 Min</div>
+                            </div>
+                            <div class="departure-item">
+                                <div class="departure-left">
+                                    <i data-lucide="bus" style="color: #7c3aed;"></i>
+                                    <span class="line-number">42</span>
+                                    <span class="destination">Universität</span>
+                                </div>
+                                <div class="departure-time delayed">+3 Min</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Profile Screen -->
+                    <div id="profile" class="screen">
+                        <h2 style="font-size: 24px; font-weight: bold; color: #1f2937; margin-bottom: 24px;">Mein Profil</h2>
+                        
+                        <!-- Parken Tabs -->
+                        <div class="parking-tabs">
+                            <button class="parking-tab active" onclick="switchParkingTab('profile')">Profil</button>
+                            <button class="parking-tab" onclick="switchParkingTab('parking')">Parken</button>
+                        </div>
+                        
+                        <!-- Profil-Inhalt -->
+                        <div id="profile-content" class="parking-content active">
+                            <!-- User Info -->
+                            <div class="card">
+                                <div class="profile-header">
+                                    <div class="avatar">MM</div>
+                                    <div>
+                                        <h3 class="user-name">Max Mustermann</h3>
+                                        <p class="user-email">max@example.com</p>
+                                        <p class="member-since">Mitglied seit März 2023</p>
+                                    </div>
+                                </div>
+                                <button class="btn" style="background: #f3f4f6; color: #1f2937;">Profil bearbeiten</button>
+                            </div>
+                            
+                            <!-- Umweltpunkte -->
+                            <div class="points-card">
+                                <h3 class="points-header">🌱 Umweltpunkte</h3>
+                                <div class="points-display">
+                                    <div>
+                                        <p class="current-points">1247</p>
+                                        <p class="points-label">Aktuelle Punkte</p>
+                                    </div>
+                                    <i data-lucide="leaf" class="points-leaf" style="width: 48px; height: 48px;"></i>
+                                </div>
+                                <div class="progress-container">
+                                    <p class="progress-text">Bis zum nächsten Level: 253 Punkte</p>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Statistiken -->
+                            <div class="card">
+                                <h3 class="card-title">Deine Statistiken</h3>
+                                <div class="stats-grid">
+                                    <div class="stat-item stat-blue">
+                                        <p class="stat-number blue">342</p>
+                                        <p class="stat-label">Gesamte Fahrten</p>
+                                    </div>
+                                    <div class="stat-item stat-green">
+                                        <p class="stat-number green">1.2 Tonnen</p>
+                                        <p class="stat-label">CO₂ gespart</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Rewards -->
+                            <div class="card">
+                                <h3 class="card-title">Belohnungen</h3>
+                                <div class="reward-item reward-yellow">
+                                    <div class="reward-left">
+                                        <i data-lucide="gift" style="color: #f59e0b;"></i>
+                                        <div>
+                                            <p class="reward-name">Freifahrt</p>
+                                            <p class="reward-cost">500 Punkte</p>
+                                        </div>
+                                    </div>
+                                    <button class="redeem-btn redeem-yellow">Einlösen</button>
+                                </div>
+                                <div class="reward-item reward-purple">
+                                    <div class="reward-left">
+                                        <i data-lucide="gift" style="color: #7c3aed;"></i>
+                                        <div>
+                                            <p class="reward-name">TramCafé Gutschein</p>
+                                            <p class="reward-cost">300 Punkte</p>
+                                        </div>
+                                    </div>
+                                    <button class="redeem-btn redeem-purple">Einlösen</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Settings -->
+                            <div class="card">
+                                <h3 class="card-title">Einstellungen</h3>
+                                <div class="settings-item">
+                                    <span>Benachrichtigungen</span>
+                                    <i data-lucide="arrow-right"></i>
+                                </div>
+                                <div class="settings-item">
+                                    <span>Datenschutz</span>
+                                    <i data-lucide="arrow-right"></i>
+                                </div>
+                                <div class="settings-item">
+                                    <span>Hilfe & FAQ</span>
+                                    <i data-lucide="arrow-right"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Parken-Inhalt -->
+                        <div id="parking-content" class="parking-content">
+                            <div class="card">
+                                <h3 class="card-title">Parkoptionen</h3>
+                                
+                                <div class="parking-card">
+                                    <div class="parking-header">
+                                        <i data-lucide="parking-square" class="parking-icon"></i>
+                                        <div>
+                                            <h4 class="parking-title">Parkausweis Zone A</h4>
+                                            <p class="parking-location">Gültig in der Innenstadt</p>
+                                        </div>
+                                    </div>
+                                    <p>Gültig von 8:00 - 20:00 Uhr</p>
+                                    <p class="parking-price">25,00 € / Monat</p>
+                                    <div class="price-points">
+                                        <i data-lucide="leaf"></i>
+                                        <span>1250 Punkte / Monat</span>
+                                    </div>
+                                    <div class="payment-options">
+                                        <button class="btn payment-option">Mit Karte zahlen</button>
+                                        <button class="btn btn-points payment-option">
+                                            <i data-lucide="leaf"></i>
+                                            Mit Punkten zahlen
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="parking-card">
+                                    <div class="parking-header">
+                                        <i data-lucide="parking-square" class="parking-icon"></i>
+                                        <div>
+                                            <h4 class="parking-title">Tages-Parkschein</h4>
+                                            <p class="parking-location">Gültig in allen Zonen</p>
+                                        </div>
+                                    </div>
+                                    <p>Gültig für 24 Stunden</p>
+                                    <p class="parking-price">5,00 € / Tag</p>
+                                    <div class="price-points">
+                                        <i data-lucide="leaf"></i>
+                                        <span>250 Punkte / Tag</span>
+                                    </div>
+                                    <div class="payment-options">
+                                        <button class="btn payment-option">Mit Karte zahlen</button>
+                                        <button class="btn btn-points payment-option">
+                                            <i data-lucide="leaf"></i>
+                                            Mit Punkten zahlen
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="parking-card">
+                                    <div class="parking-header">
+                                        <i data-lucide="parking-square" class="parking-icon"></i>
+                                        <div>
+                                            <h4 class="parking-title">Park & Ride</h4>
+                                            <p class="parking-location">An allen Stadteingängen</p>
+                                        </div>
+                                    </div>
+                                    <p>Kostenlos mit gültigem Ticket</p>
+                                    <p class="parking-price">0,00 €</p>
+                                    <button class="btn">Mehr erfahren</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bottom Navigation -->
+            <div class="bottom-nav">
+                <div class="nav-grid">
+                    <button class="nav-button active" onclick="switchTab('home')" aria-label="Home">
+                        <i data-lucide="home" class="nav-icon"></i>
+                        <span>Home</span>
+                    </button>
+                    <button class="nav-button" onclick="switchTab('tickets')" aria-label="Tickets">
+                        <i data-lucide="ticket" class="nav-icon"></i>
+                        <span>Tickets</span>
+                    </button>
+                    <button class="nav-button" onclick="switchTab('schedule')" aria-label="Fahrplan">
+                        <i data-lucide="calendar-clock" class="nav-icon"></i>
+                        <span>Fahrplan</span>
+                    </button>
+                    <button class="nav-button" onclick="switchTab('rental')" aria-label="Mieten">
+                        <i data-lucide="bike" class="nav-icon"></i>
+                        <span>Mieten</span>
+                    </button>
+                    <button class="nav-button" onclick="switchTab('profile')" aria-label="Profil">
+                        <i data-lucide="user" class="nav-icon"></i>
+                        <span>Profil</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Wait for DOM to load, then initialize Lucide icons
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Lucide icons
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            
+            // Touch-Optimierung für alle klickbaren Elemente
+            document.querySelectorAll('button, [onclick]').forEach(el => {
+                el.style.cursor = 'pointer';
+                el.addEventListener('touchstart', function() {
+                    this.classList.add('active');
+                }, {passive: true});
+                el.addEventListener('touchend', function() {
+                    this.classList.remove('active');
+                }, {passive: true});
+            });
+        });
+
+        // Tab switching functionality with scroll to top
+        function switchTab(tabName) {
+            // Hide all screens
+            const screens = document.querySelectorAll('.screen');
+            screens.forEach(screen => {
+                screen.classList.remove('active');
+            });
+            
+            // Show selected screen
+            const activeScreen = document.getElementById(tabName);
+            activeScreen.classList.add('active');
+            
+            // Scroll to top of content area
+            document.querySelector('.content-area').scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+            
+            // Update navigation buttons
+            const navButtons = document.querySelectorAll('.nav-button');
+            navButtons.forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Find and activate the corresponding nav button
+            const activeButton = Array.from(navButtons).find(button => 
+                button.getAttribute('onclick').includes(tabName)
+            );
+            if (activeButton) {
+                activeButton.classList.add('active');
+            }
+            
+            // Re-initialize icons after tab switch
+            setTimeout(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }, 50);
+        }
+
+        // Funktion für Parken-Tabs
+        function switchParkingTab(tabName) {
+            // Tabs umschalten
+            document.querySelectorAll('.parking-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`.parking-tab[onclick*="${tabName}"]`).classList.add('active');
+            
+            // Inhalte umschalten
+            document.querySelectorAll('.parking-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabName}-content`).classList.add('active');
+        }
+
+        // Bezahlfunktion mit Punkten
+        function payWithPoints(amount, itemName) {
+            const currentPoints = 1247; // In einer echten App würde dies dynamisch sein
+            if (currentPoints >= amount) {
+                alert(`Erfolgreich mit ${amount} Umweltpunkten bezahlt für: ${itemName}`);
+                // Hier würde normalerweise eine API-Anfrage stehen
+            } else {
+                alert(`Nicht genug Punkte. Du benötigst ${amount} Punkte, hast aber nur ${currentPoints}.`);
+            }
+        }
+    </script>
+</body>
+</html>
