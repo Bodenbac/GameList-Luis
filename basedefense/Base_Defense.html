@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tower Defense</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        #gameContainer {
+            position: relative;
+            width: 1000px;
+            height: 600px;
+            margin: 20px auto;
+            border: 3px solid #2c3e50;
+            background: linear-gradient(135deg, #e8f4f8 0%, #c8e6c9 100%);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        #base {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 200px;
+            height: 100%;
+            background: linear-gradient(90deg, #3498db 0%, #2980b9 100%);
+            border-radius: 12px 0 0 12px;
+            border-right: 3px solid #2c3e50;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+        .slot {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border: 3px solid #34495e;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 11px;
+            text-align: center;
+            font-weight: bold;
+            color: #2c3e50;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        .slot:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .champion {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            border: 3px solid #2c3e50;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #6ab04c 0%, #5a9a3a 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            font-size: 11px;
+            text-align: center;
+            font-weight: bold;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        .champion:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+        .champion.archer {
+            background: linear-gradient(135deg, #6ab04c 0%, #5a9a3a 100%);
+        }
+        .champion.mage {
+            background: linear-gradient(135deg, #686de0 0%, #5a5fd0 100%);
+        }
+        .champion.cannon {
+            background: linear-gradient(135deg, #e056fd 0%, #d046ed 100%);
+        }
+        .enemy {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #eb4d4b 0%, #c0392b 100%);
+            border: 2px solid #a93226;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            animation: enemyFloat 2s ease-in-out infinite;
+        }
+        @keyframes enemyFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-3px); }
+        }
+        .enemy.type1 {
+            background: linear-gradient(135deg, #eb4d4b 0%, #c0392b 100%);
+        }
+        .enemy.type2 {
+            background: linear-gradient(135deg, #6D214F 0%, #5a1c42 100%);
+        }
+        .enemy.type3 {
+            background: linear-gradient(135deg, #B33771 0%, #a02861 100%);
+        }
+        
+        .projectile-trail {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, rgba(241,196,15,0.8), rgba(243,156,18,0));
+            transform-origin: left center;
+            z-index: 10;
+        }
+        #ui {
+            position: absolute;
+            top: 15px;
+            left: 220px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            width: 760px;
+        }
+        .ui-panel {
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #34495e;
+            border-radius: 8px;
+            font-weight: bold;
+            color: #2c3e50;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        button {
+            padding: 8px 16px;
+            cursor: pointer;
+            border: 2px solid #34495e;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #ecf0f1 0%, #bdc3c7 100%);
+            font-weight: bold;
+            color: #2c3e50;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        button:active {
+            transform: translateY(0px);
+        }
+        .health-bar {
+            position: absolute;
+            top: -8px;
+            left: 2px;
+            width: 36px;
+            height: 4px;
+            background-color: #2c3e50;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+        .health-fill.healthy {
+            background: linear-gradient(90deg, #27ae60 0%, #229954 100%);
+        }
+        .health-fill.medium {
+            background: linear-gradient(90deg, #f39c12 0%, #e67e22 100%);
+        }
+        .projectile {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: radial-gradient(circle, #f1c40f 0%, #f39c12 100%);
+            border-radius: 50%;
+            border: 1px solid #e67e22;
+            box-shadow: 0 0 8px rgba(241, 196, 15, 0.6);
+            animation: projectileGlow 0.5s ease-in-out infinite alternate;
+            transition: left 0.1s linear, top 0.1s linear;
+            will-change: left, top;
+            z-index: 20;
+        }
+        @keyframes projectileGlow {
+            0% { box-shadow: 0 0 8px rgba(241, 196, 15, 0.6); }
+            100% { box-shadow: 0 0 15px rgba(241, 196, 15, 0.9); }
+        }
+        #upgradeMenu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 280px;
+            height: 280px;
+            background: radial-gradient(circle, #ffffff 0%, #ecf0f1 100%);
+            border: 4px solid #2c3e50;
+            border-radius: 50%;
+            display: none;
+            z-index: 100;
+            padding: 20px;
+            box-sizing: border-box;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+        }
+        .upgrade-section {
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: #2c3e50;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+            border: 2px solid #bdc3c7;
+        }
+        .upgrade-section:hover {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        #closeUpgrade {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 24px;
+            color: white;
+            border: 3px solid #a93226;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        #closeUpgrade:hover {
+            transform: translate(-50%, -50%) scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+        #rangeIndicator {
+            position: absolute;
+            border: 2px dashed #f39c12;
+            pointer-events: none;
+            display: none;
+            z-index: 50;
+            opacity: 0.8;
+            animation: rangePulse 2s ease-in-out infinite;
+        }
+        @keyframes rangePulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+        #startWaveBtn {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            color: white;
+            font-weight: bold;
+            border: 2px solid #1e8449;
+        }
+        #startWaveBtn:hover {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        }
+        .speed-btn.active {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border-color: #1f618d;
+        }
+        /* Custom popup styles */
+        #gamePopup {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            background: linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            z-index: 200;
+            text-align: center;
+            display: none;
+            border: 4px solid #2c3e50;
+        }
+        #gamePopup h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-size: 28px;
+        }
+        #gamePopup p {
+            font-size: 18px;
+            margin-bottom: 25px;
+            color: #34495e;
+        }
+        #gamePopup .popup-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        #gamePopup button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        #gamePopup .popup-confirm {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            color: white;
+        }
+        #gamePopup .popup-cancel {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+        #gamePopup .popup-confirm:hover {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            transform: translateY(-2px);
+        }
+        #gamePopup .popup-cancel:hover {
+            background: linear-gradient(135deg, #ff6b6b 0%, #e74c3c 100%);
+            transform: translateY(-2px);
+        }
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 150;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="base"></div>
+        <div id="rangeIndicator"></div>
+        <div id="ui">
+            <div class="ui-panel">🏰 Base HP: <span id="baseHealth">100</span></div>
+            <div class="ui-panel">⚔️ Wave: <span id="wave">1</span></div>
+            <div class="ui-panel">💰 Gold: <span id="gold">100</span></div>
+            <div class="ui-panel">💎 Crystals: <span id="crystals">5</span></div>
+            <button id="pauseBtn">⏸️ Pause</button>
+            <button id="speed1Btn" class="speed-btn active">1x</button>
+            <button id="speed2Btn" class="speed-btn">2x</button>
+            <button id="speed3Btn" class="speed-btn">3x</button>
+            <button id="startWaveBtn">🚀 Start Wave</button>
+        </div>
+    </div>
+
+    <div id="upgradeMenu">
+        <div id="damageUpgrade" class="upgrade-section">
+            <div>⚔️ Damage</div>
+            <div id="damageCost">+5 (50G)</div>
+        </div>
+        <div id="speedUpgrade" class="upgrade-section">
+            <div>⚡ Attack Speed</div>
+            <div id="speedCost">+0.1 (50G)</div>
+        </div>
+        <div id="rangeUpgrade" class="upgrade-section">
+            <div>🎯 Range</div>
+            <div id="rangeCost">+50 (50G)</div>
+        </div>
+        <div id="closeUpgrade">✕</div>
+    </div>
+
+    <!-- Custom Popup -->
+    <div id="overlay"></div>
+    <div id="gamePopup">
+        <h2 id="popupTitle">Game Over</h2>
+        <p id="popupMessage">You reached wave 0! Would you like to restart?</p>
+        <div class="popup-buttons">
+            <button class="popup-confirm">Yes, Restart!</button>
+            <button class="popup-cancel">No, Exit</button>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        const game = {
+            width: 1000,
+            height: 600,
+            baseWidth: 200,
+            baseHealth: 100,
+            gold: 100,
+            crystals: 5,
+            wave: 0,
+            gameSpeed: 1,
+            paused: false,
+            gameOver: false,
+            slots: [],
+            champions: [],
+            enemies: [],
+            projectiles: [],
+            championTypes: [
+                { id: 1, name: "Archer", damage: 60, range: 700, attackSpeed: 1.5, cost: 0, color: "#6ab04c", class: "archer" },
+                { id: 2, name: "Mage", damage: 75, range: 350, attackSpeed: 0.8, cost: 0, color: "#686de0", class: "mage" },
+                { id: 3, name: "Cannon", damage: 120, range: 300, attackSpeed: 0.5, cost: 0, color: "#e056fd", class: "cannon" }
+            ],
+            enemyTypes: [
+                { 
+                    class: "type1", 
+                    health: 60, 
+                    speed: 1.2, 
+                    reward: 12,
+                    color: "linear-gradient(135deg, #eb4d4b 0%, #c0392b 100%)"
+                },
+                { 
+                    class: "type2", 
+                    health: 100, 
+                    speed: 1.0, 
+                    reward: 18,
+                    color: "#6D214F" 
+                },
+                { 
+                    class: "type3", 
+                    health: 150, 
+                    speed: 0.8, 
+                    reward: 30,
+                    color: "#B33771" 
+                }
+            ],
+            currentUpgradeChampion: null,
+            unlockWaves: [1, 5, 10, 15],
+            showingRange: false,
+            waveInProgress: false,
+            enemiesSpawned: 0,
+            enemiesToSpawn: 0
+        };
+
+        // Initialize game
+        function init() {
+            const container = document.getElementById('gameContainer');
+            
+            // Create 2x2 slots in base with better spacing
+            const slotSize = 80;
+            const paddingX = (game.baseWidth - (2 * slotSize)) / 3;
+            const paddingY = (game.height - (2 * slotSize)) / 3;
+            
+            for (let row = 0; row < 2; row++) {
+                for (let col = 0; col < 2; col++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'slot';
+                    slot.style.left = (paddingX + col * (slotSize + paddingX)) + 'px';
+                    slot.style.top = (paddingY + row * (slotSize + paddingY)) + 'px';
+                    
+                    const unlockWave = game.unlockWaves[row * 2 + col];
+                    if (unlockWave > 1) {
+                        slot.innerHTML = `🔒<br>Wave ${unlockWave}`;
+                        slot.style.backgroundColor = "rgba(0,0,0,0.3)";
+                        slot.style.color = "#7f8c8d";
+                    }
+                    
+                    container.appendChild(slot);
+                    game.slots.push({
+                        element: slot,
+                        x: paddingX + col * (slotSize + paddingX),
+                        y: paddingY + row * (slotSize + paddingY),
+                        width: slotSize,
+                        height: slotSize,
+                        occupied: false,
+                        unlocked: unlockWave === 1,
+                        unlockWave: unlockWave
+                    });
+                }
+            }
+            
+            // Place Archer in first slot
+            placeChampion(0, 0);
+            
+            // Event listeners
+            document.getElementById('pauseBtn').addEventListener('click', togglePause);
+            document.getElementById('speed1Btn').addEventListener('click', () => setGameSpeed(1));
+            document.getElementById('speed2Btn').addEventListener('click', () => setGameSpeed(2));
+            document.getElementById('speed3Btn').addEventListener('click', () => setGameSpeed(3));
+            document.getElementById('startWaveBtn').addEventListener('click', startWave);
+            
+            // Upgrade menu events
+            document.getElementById('damageUpgrade').addEventListener('click', () => upgradeStat('damage'));
+            document.getElementById('speedUpgrade').addEventListener('click', () => upgradeStat('attackSpeed'));
+            document.getElementById('rangeUpgrade').addEventListener('click', () => upgradeStat('range'));
+            document.getElementById('closeUpgrade').addEventListener('click', hideUpgradeMenu);
+            
+            // Popup events
+            document.querySelector('#gamePopup .popup-confirm').addEventListener('click', () => {
+                location.reload();
+            });
+            document.querySelector('#gamePopup .popup-cancel').addEventListener('click', () => {
+                hidePopup();
+            });
+            
+            updateUI();
+            // Start game loop
+            gameLoop();
+        }
+
+        // Show custom popup
+        function showPopup(title, message) {
+            document.getElementById('popupTitle').textContent = title;
+            document.getElementById('popupMessage').textContent = message;
+            document.getElementById('gamePopup').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+            game.paused = true;
+        }
+
+        // Hide custom popup
+        function hidePopup() {
+            document.getElementById('gamePopup').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+            game.paused = false;
+        }
+
+        // Start a new wave
+        function startWave() {
+            if (game.waveInProgress) {
+                console.log("Wave already in progress");
+                return;
+            }
+            
+            // Initialize wave
+            game.waveInProgress = true;
+            game.enemiesToSpawn = 4 + Math.floor(game.wave * 1.5);
+            game.enemiesSpawned = 0;
+            
+            // Verify we have enemy types
+            if (!game.enemyTypes || game.enemyTypes.length === 0) {
+                console.error("No enemy types defined!");
+                game.waveInProgress = false;
+                return;
+            }
+            
+            // Start spawning
+            console.log(`Starting wave ${game.wave} with ${game.enemiesToSpawn} enemies`);
+            spawnEnemy();
+        }
+        
+        function spawnEnemy() {
+            if (game.enemiesSpawned >= game.enemiesToSpawn) {
+                return;
+            }
+
+            // Safely get enemy type with fallback
+            let typeIndex = Math.min(
+                Math.floor((game.wave - 1) / 4),
+                game.enemyTypes.length - 1
+            );
+            typeIndex = Math.max(0, typeIndex); // Ensure not negative
+            
+            const type = game.enemyTypes[typeIndex] || game.enemyTypes[0]; // Fallback to first type
+            
+            // Validate type properties
+            if (!type || typeof type.health !== 'number') {
+                console.error("Invalid enemy type:", type);
+                type = game.enemyTypes[0]; // Default to first type
+            }
+
+            const enemy = {
+                id: Date.now() + game.enemiesSpawned,
+                x: game.width + Math.random() * 100,
+                y: 100 + Math.random() * (game.height - 200),
+                health: type.health + Math.floor(game.wave * 8),
+                maxHealth: type.health + Math.floor(game.wave * 8),
+                speed: type.speed + Math.random() * 0.3,
+                reward: type.reward + Math.floor(game.wave * 0.8),
+                element: document.createElement('div'),
+                healthBar: null,
+                type: type.class
+            };
+            
+            // Set up enemy visuals
+            enemy.element.className = `enemy ${type.class}`;
+            enemy.element.style.left = enemy.x + 'px';
+            enemy.element.style.top = enemy.y + 'px';
+            enemy.element.style.background = type.color;
+            
+            // Create health bar
+            const healthBar = document.createElement('div');
+            healthBar.className = 'health-bar';
+            const healthFill = document.createElement('div');
+            healthFill.className = 'health-fill healthy';
+            healthFill.style.width = '100%';
+            healthBar.appendChild(healthFill);
+            enemy.element.appendChild(healthBar);
+            enemy.healthBar = healthFill;
+            
+            document.getElementById('gameContainer').appendChild(enemy.element);
+            game.enemies.push(enemy);
+            game.enemiesSpawned++;
+            
+            // Continue spawning if needed
+            if (game.enemiesSpawned < game.enemiesToSpawn) {
+                setTimeout(spawnEnemy, Math.max(100, 800 - (game.wave * 20)));
+            } else {
+                game.wave++;
+                updateUI();
+            }
+        }
+        
+        function findLeftmostEnemy() {
+            let leftmost = null;
+            let minX = Infinity;
+            
+            game.enemies.forEach(enemy => {
+                if (enemy.x < minX) {
+                    minX = enemy.x;
+                    leftmost = enemy;
+                }
+            });
+            
+            return leftmost;
+        }
+
+        // Find leftmost enemy IN RANGE (for initial targeting)
+        function findLeftmostEnemyInRange(champion) {
+            const champCenterX = champion.x + champion.width/2;
+            const champCenterY = champion.y + champion.height/2;
+            
+            let leftmost = null;
+            let minX = Infinity;
+            
+            game.enemies.forEach(enemy => {
+                const enemyX = enemy.x + 20;
+                const enemyY = enemy.y + 20;
+                const dx = enemyX - champCenterX;
+                const dy = enemyY - champCenterY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Only consider enemies in range and to the right of tower
+                if (distance <= champion.range && enemyX > champCenterX) {
+                    if (enemy.x < minX) {
+                        minX = enemy.x;
+                        leftmost = enemy;
+                    }
+                }
+            });
+            
+            return leftmost;
+        }
+
+        // Place a champion in a slot
+        function placeChampion(row, col) {
+            const slotIndex = row * 2 + col;
+            const slot = game.slots[slotIndex];
+            
+            if (slot.occupied || !slot.unlocked) return;
+            
+            const championType = game.championTypes[slotIndex % game.championTypes.length];
+            const champion = {
+                ...championType,
+                id: Date.now(),
+                x: slot.x + 5,
+                y: slot.y + 5,
+                width: 70,
+                height: 70,
+                cooldown: 0,
+                level: 1,
+                element: document.createElement('div'),
+                slotIndex: slotIndex
+            };
+            
+            champion.element.className = `champion ${champion.class}`;
+            champion.element.style.left = champion.x + 'px';
+            champion.element.style.top = champion.y + 'px';
+            champion.element.innerHTML = `
+                <div>${champion.name}</div>
+                <div>Lvl ${champion.level}</div>
+            `;
+            
+            champion.element.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (game.showingRange && game.currentUpgradeChampion === champion) {
+                    hideRangeIndicator();
+                    hideUpgradeMenu();
+                } else {
+                    showRangeIndicator(champion);
+                    showUpgradeMenu(champion);
+                }
+            });
+            
+            document.getElementById('gameContainer').appendChild(champion.element);
+            game.champions.push(champion);
+            
+            slot.occupied = true;
+        }
+
+        // Show range indicator (horizontal line extending right)
+        function showRangeIndicator(champion) {
+            const indicator = document.getElementById('rangeIndicator');
+            indicator.style.display = 'block';
+            
+            // Position at champion center
+            const startX = champion.x + champion.width/2;
+            const startY = champion.y + champion.height/2;
+            
+            // Create horizontal line extending right
+            indicator.style.left = startX + 'px';
+            indicator.style.top = startY + 'px';
+            indicator.style.width = champion.range + 'px';
+            indicator.style.height = '2px';
+            indicator.style.borderLeft = 'none';
+            indicator.style.borderTop = '2px dashed #f39c12';
+            
+            game.showingRange = true;
+        }
+
+        function hideRangeIndicator() {
+            document.getElementById('rangeIndicator').style.display = 'none';
+            game.showingRange = false;
+        }
+
+        // Game loop
+        function gameLoop() {
+            if (!game.paused && !game.gameOver) {
+                // Update champions
+                updateChampions();
+                // Update game state (including enemies)
+                updateGame();
+                // Render game
+                renderGame();
+            }
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Update game state
+        function updateGame() {
+            // Check for unlocked slots
+            game.slots.forEach((slot, index) => {
+                if (!slot.unlocked && game.wave >= slot.unlockWave) {
+                    slot.unlocked = true;
+                    slot.element.style.backgroundColor = "rgba(255,255,255,0.4)";
+                    slot.element.innerHTML = "✨ Ready!";
+                    slot.element.style.color = "#27ae60";
+                    
+                    setTimeout(() => {
+                        slot.element.innerHTML = "";
+                        placeChampion(Math.floor(index / 2), index % 2);
+                    }, 1000);
+                }
+            });
+            
+            // Update projectiles
+            updateProjectiles();    
+            
+            // Update enemies
+            for (let i = game.enemies.length - 1; i >= 0; i--) {
+                const enemy = game.enemies[i];
+                enemy.x -= enemy.speed * game.gameSpeed;
+                enemy.element.style.left = enemy.x + 'px';
+                
+                // Check if enemy reached base
+                if (enemy.x < game.baseWidth) {
+                    game.baseHealth -= 10;
+                    updateUI();
+                    enemy.element.remove();
+                    game.enemies.splice(i, 1);
+                    
+                    if (game.baseHealth <= 0) {
+                        gameOver();
+                    }
+                }
+            }
+            
+            // Update champions - attack enemies in range horizontally
+            game.champions.forEach(champion => {
+                if (champion.cooldown <= 0) {
+                    const target = findTargetInRange(champion);
+                    if (target) {
+                        shoot(champion, target);
+                        champion.cooldown = 60 / champion.attackSpeed;
+                    }
+                } else {
+                    champion.cooldown--;
+                }
+            });
+
+            // Check if wave is complete
+            if (game.waveInProgress && 
+                game.enemiesSpawned >= game.enemiesToSpawn && 
+                game.enemies.length === 0) {
+                game.waveInProgress = false;
+                game.gold += Math.floor(game.wave * 5); // Wave completion bonus
+                updateUI();
+            }
+        }
+
+        // Find target within range (horizontally to the right)
+        function findTargetInRange(champion) {
+            const champCenterX = champion.x + champion.width/2;
+            const champCenterY = champion.y + champion.height/2;
+            let closest = null;
+            let minDist = Infinity;
+            
+            game.enemies.forEach(enemy => {
+                const enemyCenterX = enemy.x + 20;
+                const enemyCenterY = enemy.y + 20;
+                
+                // Check if enemy is to the right of the champion
+                if (enemyCenterX > champCenterX) {
+                    const horizontalDist = enemyCenterX - champCenterX;
+                    const verticalDist = Math.abs(enemyCenterY - champCenterY);
+                    const totalDist = Math.sqrt(horizontalDist * horizontalDist + verticalDist * verticalDist);
+                    
+                    // Enemy is in range if total distance is within champion's range
+                    if (totalDist <= champion.range && horizontalDist < minDist) {
+                        closest = enemy;
+                        minDist = horizontalDist;
+                    }
+                }
+            });
+            
+            return closest;
+        }
+
+        // Champion shoots at enemy
+        function shoot(champion, target) {
+            if (!target) return; // No enemies in range
+            
+            // Create trail element
+            const trail = document.createElement('div');
+            trail.className = 'projectile-trail';
+            document.getElementById('gameContainer').appendChild(trail);
+            
+            const projectile = {
+                element: document.createElement('div'),
+                trail: trail,
+                target: target,
+                x: champion.x + champion.width/2,
+                y: champion.y + champion.height/2,
+                targetX: target.x + 20,
+                targetY: target.y + 20,
+                damage: champion.damage,
+                speed: 0.1,
+                progress: 0
+            };
+            
+            projectile.element.className = 'projectile';
+            projectile.element.style.left = projectile.x + 'px';
+            projectile.element.style.top = projectile.y + 'px';
+            document.getElementById('gameContainer').appendChild(projectile.element);
+            
+            game.projectiles.push(projectile);
+        }
+        
+        function updateProjectiles() {
+            for (let i = game.projectiles.length - 1; i >= 0; i--) {
+                const proj = game.projectiles[i];
+                
+                // Skip if projectile is already being handled
+                if (proj.handled) continue;
+                
+                proj.progress += proj.speed * game.gameSpeed;
+                
+                // Calculate new position
+                const newX = proj.x + (proj.targetX - proj.x) * proj.speed;
+                const newY = proj.y + (proj.targetY - proj.y) * proj.speed;
+                
+                // Update trail
+                const trailLength = Math.sqrt(Math.pow(newX - proj.x, 2) + Math.pow(newY - proj.y, 2));
+                const angle = Math.atan2(newY - proj.y, newX - proj.x);
+                
+                if (proj.trail) {
+                    proj.trail.style.left = proj.x + 'px';
+                    proj.trail.style.top = proj.y + 'px';
+                    proj.trail.style.width = trailLength + 'px';
+                    proj.trail.style.transform = `rotate(${angle}rad)`;
+                }
+                
+                // Update projectile position
+                proj.x = newX;
+                proj.y = newY;
+                proj.element.style.left = proj.x + 'px';
+                proj.element.style.top = proj.y + 'px';
+                
+                // Check for hit
+                if (proj.progress >= 0.95) {
+                    applyDamage(proj.target, proj.damage);
+                    
+                    // Remove projectile elements
+                    proj.element.remove();
+                    if (proj.trail) proj.trail.remove();
+                    game.projectiles.splice(i, 1);
+                }
+            }
+        }
+        
+        function applyDamage(target, damage) {
+            target.health -= damage;
+            
+            // Update health bar
+            const healthPercent = Math.max(0, (target.health / target.maxHealth) * 100);
+            target.healthBar.style.width = healthPercent + '%';
+            
+            // Update health bar color
+            target.healthBar.className = 
+                healthPercent > 60 ? 'health-fill healthy' :
+                healthPercent > 30 ? 'health-fill medium' : 'health-fill';
+            
+            // Check if enemy died
+            if (target.health <= 0) {
+                game.gold += target.reward;
+                if (Math.random() < 0.15) game.crystals++;
+                target.element.remove();
+                const enemyIndex = game.enemies.findIndex(e => e.id === target.id);
+                if (enemyIndex !== -1) game.enemies.splice(enemyIndex, 1);
+                updateUI();
+            }
+        }
+
+        // Upgrade menu
+        function showUpgradeMenu(champion) {
+            game.currentUpgradeChampion = champion;
+            const baseCost = champion.level * 50;
+            document.getElementById('damageCost').textContent = `+5 (${baseCost}G)`;
+            document.getElementById('speedCost').textContent = `+0.1 (${baseCost}G)`;
+            document.getElementById('rangeCost').textContent = `+50 (${baseCost}G)`;
+            document.getElementById('upgradeMenu').style.display = 'block';
+            
+            // Position upgrade sections in a circle (120° apart)
+            const centerX = 140;
+            const centerY = 140;
+            const radius = 100;
+            
+            // Damage at top (90°)
+            const angle1 = (90 * Math.PI) / 180;
+            document.getElementById('damageUpgrade').style.left = (centerX + radius * Math.cos(angle1) - 45) + 'px';
+            document.getElementById('damageUpgrade').style.top = (centerY - radius * Math.sin(angle1) - 45) + 'px';
+            
+            // Speed at bottom-left (210°)
+            const angle2 = (210 * Math.PI) / 180;
+            document.getElementById('speedUpgrade').style.left = (centerX + radius * Math.cos(angle2) - 45) + 'px';
+            document.getElementById('speedUpgrade').style.top = (centerY - radius * Math.sin(angle2) - 45) + 'px';
+            
+            // Range at bottom-right (330°)
+            const angle3 = (330 * Math.PI) / 180;
+            document.getElementById('rangeUpgrade').style.left = (centerX + radius * Math.cos(angle3) - 45) + 'px';
+            document.getElementById('rangeUpgrade').style.top = (centerY - radius * Math.sin(angle3) - 45) + 'px';
+        }
+
+        function hideUpgradeMenu() {
+            document.getElementById('upgradeMenu').style.display = 'none';
+            hideRangeIndicator();
+            game.currentUpgradeChampion = null;
+        }
+
+        function upgradeStat(stat) {
+            if (!game.currentUpgradeChampion) return;
+            
+            const cost = game.currentUpgradeChampion.level * 50;
+            if (game.gold >= cost) {
+                game.gold -= cost;
+                
+                switch(stat) {
+                    case 'damage':
+                        game.currentUpgradeChampion.damage += 5;
+                        break;
+                    case 'attackSpeed':
+                        game.currentUpgradeChampion.attackSpeed += 0.1;
+                        break;
+                    case 'range':
+                        game.currentUpgradeChampion.range += 50;
+                        if (game.showingRange) {
+                            showRangeIndicator(game.currentUpgradeChampion);
+                        }
+                        break;
+                }
+                
+                game.currentUpgradeChampion.level++;
+                game.currentUpgradeChampion.element.innerHTML = `
+                    <div>${game.currentUpgradeChampion.name}</div>
+                    <div>Lvl ${game.currentUpgradeChampion.level}</div>
+                `;
+                
+                // Update upgrade costs
+                showUpgradeMenu(game.currentUpgradeChampion);
+                updateUI();
+            }
+        }
+
+        // UI functions
+        function updateUI() {
+            document.getElementById('baseHealth').textContent = game.baseHealth;
+            document.getElementById('wave').textContent = game.wave;
+            document.getElementById('gold').textContent = game.gold;
+            document.getElementById('crystals').textContent = game.crystals;
+        }
+
+        // Game controls
+        function togglePause() {
+            game.paused = !game.paused;
+            const btn = document.getElementById('pauseBtn');
+            btn.textContent = game.paused ? "▶️ Resume" : "⏸️ Pause";
+        }
+
+        function setGameSpeed(speed) {
+            game.gameSpeed = speed;
+            document.querySelectorAll('.speed-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`speed${speed}Btn`).classList.add('active');
+        }
+
+        function gameOver() {
+            game.gameOver = true;
+            showPopup("Game Over", `You reached wave ${game.wave - 1}! Would you like to restart?`);
+        }
+
+        function renderGame() {
+            // Visual updates can be added here for smooth animations
+        }
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!document.getElementById('upgradeMenu').contains(e.target) && 
+                !Array.from(document.getElementsByClassName('champion')).some(el => el.contains(e.target))) {
+                hideUpgradeMenu();
+            }
+        });
+
+        // Start the game
+        window.onload = init;
+    </script>
+</body>
+</html>
