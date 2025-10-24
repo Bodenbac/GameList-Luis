@@ -1,0 +1,909 @@
+/* ======================
+BASE STYLES 
+====================== */
+html, body {
+    margin: 0; 
+    padding: 0; 
+    width: 100vw; 
+    height: 100vh; 
+    overflow: hidden;
+    background: linear-gradient(135deg, #356c3c 0%, #467943 100%);
+}
+
+/* ======================
+GAME CONTAINER & CANVAS 
+====================== */
+#gameContainer { 
+    position: relative; 
+    width: 100vw; 
+    height: 100vh; 
+    overflow: hidden;
+}
+
+#gameCanvas { 
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: transparent; 
+    pointer-events: auto;
+    z-index: 10;
+}
+
+/* ======================
+USER INTERFACE (UI) 
+====================== */
+#ui {
+    position: absolute; 
+    top: 10px; 
+    left: 10px; 
+    right: 10px; 
+    z-index: 100;
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    background: rgba(0,0,0,0.75); 
+    padding: 10px 18px; 
+    border-radius: 12px; 
+    color: white;
+}
+
+#resources-left, #resources-right {
+    display: flex; 
+    align-items: center; 
+    gap: 18px;
+}
+
+#resources-right .resource { 
+    margin-left: 18px; 
+}
+
+.resource { 
+    display: flex; 
+    align-items: center; 
+    gap: 7px; 
+    font-weight: bold; 
+    font-size: 1.12em; 
+}
+
+.ico { 
+    width: 1.38em; 
+    height: 1.38em; 
+    vertical-align: middle; 
+}
+
+/* ======================
+BUTTONS 
+====================== */
+#startButton { 
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 9px 22px;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 3px 16px #0006;
+    z-index: 1000;
+}
+
+#startButton:hover {
+    background: #2980b9;
+    transform: translateX(-50%) scale(1.05);
+}
+
+#startButton:disabled {
+    background: #7f8c8d;
+    cursor: not-allowed;
+    transform: translateX(-50%);
+}
+
+/* ======================
+MENUS (TOWER & UPGRADE) 
+====================== */
+#towerMenu {
+    position: absolute;
+    z-index: 1000;
+    display: none;
+    background: rgba(0,0,0,0.93);
+    border-radius: 14px;
+    padding: 14px 13px;
+    min-width: 240px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 13px;
+    box-shadow: 0 4px 22px #000b;
+    border: 2px solid #3498db;
+}
+
+#upgradeMenu {
+    position: absolute;
+    z-index: 1000;
+    display: none;
+    background: rgba(0,0,0,0.93);
+    border-radius: 14px;
+    padding: 8px;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    box-shadow: 0 4px 22px #000b;
+    border: 2px solid #f1c40f;
+    bottom: 20px;
+    left: 20px;
+    width: auto;
+    max-width: calc(100% - 40px);
+}
+
+/* ======================
+TOWER OPTIONS 
+====================== */
+.tower-option {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white; 
+    border: none; 
+    border-radius: 8px;
+    padding: 12px 3px 10px 3px; 
+    cursor: pointer;
+    font-size: 14px; 
+    text-align: center; 
+    min-height: 62px;
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    gap: 4px;
+    transition: all 0.2s;
+}
+
+/* Tower type variants */
+.tower-option.cannon {
+    background: linear-gradient(135deg, #696969, #555555);
+}
+
+.tower-option.mage {
+    background: linear-gradient(135deg, #6A5ACD, #4B0082);
+}
+
+.tower-option.fire {
+    background: linear-gradient(135deg, #FF4500, #8B0000);
+}
+
+.tower-option.ice {
+    background: linear-gradient(135deg, #007acc, #a0e1ff);
+}
+
+.tower-option.sniper {
+    background: linear-gradient(135deg, #333333, #001f3f);
+}
+
+.tower-option:hover { 
+    background: linear-gradient(135deg, #2980b9, #3498db); 
+    transform: scale(1.04);
+}
+
+.tower-option.cannon:hover { 
+    background: linear-gradient(135deg, #555555, #696969); 
+}
+
+.tower-option.mage:hover { 
+    background: linear-gradient(135deg, #4B0082, #6A5ACD); 
+}
+
+.tower-option.fire:hover { 
+    background: linear-gradient(135deg, #8B0000, #FF4500); 
+}
+
+.tower-option.ice:hover { 
+    background: linear-gradient(135deg, #a0e1ff, #007acc); 
+}
+
+.tower-option.sniper:hover { 
+    background: linear-gradient(135deg, #001f3f, #333333); 
+}
+
+/* ======================
+UPGRADE OPTIONS 
+====================== */
+.upgrade-option {
+    width: 100%;
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white; 
+    border: none; 
+    border-radius: 8px;
+    padding: 12px 3px 10px 3px; 
+    cursor: pointer;
+    font-size: 14px; 
+    text-align: center; 
+    min-height: 62px;
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    gap: 4px;
+    transition: all 0.2s;
+}
+
+.upgrade-option:hover { 
+    background: linear-gradient(135deg, #e67e22, #f39c12); 
+    transform: scale(1.04);
+}
+
+.tower-option:disabled, 
+.upgrade-option:disabled { 
+    background: #7f8c8d; 
+    cursor: not-allowed; 
+}
+
+/* ======================
+TYPOGRAPHY & TEXT ELEMENTS
+====================== */
+.tower-name, 
+.upgrade-name { 
+    font-weight: bold; 
+    margin-bottom: 3px; 
+}
+
+.tower-cost, 
+.upgrade-cost { 
+    font-size: 11px; 
+    color: #f1c40f; 
+    margin-top: 2px; 
+}
+
+.upgrade-description {
+    font-size: 10px;
+    color: #ccc;
+    margin-top: 2px;
+}
+
+/* ======================
+TOWER ICONS
+====================== */
+.tower-icon svg {
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+/* ======================
+STATS DISPLAYS
+====================== */
+.tower-stats {
+    grid-column: 1 / -1;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    color: white;
+}
+
+.enemy-info {
+    background: rgba(0,0,0,0.93);
+    border-radius: 14px;
+    padding: 14px;
+    border: 2px solid #f44336;
+}
+
+.enemy-info .stat-name {
+    color: #f5a742;
+}
+
+.enemy-info .stat-value {
+    color: white;
+}
+
+.enemy-info h3 {
+    color: #f44336;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 5px 0;
+}
+
+.stat-name {
+    font-weight: bold;
+    color: #f5a742;
+}
+
+.stat-value {
+    color: white;
+}
+
+/* ======================
+UPGRADE OPTIONS CONTAINER
+====================== */
+.upgrade-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* ======================
+TITLE SCREEN
+====================== */
+#titleScreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('https://bodenbac.github.io/GameList-Luis/Assets/LOT/Other/background.svg') center/cover no-repeat;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    color: white;
+    font-family: 'Arial', sans-serif;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    min-height: 100vh;
+}
+
+#titleScreen ~ #gameContainer #startButton {
+    display: none;
+    pointer-events: none;
+}
+
+#titleScreen h1 {
+    font-size: 3.5rem;
+    margin-bottom: 4rem;
+    margin-top: 2rem;
+    text-shadow: 0 0 20px rgba(255,255,255,0.8);
+    background: linear-gradient(to right, #f5d742, #f5a742);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-align: center;
+    animation: titleGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes titleGlow {
+    from { text-shadow: 0 0 20px rgba(255,255,255,0.8); }
+    to { text-shadow: 0 0 30px rgba(255,255,255,1), 0 0 40px rgba(245,215,66,0.5); }
+}
+
+/* ======================
+MENU SECTIONS
+====================== */
+.menu-section {
+    background: rgba(0,0,0,0.7);
+    padding: 1.5rem;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    width: 100%;
+    max-width: 600px;
+    box-sizing: border-box;
+}
+
+.menu-section:last-of-type {
+    margin-bottom: 20px;
+}
+
+.maps-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.menu-title {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: #f5a742;
+}
+
+.menu-options {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+[data-map] {
+    width: 100%;
+    margin: 0;
+}
+
+/* ======================
+MENU BUTTONS
+====================== */
+.menu-btn {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 1rem;
+}
+
+.menu-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(52, 152, 219, 0.6);
+}
+
+.menu-btn.selected {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    box-shadow: 0 0 15px rgba(243, 156, 18, 0.6);
+}
+
+.menu-btn.locked {
+    background: linear-gradient(135deg, #555, #333);
+    color: #999;
+    cursor: not-allowed;
+}
+
+.start-btn {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    padding: 1rem 3rem;
+    font-size: 1.2rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    width: 100%;
+    max-width: 300px;
+}
+
+.start-btn:hover {
+    box-shadow: 0 0 20px rgba(46, 204, 113, 0.7);
+}
+
+/* ======================
+MULTIPLAYER STYLES
+====================== */
+.multiplayer-btn {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    padding: 1.8rem 4.5rem;
+    font-size: 1.5rem;
+    margin-top: 1.5rem;
+    margin-bottom: 3rem;
+    width: 100%;
+    max-width: 450px;
+    box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+    min-height: 65px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.multiplayer-btn:hover {
+    box-shadow: 0 10px 30px rgba(231, 76, 60, 0.6);
+    transform: translateY(-4px) scale(1.02);
+}
+
+#multiplayerMenu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('https://bodenbac.github.io/GameList-Luis/Assets/LOT/Other/background.svg') center/cover no-repeat;
+    display: none;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    z-index: 1001;
+    color: white;
+    font-family: 'Arial', sans-serif;
+    padding: 3rem 1rem 2rem 1rem;
+    box-sizing: border-box;
+    overflow-y: auto;
+    min-height: 100vh;
+}
+
+.multiplayer-title {
+    font-size: 3.5rem;
+    margin-bottom: 3rem;
+    margin-top: 1rem;
+    text-shadow: 0 0 20px rgba(255,255,255,0.8);
+    background: linear-gradient(to right, #f5d742, #f5a742);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-align: center;
+    animation: titleGlow 2s ease-in-out infinite alternate;
+}
+
+.multiplayer-container {
+    display: flex;
+    width: 95%;
+    max-width: 1400px;
+    gap: 2.5rem;
+    margin: 1.5rem 0 2rem 0;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.multiplayer-left, .multiplayer-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    max-width: 600px;
+}
+
+.connection-status, .menu-section, .lobby-list, .player-list {
+    background: rgba(0,0,0,0.85);
+    padding: 2.5rem;
+    border-radius: 20px;
+    margin: 0;
+    width: 100%;
+    box-sizing: border-box;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(245, 215, 66, 0.3);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    transition: all 0.3s ease;
+}
+
+.connection-status:hover, .lobby-list:hover, .player-list:hover {
+    border-color: rgba(245, 215, 66, 0.6);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.7);
+    transform: translateY(-2px);
+}
+
+.lobby-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.input-group {
+    margin: 2rem 0;
+}
+
+.input-group:first-child {
+    margin-top: 1rem;
+}
+
+.input-group:last-child {
+    margin-bottom: 1rem;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 1rem;
+    font-weight: bold;
+    color: #f5a742;
+    font-size: 1.1rem;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 1.2rem;
+    border: 2px solid rgba(245, 215, 66, 0.3);
+    border-radius: 10px;
+    font-size: 1rem;
+    background: rgba(255,255,255,0.1);
+    color: white;
+    backdrop-filter: blur(5px);
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+    margin-bottom: 0.5rem;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: rgba(245, 215, 66, 0.8);
+    box-shadow: 0 0 15px rgba(245, 215, 66, 0.3);
+}
+
+.input-group input::placeholder {
+    color: rgba(255,255,255,0.6);
+}
+
+.back-btn {
+    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+    padding: 1.2rem 3rem;
+    font-size: 1.2rem;
+    margin-top: 3rem;
+    margin-bottom: 2rem;
+    align-self: center;
+    max-width: 350px;
+    box-shadow: 0 4px 15px rgba(149, 165, 166, 0.3);
+    min-height: 55px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.back-btn:hover {
+    box-shadow: 0 8px 25px rgba(149, 165, 166, 0.5);
+    transform: translateY(-3px) scale(1.05);
+}
+
+/* ======================
+TOWER BAR
+====================== */
+#towerBar {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 15px;
+    padding: 10px;
+    background: rgba(0,0,0,0.7);
+    border-radius: 12px;
+    z-index: 50;
+}
+
+.tower-icon {
+    width: 50px;
+    height: 50px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 8px;
+    padding: 2px;
+    background: rgba(0,0,0,0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.tower-icon:hover {
+    transform: scale(1.1);
+    background: rgba(255,255,255,0.2);
+}
+
+.tower-icon:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ======================
+PLAYER INDICATORS
+====================== */
+.player-indicator {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+.player-1 {
+    background: #3498db;
+}
+
+.player-2 {
+    background: #e74c3c;
+}
+
+/* ======================
+CUSTOM ALERTS
+====================== */
+.custom-alert {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(50, 50, 50, 0.95);
+    border-radius: 15px;
+    padding: 20px;
+    z-index: 2000;
+    color: white;
+    text-align: center;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+    max-width: 80%;
+    width: 400px;
+    border: 1px solid #444;
+}
+
+.custom-alert h3 {
+    margin-top: 0;
+    color: #f5a742;
+}
+
+.custom-alert-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.custom-alert-btn {
+    padding: 10px 25px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s;
+    font-size: 1rem;
+}
+
+.custom-alert-btn.retry {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+}
+
+.custom-alert-btn.exit {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+}
+
+.custom-alert-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(255,255,255,0.3);
+}
+
+.custom-alert-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 1999;
+}
+
+/* ======================
+MEDIA QUERIES
+====================== */
+@media (max-width:700px) {
+    #ui { 
+        font-size: 0.97em; 
+        padding: 7px 7px; 
+    }
+
+    #resources-left, #resources-right { 
+        gap: 10px; 
+    }
+
+    .resource { 
+        font-size: 0.98em; 
+    }
+
+    #towerMenu, #upgradeMenu { 
+        min-width: 130px; 
+    }
+
+    .tower-option, .upgrade-option { 
+        font-size: 12px; 
+        min-height: 52px; 
+    }
+
+    #towerBar { 
+        gap: 8px; 
+        padding: 5px; 
+    }
+
+    .tower-icon { 
+        width: 40px; 
+        height: 40px; 
+    }
+}
+
+@media (max-width: 900px) {
+    .multiplayer-container {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 768px) {
+    #titleScreen h1,
+    .multiplayer-title {
+        font-size: 2.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .maps-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .menu-options {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .menu-btn {
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    .start-btn, .multiplayer-btn {
+        padding: 0.8rem 2rem;
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 500px) {
+    #titleScreen h1,
+    .multiplayer-title {
+        font-size: 2rem;
+    }
+
+    .menu-section {
+        width: 100%;
+        padding: 0.8rem;
+    }
+
+    .maps-container {
+        grid-template-columns: 1fr;
+    }
+
+    .menu-options {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .menu-btn {
+        width: 100%;
+        padding: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .start-btn, .multiplayer-btn {
+        width: 100%;
+        padding: 0.7rem;
+        font-size: 0.9rem;
+    }
+}
+ #chatContainer {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 300px;
+    background: rgba(0,0,0,0.8);
+    border-radius: 10px;
+    padding: 10px;
+    z-index: 1000;
+    display: none;
+}
+
+#chatMessages {
+    height: 200px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    color: white;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+}
+
+#chatInput {
+    width: calc(100% - 60px);
+    padding: 5px;
+    border-radius: 5px;
+    border: none;
+}
+
+#sendChat {
+    width: 50px;
+    padding: 5px;
+    border-radius: 5px;
+    border: none;
+    background: #3498db;
+    color: white;
+    cursor: pointer;
+}
+
+#toggleChat {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 1001;
+    display: none;
+}
+
