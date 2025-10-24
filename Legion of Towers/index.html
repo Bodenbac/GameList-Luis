@@ -1120,13 +1120,17 @@
 				return;
 			}
 
-			try {
-				this.peer = new Peer({
-					debug: 3,
-					config: {
-						iceServers: [
-							{ urls: 'stun:stun.l.google.com:19302' },
-							{ urls: 'stun:stun1.l.google.com:19302' }
+                        try {
+                                if (this.peer) {
+                                        this.peer.destroy();
+                                }
+
+                                this.peer = new Peer({
+                                        debug: 3,
+                                        config: {
+                                                iceServers: [
+                                                        { urls: 'stun:stun.l.google.com:19302' },
+                                                        { urls: 'stun:stun1.l.google.com:19302' }
 						]
 					}
 				});
@@ -1138,8 +1142,19 @@
 				});
 
 				// Store the full peer ID
-				this.lobbyCode = peerId;
-				this.playerName = playerName;
+                                this.lobbyCode = peerId;
+                                this.playerName = playerName;
+                                this.playerRole = 'host';
+
+                                // Ensure the local player list always starts clean
+                                this.connections.clear();
+                                this.connectedPlayers.clear();
+                                this.connectedPlayers.set(this.peer.id, {
+                                        id: this.peer.id,
+                                        name: this.playerName,
+                                        role: 'host',
+                                        status: 'connected'
+                                });
 				
 				// Update UI - MAKE SURE THIS ELEMENT EXISTS
 				const lobbyDisplay = document.getElementById('lobbyCodeDisplay');
@@ -1152,16 +1167,19 @@
 				}
 
 				// Set up connection handler
-				this.peer.on('connection', (conn) => {
-					console.log('Incoming connection:', conn.peer);
-					this.setupConnection(conn);
-				});
+                                this.peer.on('connection', (conn) => {
+                                        console.log('Incoming connection:', conn.peer);
+                                        this.setupConnection(conn);
+                                });
 
-				this.isHost = true;
-				this.isConnected = true;
-				this.updateUI();
+                                this.isHost = true;
+                                this.isConnected = true;
+                                this.updateUI();
 
-			} catch (error) {
+                                // Allow the host to access the chat immediately
+                                document.getElementById('toggleChat').style.display = 'block';
+
+                        } catch (error) {
 				console.error('Failed to host lobby:', error);
 				if (this.peer) this.peer.destroy();
 				this.showCustomAlert(`Failed to create lobby: ${error}`);
@@ -1174,7 +1192,7 @@
             // you'd have a server to map codes to full peer IDs.
             // For this demo, we'll assume the full peer ID is available
             // This is a limitation of the current implementation
-            return lobbyCode.toLowerCase();
+            return lobbyCode.trim();
         }
 
         setupConnection(conn) {
@@ -1219,10 +1237,10 @@
             });
         }
 		
-		findHostPeerId(lobbyCode) {
+        findHostPeerId(lobbyCode) {
             // In a real implementation, you'd look up the peer ID from the lobby code
             // For this demo, we'll just use the lobby code directly (since we're not using a server)
-            return lobbyCode.toLowerCase() + '0000'.substring(0, 6 - lobbyCode.length);
+            return lobbyCode.trim();
         }
 
         joinRandomLobby() {
@@ -1231,20 +1249,20 @@
 
         async joinLobby() {
             const playerName = document.getElementById('playerName').value.trim();
-            const lobbyCode = document.getElementById('lobbyCode').value.trim().toUpperCase();
-            
+            const lobbyCodeInput = document.getElementById('lobbyCode').value.trim();
+
             if (!playerName) {
                 this.showCustomAlert('Please enter your name first!');
                 return;
             }
-            
-            if (!lobbyCode || lobbyCode.length < 6) {
-                this.showCustomAlert('Please enter a valid 6-character lobby code!');
+
+            if (!lobbyCodeInput) {
+                this.showCustomAlert('Please enter a lobby code!');
                 return;
             }
 
             try {
-                console.log('Joining lobby with code:', lobbyCode);
+                console.log('Joining lobby with code:', lobbyCodeInput);
                 
                 // Check if PeerJS is available
                 if (typeof Peer === 'undefined') {
@@ -1290,14 +1308,13 @@
                 });
 
                 this.playerName = playerName;
-                this.lobbyCode = lobbyCode;
                 this.isHost = false;
                 this.playerRole = 'guest';
 
                 // Convert lobby code back to host peer ID
                 //const hostPeerId = this.lobbyCodeToPeerId(lobbyCode);
-				const hostPeerId = document.getElementById('lobbyCode').value.trim(); // Expect full ID
-				console.log("Connecting to:", hostPeerId); // Debug log
+                                const hostPeerId = lobbyCodeInput; // Expect full ID
+                                console.log("Connecting to:", hostPeerId); // Debug log
 
                 // Connect to host
                 const conn = this.peer.connect(hostPeerId, {
@@ -1346,9 +1363,10 @@
                     status: 'connected'
                 });
 
+                this.lobbyCode = hostPeerId;
                 this.isConnected = true;
                 this.updateUI();
-                this.showCustomAlert(`Successfully joined lobby: ${lobbyCode}`, 'Success');
+                this.showCustomAlert(`Successfully joined lobby: ${hostPeerId}`, 'Success');
                 
                 // Show chat controls
                 document.getElementById('toggleChat').style.display = 'block';
