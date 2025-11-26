@@ -1,0 +1,2416 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>SVG Tools Studio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Google Font für modernen Look -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet" />
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-dark: #050816;
+      --bg-card: rgba(15, 23, 42, 0.9);
+      --bg-card-solid: #0f172a;
+      --accent: #6366f1;
+      --accent-soft: rgba(99, 102, 241, 0.2);
+      --accent-2: #22d3ee;
+      --accent-3: #22c55e;
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --border-subtle: rgba(148, 163, 184, 0.2);
+      --radius-xl: 24px;
+      --shadow-soft: 0 20px 40px rgba(15, 23, 42, 0.8);
+      --transition-fast: 0.18s ease;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text-main);
+      background: radial-gradient(circle at top, #1e293b 0, #020617 50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Kreativer Hintergrund mit Blur-Bubbles */
+    .bg-orb {
+      position: fixed;
+      border-radius: 999px;
+      filter: blur(70px);
+      opacity: 0.6;
+      z-index: -2;
+    }
+
+    .bg-orb-1 {
+      width: 420px;
+      height: 420px;
+      background: radial-gradient(circle at 30% 30%, #4f46e5, transparent 60%);
+      top: -80px;
+      left: -60px;
+    }
+
+    .bg-orb-2 {
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle at 70% 40%, #22d3ee, transparent 60%);
+      bottom: -120px;
+      right: -140px;
+    }
+
+    .bg-orb-3 {
+      width: 380px;
+      height: 380px;
+      background: radial-gradient(circle at 50% 50%, #f97316, transparent 60%);
+      bottom: 10%;
+      left: 10%;
+      opacity: 0.35;
+    }
+
+    .noise-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.12'/%3E%3C/svg%3E");
+      mix-blend-mode: soft-light;
+      z-index: -1;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 1240px;
+      border-radius: var(--radius-xl);
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.9));
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      box-shadow: var(--shadow-soft);
+      padding: 24px;
+      backdrop-filter: blur(22px) saturate(140%);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    @media (min-width: 900px) {
+      .app-shell {
+        padding: 26px 30px;
+      }
+    }
+
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.2), rgba(15, 23, 42, 0.9));
+      color: var(--text-muted);
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent-2), var(--accent));
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.9);
+    }
+
+    h1 {
+      font-size: clamp(26px, 2.5vw + 16px, 34px);
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h1 span.highlight {
+      background: linear-gradient(120deg, #a5b4fc, #22d3ee);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      max-width: 560px;
+    }
+
+    .header-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-end;
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    .pill-meta {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(15, 23, 42, 0.7);
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .pill-meta strong {
+      color: var(--accent-2);
+      font-weight: 600;
+    }
+
+    .pill-meta small {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Body layout: tools sidebar + content */
+    .app-body {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .tool-sidebar {
+      width: 72px;
+      border-radius: 18px;
+      background: radial-gradient(circle at top left, rgba(30, 64, 175, 0.5), rgba(15, 23, 42, 0.96));
+      border: 1px solid rgba(30, 64, 175, 0.8);
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .tool-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #22d3ee, #6366f1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 25px rgba(59, 130, 246, 0.8);
+      color: white;
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: 0.06em;
+    }
+
+    .tool-divider {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.5), transparent);
+      margin: 4px 0 2px;
+    }
+
+    .tool-tab {
+      width: 100%;
+      border-radius: 16px;
+      padding: 8px 4px;
+      border: 1px solid transparent;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .tool-tab-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .tool-tab span.label {
+      font-size: 9px;
+      opacity: 0.9;
+    }
+
+    .tool-tab.active {
+      background: radial-gradient(circle at top left, rgba(34, 211, 238, 0.2), rgba(15, 23, 42, 0.95));
+      border-color: rgba(34, 211, 238, 0.9);
+      color: #e5e7eb;
+      transform: translateY(-1px);
+      box-shadow: 0 10px 30px rgba(56, 189, 248, 0.7);
+    }
+
+    .tool-tab.active .tool-tab-icon {
+      border-color: rgba(56, 189, 248, 0.9);
+      background: radial-gradient(circle at 30% 30%, rgba(56, 189, 248, 0.6), rgba(59, 130, 246, 1));
+    }
+
+    .tool-content {
+      border-radius: 20px;
+      border: 1px solid rgba(30, 64, 175, 0.6);
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.98));
+      padding: 14px 16px;
+    }
+
+    @media (max-width: 880px) {
+      .app-body {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .tool-sidebar {
+        flex-direction: row;
+        width: 100%;
+        height: auto;
+        justify-content: center;
+      }
+      .tool-content {
+        padding: 10px 8px;
+      }
+    }
+
+    /* Shared card styles */
+    .card {
+      background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.18), transparent 55%), var(--bg-card);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-subtle);
+      padding: 18px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), transparent 55%);
+      mix-blend-mode: soft-light;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-fast);
+    }
+
+    .card:hover::before {
+      opacity: 1;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      gap: 8px;
+    }
+
+    .card-header h2 {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-header h2::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: radial-gradient(circle, var(--accent), transparent 70%);
+      box-shadow: 0 0 16px rgba(94, 234, 212, 0.7);
+    }
+
+    .card-header span.sub {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* --- TOOL 1: SVG -> PNG (bestehendes Layout) --- */
+
+    #tool-svg2png .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr);
+      gap: 20px;
+    }
+
+    @media (max-width: 880px) {
+      #tool-svg2png .layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .dropzone {
+      border-radius: 18px;
+      border: 1px dashed rgba(148, 163, 184, 0.55);
+      background: radial-gradient(circle at top, rgba(30, 64, 175, 0.3), rgba(15, 23, 42, 0.98));
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+    }
+
+    .dropzone::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top, rgba(96, 165, 250, 0.35), transparent 55%);
+      opacity: 0.4;
+      mix-blend-mode: screen;
+      pointer-events: none;
+    }
+
+    .dropzone.dragover {
+      border-color: var(--accent-2);
+      transform: translateY(-1px) scale(1.01);
+      box-shadow: 0 14px 40px rgba(34, 211, 238, 0.35);
+      background: radial-gradient(circle at top, rgba(56, 189, 248, 0.4), rgba(15, 23, 42, 0.98));
+    }
+
+    .dropzone-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .drop-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      border: 1px solid rgba(129, 140, 248, 0.7);
+      background: radial-gradient(circle at top left, rgba(129, 140, 248, 0.35), rgba(15, 23, 42, 1));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 14px 38px rgba(129, 140, 248, 0.8);
+    }
+
+    .drop-icon svg {
+      width: 28px;
+      height: 28px;
+      opacity: 0.9;
+    }
+
+    .drop-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .drop-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .drop-sub strong {
+      color: #e5e7eb;
+      font-weight: 500;
+    }
+
+    .drop-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 6px;
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.9);
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #e5e7eb;
+      transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast), opacity var(--transition-fast);
+    }
+
+    .btn-primary {
+      border-color: rgba(94, 234, 212, 0.9);
+      background: radial-gradient(circle at top left, rgba(34, 211, 238, 0.3), rgba(37, 99, 235, 1));
+      box-shadow: 0 12px 35px rgba(34, 211, 238, 0.6);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 45px rgba(34, 211, 238, 0.8);
+      border-color: rgba(94, 234, 212, 1);
+    }
+
+    .btn-ghost {
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    .btn-ghost:hover {
+      background: rgba(30, 64, 175, 0.7);
+    }
+
+    .btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .hint-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      gap: 8px;
+    }
+
+    .hint-row span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hint-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #22c55e, #a3e635);
+      box-shadow: 0 0 14px rgba(22, 163, 74, 0.8);
+    }
+
+    .badge-mini {
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      padding: 3px 8px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      opacity: 0.85;
+    }
+
+    .file-list-wrapper {
+      margin-top: 16px;
+      max-height: 290px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .file-list-inner {
+      border-radius: 14px;
+      border: 1px solid rgba(51, 65, 85, 0.7);
+      background: radial-gradient(circle at top left, rgba(15, 118, 110, 0.16), rgba(15, 23, 42, 0.95));
+      padding: 10px;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    .file-row {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 8px;
+      border-radius: 10px;
+      transition: background var(--transition-fast), transform var(--transition-fast), border-color var(--transition-fast);
+      border: 1px solid transparent;
+    }
+
+    .file-row:nth-child(odd) {
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .file-row:nth-child(even) {
+      background: rgba(15, 23, 42, 0.86);
+    }
+
+    .file-row:hover {
+      transform: translateY(-1px);
+      background: radial-gradient(circle at left, rgba(56, 189, 248, 0.16), rgba(15, 23, 42, 0.98));
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    .file-thumb {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: radial-gradient(circle at top left, rgba(129, 140, 248, 0.25), rgba(15, 23, 42, 1));
+      border: 1px solid rgba(129, 140, 248, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: #e5e7eb;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .file-thumb img {
+      max-width: 100%;
+      max-height: 100%;
+      display: block;
+    }
+
+    .file-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .file-name {
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border-radius: 6px;
+      padding: 2px 4px;
+      margin: -2px -4px 0;
+      cursor: text;
+      transition: background 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .file-name[contenteditable="true"]:hover {
+      background: rgba(15, 23, 42, 0.88);
+      box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.5);
+    }
+
+    .file-name.is-editing {
+      background: rgba(15, 23, 42, 0.95);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.8);
+      outline: none;
+    }
+
+    .file-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .file-meta span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .file-status {
+      font-size: 11px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+
+    .file-status.pending {
+      background: rgba(15, 23, 42, 1);
+      color: #e5e7eb;
+      border: 1px dashed rgba(148, 163, 184, 0.7);
+    }
+
+    .file-status.done {
+      background: rgba(22, 163, 74, 0.1);
+      color: #bbf7d0;
+      border: 1px solid rgba(34, 197, 94, 0.9);
+    }
+
+    .file-status.error {
+      background: rgba(239, 68, 68, 0.05);
+      color: #fecaca;
+      border: 1px solid rgba(248, 113, 113, 0.8);
+    }
+
+    .file-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+    }
+
+    .file-status.pending .file-status-dot {
+      background: linear-gradient(135deg, #eab308, #f97316);
+      box-shadow: 0 0 12px rgba(234, 179, 8, 0.8);
+    }
+
+    .file-status.done .file-status-dot {
+      background: linear-gradient(135deg, #22c55e, #4ade80);
+      box-shadow: 0 0 14px rgba(22, 163, 74, 0.9);
+    }
+
+    .file-status.error .file-status-dot {
+      background: linear-gradient(135deg, #ef4444, #fb7185);
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.9);
+    }
+
+    .btn-file-download {
+      font-size: 11px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.92);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background var(--transition-fast), transform var(--transition-fast), border-color var(--transition-fast), opacity var(--transition-fast);
+    }
+
+    .btn-file-download[disabled] {
+      cursor: default;
+      opacity: 0.5;
+    }
+
+    .btn-file-download:not([disabled]):hover {
+      background: rgba(37, 99, 235, 0.9);
+      border-color: rgba(129, 140, 248, 1);
+      transform: translateY(-0.5px);
+    }
+
+    .summary-card {
+      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.4), transparent 60%), var(--bg-card-solid);
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(15, 23, 42, 1);
+      padding: 18px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .summary-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: conic-gradient(from 130deg, rgba(56, 189, 248, 0.18), transparent, rgba(129, 140, 248, 0.18), transparent);
+      mix-blend-mode: soft-light;
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    .summary-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .stats-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .stat-chip {
+      flex: 1 1 120px;
+      min-width: 0;
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.96));
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .stat-value span.unit {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .stat-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .conversion-bar {
+      position: relative;
+      border-radius: 999px;
+      height: 8px;
+      overflow: hidden;
+      background: rgba(15, 23, 42, 1);
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      margin-top: 2px;
+    }
+
+    .conversion-bar-fill {
+      position: absolute;
+      inset: 0;
+      transform-origin: left;
+      transform: scaleX(0);
+      transition: transform 0.25s ease-out;
+      background: linear-gradient(90deg, #22c55e, #22d3ee, #6366f1);
+    }
+
+    .summary-bottom-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .summary-bottom-row small {
+      font-size: 11px;
+      color: var(--text-muted);
+      max-width: 280px;
+    }
+
+    .btn-lg {
+      padding: 9px 18px;
+      font-size: 13px;
+      border-radius: 999px;
+      border-width: 1px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: radial-gradient(circle at top left, rgba(34, 211, 238, 0.12), rgba(37, 99, 235, 1));
+      border-color: rgba(56, 189, 248, 0.9);
+      box-shadow: 0 16px 40px rgba(56, 189, 248, 0.7);
+      cursor: pointer;
+      font-weight: 500;
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast), opacity var(--transition-fast), background var(--transition-fast);
+    }
+
+    .btn-lg:hover:not([disabled]) {
+      transform: translateY(-1px);
+      box-shadow: 0 22px 55px rgba(59, 130, 246, 0.9);
+    }
+
+    .btn-lg[disabled] {
+      opacity: 0.45;
+      cursor: default;
+      box-shadow: none;
+      background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.18), rgba(30, 64, 175, 1));
+      border-color: rgba(75, 85, 99, 0.7);
+    }
+
+    .btn-lg svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .note-row {
+      font-size: 10px;
+      color: var(--text-muted);
+      opacity: 0.9;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .note-row span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dot-accent {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #22d3ee, #0ea5e9);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.9);
+    }
+
+    .note-row a {
+      color: #a5b4fc;
+      text-decoration: none;
+    }
+
+    .note-row a:hover {
+      text-decoration: underline;
+    }
+
+    /* --- TOOL 2: SVG Reworker --- */
+
+    #tool-svg-reworker .reworker-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr);
+      gap: 18px;
+    }
+
+    @media (max-width: 960px) {
+      #tool-svg-reworker .reworker-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .code-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      padding: 16px 16px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .code-header-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .code-header-title span.dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #22d3ee, #6366f1);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.8);
+    }
+
+    .code-chips {
+      display: inline-flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .chip {
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      padding: 3px 8px;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .svg-textarea-wrapper {
+      border-radius: 14px;
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      background: rgba(15, 23, 42, 0.95);
+      padding: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    textarea#svgInput {
+      width: 100%;
+      min-height: 260px;
+      resize: vertical;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #e5e7eb;
+      font-family: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      padding: 6px 0;
+      caret-color: #38bdf8;
+    }
+
+    .code-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    .code-footer span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .indicator-live {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #22c55e, #4ade80);
+      box-shadow: 0 0 14px rgba(22, 163, 74, 0.95);
+    }
+
+    .btn-mini {
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.9);
+      padding: 5px 10px;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      color: #e5e7eb;
+    }
+
+    .btn-mini:hover {
+      background: rgba(30, 64, 175, 0.9);
+    }
+
+    /* Preview side */
+
+    .preview-card {
+      background: #f8fafc;
+      border-radius: 24px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      padding: 14px 12px 12px;
+      display: grid;
+      grid-template-rows: auto auto auto;
+      gap: 10px;
+      color: #0f172a;
+    }
+
+    @media (max-width: 960px) {
+      .preview-card {
+        border-radius: 20px;
+      }
+    }
+
+    .preview-top {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 720px) {
+      .preview-top {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .preview-board {
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      background-image: radial-gradient(#e5e7eb 1px, transparent 0);
+      background-size: 18px 18px;
+      background-color: #ffffff;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .preview-board-inner {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    #svgPreviewContainer svg {
+      max-width: 100%;
+      max-height: 260px;
+      display: block;
+    }
+
+    .preview-theme-toggle {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      display: inline-flex;
+      gap: 4px;
+      background: #f8fafc;
+      border-radius: 999px;
+      padding: 3px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .preview-theme-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 1px solid #cbd5f5;
+      background: #ffffff;
+      cursor: pointer;
+    }
+
+    .preview-theme-dot.dark {
+      background: #020617;
+      border-color: #020617;
+    }
+
+    .preview-settings {
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      padding: 10px 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .settings-row-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #64748b;
+      margin-bottom: 2px;
+    }
+
+    .settings-row-label span.value {
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+    }
+
+    .range {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      outline: none;
+    }
+
+    .range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #2563eb;
+      cursor: pointer;
+      box-shadow: 0 0 0 2px #ffffff;
+    }
+
+    .range::-moz-range-thumb {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #2563eb;
+      cursor: pointer;
+      border: 2px solid #ffffff;
+    }
+
+    .settings-row {
+      margin-bottom: 3px;
+    }
+
+    .settings-linecolor {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .settings-linecolor input[type="color"] {
+      width: 32px;
+      height: 28px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      padding: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .settings-linecolor input[type="text"] {
+      flex: 1;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      padding: 6px 8px;
+      font-size: 11px;
+      font-family: inherit;
+    }
+
+    .settings-grid-buttons {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .btn-pill {
+      border-radius: 999px;
+      border: 1px solid #cbd5e1;
+      padding: 4px 0;
+      font-size: 11px;
+      background: #ffffff;
+      cursor: pointer;
+    }
+
+    .btn-pill.icon {
+      font-size: 10px;
+    }
+
+    .btn-pill.active {
+      background: #eff6ff;
+      border-color: #2563eb;
+      color: #1d4ed8;
+      font-weight: 500;
+    }
+
+    .preview-middle {
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      padding: 10px 10px 8px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+      gap: 8px;
+    }
+
+    @media (max-width: 720px) {
+      .preview-middle {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .color-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .color-row {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 6px;
+      align-items: center;
+    }
+
+    .color-swatch {
+      width: 36px;
+      height: 26px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+    }
+
+    .color-row input[type="text"] {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      padding: 6px 8px;
+      font-size: 11px;
+      font-family: inherit;
+    }
+
+    .preview-bottom {
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .btn-export {
+      border-radius: 999px;
+      padding: 7px 16px;
+      border: none;
+      background: #2563eb;
+      color: #ffffff;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-export.disabled {
+      opacity: 0.5;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    .btn-export svg {
+      width: 14px;
+      height: 14px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Kreative Hintergrund-Elemente -->
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+  <div class="noise-overlay"></div>
+
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="title-group">
+        <div class="badge">
+          <span class="badge-dot"></span>
+          <span>Instant Vector Converter Suite</span>
+        </div>
+        <h1>
+          SVG&nbsp;<span class="highlight">Tools</span>&nbsp;Studio
+        </h1>
+        <p class="subtitle">
+          Ein kleines Toolkit für deine SVGs: konvertiere sie zu PNG oder bearbeite sie live im Browser –
+          Farben anpassen, Größe ändern und direkt als Bild herunterladen.
+        </p>
+      </div>
+      <div class="header-actions">
+        <div class="pill-meta">
+          <strong>Client-side</strong>
+          <small>keine Datei verlässt deinen Browser</small>
+        </div>
+        <div class="pill-meta">
+          <strong>SVG only</strong>
+          <small>maximale Qualität • transparente Hintergründe</small>
+        </div>
+      </div>
+    </header>
+
+    <div class="app-body">
+      <!-- Tools Sidebar -->
+      <aside class="tool-sidebar">
+        <div class="tool-logo">S</div>
+        <div class="tool-divider"></div>
+
+        <button type="button" class="tool-tab active" data-tool="svg2png">
+          <div class="tool-tab-icon">①</div>
+          <span class="label">SVG → PNG</span>
+        </button>
+
+        <button type="button" class="tool-tab" data-tool="svgreworker">
+          <div class="tool-tab-icon">②</div>
+          <span class="label">Reworker</span>
+        </button>
+      </aside>
+
+      <!-- Main tool content -->
+      <div class="tool-content">
+        <!-- TOOL 1: SVG to PNG -->
+        <section id="tool-svg2png">
+          <div class="layout">
+            <!-- Linke Seite: Upload & Liste -->
+            <section class="card">
+              <div class="card-header">
+                <h2>Upload &amp; Übersicht</h2>
+                <span class="sub">Nur SVG-Dateien (Drag &amp; Drop oder Dateiauswahl)</span>
+              </div>
+
+              <div id="dropzone" class="dropzone">
+                <div class="dropzone-inner">
+                  <div class="drop-icon">
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path d="M7.5 17.25C5.42893 17.25 3.75 15.5711 3.75 13.5C3.75 11.68 5.02062 10.1584 6.75 9.81393M17.25 17.25C19.3211 17.25 21 15.5711 21 13.5C21 11.68 19.7294 10.1584 18 9.81393M8.25 12L12 8.25M12 8.25L15.75 12M12 8.25L12 15.75" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="drop-title">Ziehe deine SVGs hierher</div>
+                  <div class="drop-sub">
+                    oder <strong>klicke</strong>, um Dateien auszuwählen<br />
+                    <span style="font-size: 11px; opacity: 0.8;">Mehrere Dateien gleichzeitig möglich</span>
+                  </div>
+                  <div class="drop-actions">
+                    <button id="browseBtn" type="button" class="btn btn-primary">
+                      <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M4 7.5C4 6.67157 4.67157 6 5.5 6H10.379C10.7765 6 11.158 6.15804 11.4393 6.43934L13.5607 8.56066C13.842 8.84196 14.2235 9 14.621 9H18.5C19.3284 9 20 9.67157 20 10.5V16.5C20 17.3284 19.3284 18 18.5 18H5.5C4.67157 18 4 17.3284 4 16.5V7.5Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                      Dateien auswählen
+                    </button>
+                    <button type="button" class="btn btn-ghost" id="clearListBtn">
+                      Liste leeren
+                    </button>
+                  </div>
+                </div>
+                <input id="fileInput" type="file" accept=".svg,image/svg+xml" multiple class="hidden" />
+              </div>
+
+              <div class="hint-row">
+                <span><span class="hint-dot"></span> Konvertierung direkt im Browser (Canvas)</span>
+                <span class="badge-mini">Supported: SVG → PNG</span>
+              </div>
+
+              <div class="file-list-wrapper">
+                <div id="fileListPlaceholder" style="font-size: 12px; color: var(--text-muted); padding: 10px 4px;">
+                  Noch keine Dateien ausgewählt – starte mit einem Drag &amp; Drop oder einem Klick auf „Dateien auswählen“.
+                </div>
+                <div id="fileList" class="file-list-inner hidden"></div>
+              </div>
+            </section>
+
+            <!-- Rechte Seite: Zusammenfassung & Download All -->
+            <section class="summary-card">
+              <div class="summary-inner">
+                <div class="card-header" style="margin-bottom: 8px;">
+                  <h2>Konvertierung &amp; Export</h2>
+                  <span class="sub">Status-Übersicht und Sammeldownload</span>
+                </div>
+
+                <div class="stats-row">
+                  <div class="stat-chip">
+                    <div class="stat-label">SVGs geladen</div>
+                    <div class="stat-value">
+                      <span id="statTotalFiles">0</span>
+                      <span class="unit">files</span>
+                    </div>
+                    <div class="stat-sub" id="statTotalFilesSub">Bereit für deinen ersten Upload</div>
+                  </div>
+                  <div class="stat-chip">
+                    <div class="stat-label">Erfolgreich konvertiert</div>
+                    <div class="stat-value">
+                      <span id="statConverted">0</span>
+                      <span class="unit">png</span>
+                    </div>
+                    <div class="conversion-bar">
+                      <div id="conversionBarFill" class="conversion-bar-fill"></div>
+                    </div>
+                    <div class="stat-sub" id="statConvertedSub">Noch keine Konvertierungen</div>
+                  </div>
+                  <div class="stat-chip">
+                    <div class="stat-label">Fehler / Nicht unterstützt</div>
+                    <div class="stat-value">
+                      <span id="statErrors">0</span>
+                      <span class="unit">files</span>
+                    </div>
+                    <div class="stat-sub" id="statErrorsSub">Dateien mit Problemen</div>
+                  </div>
+                </div>
+
+                <div class="summary-bottom-row">
+                  <small id="downloadHint">
+                    Lade alle generierten PNG-Dateien als einzelne Downloads herunter.
+                    Je nach Browser kann ein kurzer Popup-Hinweis erscheinen.
+                  </small>
+                  <button id="downloadAllBtn" type="button" class="btn-lg" disabled>
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path d="M12 4V15M12 15L8.5 11.5M12 15L15.5 11.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M5 16.75V17.5C5 18.8807 6.11929 20 7.5 20H16.5C17.8807 20 19 18.8807 19 17.5V16.75" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                    Download all PNGs
+                  </button>
+                </div>
+
+                <div class="note-row">
+                  <span>
+                    <span class="dot-accent"></span>
+                    Transparenz bleibt erhalten, Größe wird aus dem SVG übernommen (falls verfügbar).
+                  </span>
+                  <span>
+                    Tipp: Nutze optimierte SVGs für beste Qualität.
+                  </span>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- TOOL 2: SVG Reworker -->
+        <section id="tool-svg-reworker" class="hidden">
+          <div class="reworker-layout">
+            <!-- Code side -->
+            <section class="code-card">
+              <div class="code-header">
+                <div class="code-header-title">
+                  <span class="dot"></span>
+                  <span>SVG Code</span>
+                </div>
+                <div class="code-chips">
+                  <div class="chip">Live Preview</div>
+                  <div class="chip">Color Remap</div>
+                </div>
+              </div>
+
+              <div class="svg-textarea-wrapper">
+                <textarea id="svgInput" spellcheck="false" placeholder="<svg ...>Dein SVG-Code hier"></textarea>
+              </div>
+
+              <div class="code-footer">
+                <span>
+                  <span class="indicator-live"></span>
+                  Änderungen erscheinen sofort rechts im Preview.
+                </span>
+                <button type="button" id="btnPasteClipboard" class="btn-mini">SVG aus Zwischenablage</button>
+              </div>
+            </section>
+
+            <!-- Preview & tools side -->
+            <section class="preview-card">
+              <div class="preview-top">
+                <div class="preview-board" id="previewBoard">
+                  <div class="preview-theme-toggle">
+                    <button type="button" class="preview-theme-dot" data-theme="light"></button>
+                    <button type="button" class="preview-theme-dot dark" data-theme="dark"></button>
+                  </div>
+                  <div class="preview-board-inner">
+                    <div id="svgPreviewContainer">
+                      <!-- Rendered SVG goes here -->
+                    </div>
+                  </div>
+                </div>
+
+                <div class="preview-settings">
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <span>Icon Size</span>
+                      <span class="value" id="labelIconSize">200px</span>
+                    </div>
+                    <input type="range" min="80" max="260" value="200" id="rangeIconSize" class="range" />
+                  </div>
+
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <span>Padding</span>
+                      <span class="value" id="labelPadding">0%</span>
+                    </div>
+                    <input type="range" min="0" max="20" value="0" id="rangePadding" class="range" />
+                  </div>
+
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <span>Rotation</span>
+                      <span class="value" id="labelRotation">0°</span>
+                    </div>
+                    <input type="range" min="0" max="360" value="0" id="rangeRotation" class="range" />
+                  </div>
+
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <span>Line Color</span>
+                    </div>
+                    <div class="settings-linecolor">
+                      <input type="color" id="lineColorPicker" value="#000000" />
+                      <input type="text" id="lineColorInput" value="#000000" />
+                    </div>
+                  </div>
+
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <span>Flip / Mirror</span>
+                    </div>
+                    <div class="settings-grid-buttons">
+                      <button type="button" class="btn-pill icon" data-flip="none">·</button>
+                      <button type="button" class="btn-pill icon" data-flip="h">⇋</button>
+                      <button type="button" class="btn-pill icon" data-flip="v">⇅</button>
+                      <button type="button" class="btn-pill icon" data-flip="hv">⤡</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="preview-middle">
+                <div>
+                  <div class="settings-row-label">
+                    <span>Farben im SVG</span>
+                    <span class="value" id="labelColorCount">0</span>
+                  </div>
+                  <div id="colorList" class="color-list">
+                    <!-- Colors -->
+                  </div>
+                </div>
+                <div>
+                  <div class="settings-row-label">
+                    <span>BG Shape</span>
+                  </div>
+                  <div class="settings-grid-buttons" style="margin-bottom:6px;">
+                    <button type="button" class="btn-pill icon active" data-bgshape="none">⋯</button>
+                    <button type="button" class="btn-pill icon" data-bgshape="grid">▢</button>
+                    <button type="button" class="btn-pill icon" data-bgshape="circle">◯</button>
+                    <button type="button" class="btn-pill icon" data-bgshape="rounded">⬚</button>
+                  </div>
+
+                  <div class="settings-row">
+                    <div class="settings-row-label">
+                      <span>Trace Width (Stroke)</span>
+                      <span class="value" id="labelStroke">0%</span>
+                    </div>
+                    <input type="range" min="0" max="40" value="0" id="rangeStroke" class="range" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="preview-bottom">
+                <span id="previewInfo">Füge links SVG-Code ein, um eine Vorschau zu sehen.</span>
+                <button type="button" id="btnDownloadPng" class="btn-export disabled">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 4V15M12 15L8.5 11.5M12 15L15.5 11.5" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M5 16.75V17.5C5 18.8807 6.11929 20 7.5 20H16.5C17.8807 20 19 18.8807 19 17.5V16.75" stroke="white" stroke-width="1.7" stroke-linecap="round"/>
+                  </svg>
+                  Download PNG
+                </button>
+              </div>
+            </section>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      /* ---------- Tool switching ---------- */
+      const toolTabs = document.querySelectorAll(".tool-tab");
+      const toolSvg2Png = document.getElementById("tool-svg2png");
+      const toolSvgReworker = document.getElementById("tool-svg-reworker");
+
+      toolTabs.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          toolTabs.forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          const tool = btn.dataset.tool;
+          if (tool === "svg2png") {
+            toolSvg2Png.classList.remove("hidden");
+            toolSvgReworker.classList.add("hidden");
+          } else {
+            toolSvg2Png.classList.add("hidden");
+            toolSvgReworker.classList.remove("hidden");
+          }
+        });
+      });
+
+      /* ---------- TOOL 1: SVG -> PNG ---------- */
+      const dropzone = document.getElementById("dropzone");
+      const fileInput = document.getElementById("fileInput");
+      const browseBtn = document.getElementById("browseBtn");
+      const clearListBtn = document.getElementById("clearListBtn");
+      const fileListEl = document.getElementById("fileList");
+      const fileListPlaceholder = document.getElementById("fileListPlaceholder");
+      const downloadAllBtn = document.getElementById("downloadAllBtn");
+
+      const statTotalFiles = document.getElementById("statTotalFiles");
+      const statTotalFilesSub = document.getElementById("statTotalFilesSub");
+      const statConverted = document.getElementById("statConverted");
+      const statConvertedSub = document.getElementById("statConvertedSub");
+      const statErrors = document.getElementById("statErrors");
+      const statErrorsSub = document.getElementById("statErrorsSub");
+      const conversionBarFill = document.getElementById("conversionBarFill");
+      const downloadHint = document.getElementById("downloadHint");
+
+      const items = []; // { id, file, name, displayName, size, status, error, pngBlobUrl, pngBlob, previewUrl }
+
+      let nextId = 1;
+
+      function humanFileSize(bytes) {
+        if (bytes === 0) return "0 B";
+        const k = 1024;
+        const sizes = ["B", "KB", "MB", "GB"];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        const value = bytes / Math.pow(k, i);
+        return value.toFixed(value >= 10 || i === 0 ? 0 : 1) + " " + sizes[i];
+      }
+
+      function updateStats() {
+        const total = items.length;
+        const converted = items.filter((i) => i.status === "done").length;
+        const errors = items.filter((i) => i.status === "error").length;
+
+        statTotalFiles.textContent = total;
+        statConverted.textContent = converted;
+        statErrors.textContent = errors;
+
+        if (total === 0) {
+          statTotalFilesSub.textContent = "Bereit für deinen ersten Upload";
+          statConvertedSub.textContent = "Noch keine Konvertierungen";
+          statErrorsSub.textContent = "Dateien mit Problemen";
+          conversionBarFill.style.transform = "scaleX(0)";
+        } else {
+          statTotalFilesSub.textContent = total === 1
+            ? "1 SVG in der Warteschlange"
+            : total + " SVG-Dateien in der Warteschlange";
+
+          const progress = converted / total;
+          conversionBarFill.style.transform = "scaleX(" + progress + ")";
+
+          statConvertedSub.textContent = converted === 0
+            ? "Noch keine konvertierten PNGs"
+            : converted + " von " + total + " erfolgreich";
+
+          statErrorsSub.textContent = errors === 0
+            ? "Keine Fehler – nice!"
+            : errors + " Datei(en) konnten nicht konvertiert werden";
+        }
+
+        downloadAllBtn.disabled = !(total > 0 && converted > 0);
+
+        if (total > 0 && converted > 0) {
+          downloadHint.textContent =
+            "Alles bereit – klicke auf „Download all PNGs“, um alle generierten PNGs auf einmal zu speichern.";
+        } else if (total > 0 && converted === 0) {
+          downloadHint.textContent =
+            "Die Konvertierung läuft noch. Sobald PNGs fertig sind, kannst du sie alle auf einmal herunterladen.";
+        } else {
+          downloadHint.textContent =
+            "Lade zuerst deine SVG-Dateien hoch. Danach kannst du alle generierten PNGs mit einem Klick herunterladen.";
+        }
+      }
+
+      function attachEditableNameBehavior(nameEl, item) {
+        nameEl.addEventListener("focus", function () {
+          nameEl.classList.add("is-editing");
+          const range = document.createRange();
+          const sel = window.getSelection();
+          range.selectNodeContents(nameEl);
+          range.collapse(false);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        });
+
+        nameEl.addEventListener("blur", function () {
+          nameEl.classList.remove("is-editing");
+          const value = (nameEl.textContent || "").trim();
+          if (!value) {
+            nameEl.textContent = item.displayName;
+            return;
+          }
+          item.displayName = value;
+        });
+
+        nameEl.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            nameEl.blur();
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            nameEl.textContent = item.displayName;
+            nameEl.blur();
+          }
+        });
+      }
+
+      function createFileRow(item) {
+        const row = document.createElement("div");
+        row.className = "file-row";
+        row.dataset.id = item.id;
+
+        const thumb = document.createElement("div");
+        thumb.className = "file-thumb";
+        thumb.textContent = "SVG";
+
+        const info = document.createElement("div");
+        info.className = "file-info";
+
+        const nameEl = document.createElement("div");
+        nameEl.className = "file-name";
+        nameEl.contentEditable = "true";
+        nameEl.spellcheck = false;
+        nameEl.title = "Name ändern (Enter zum Bestätigen, Esc zum Abbrechen)";
+        nameEl.textContent = item.displayName;
+
+        attachEditableNameBehavior(nameEl, item);
+
+        const metaEl = document.createElement("div");
+        metaEl.className = "file-meta";
+
+        const sizeSpan = document.createElement("span");
+        sizeSpan.innerHTML = "<span style='font-size:10px;opacity:0.85;'>Größe:</span> " + humanFileSize(item.size);
+
+        const typeSpan = document.createElement("span");
+        typeSpan.innerHTML = "<span style='font-size:10px;opacity:0.85;'>Typ:</span> SVG";
+
+        metaEl.appendChild(sizeSpan);
+        metaEl.appendChild(typeSpan);
+
+        info.appendChild(nameEl);
+        info.appendChild(metaEl);
+
+        const rightBox = document.createElement("div");
+        rightBox.style.display = "flex";
+        rightBox.style.flexDirection = "column";
+        rightBox.style.alignItems = "flex-end";
+        rightBox.style.gap = "6px";
+
+        const statusEl = document.createElement("div");
+        statusEl.className = "file-status pending";
+        statusEl.innerHTML =
+          "<span class='file-status-dot'></span><span class='file-status-text'>wird vorbereitet...</span>";
+
+        const downloadBtn = document.createElement("button");
+        downloadBtn.className = "btn-file-download";
+        downloadBtn.type = "button";
+        downloadBtn.disabled = true;
+        downloadBtn.innerHTML =
+          "<svg viewBox='0 0 24 24' fill='none'><path d='M12 4V15M12 15L8.5 11.5M12 15L15.5 11.5' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/><path d='M5 16.75V17.5C5 18.8807 6.11929 20 7.5 20H16.5C17.8807 20 19 18.8807 19 17.5V16.75' stroke='white' stroke-width='1.6' stroke-linecap='round'/></svg><span>PNG</span>";
+
+        downloadBtn.addEventListener("click", function () {
+          if (!item.pngBlobUrl) return;
+          const a = document.createElement("a");
+          a.href = item.pngBlobUrl;
+          const base = (item.displayName || "image").replace(/\.png$/i, "");
+          a.download = base + ".png";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        });
+
+        rightBox.appendChild(statusEl);
+        rightBox.appendChild(downloadBtn);
+
+        row.appendChild(thumb);
+        row.appendChild(info);
+        row.appendChild(rightBox);
+
+        item.dom = { row, thumb, statusEl, downloadBtn, nameEl };
+
+        return row;
+      }
+
+      function updateFileRowStatus(item, status, errorMsg) {
+        item.status = status;
+        const { statusEl, downloadBtn, thumb } = item.dom;
+
+        statusEl.classList.remove("pending", "done", "error");
+
+        if (status === "pending") {
+          statusEl.classList.add("pending");
+          statusEl.innerHTML =
+            "<span class='file-status-dot'></span><span class='file-status-text'>wird konvertiert...</span>";
+          downloadBtn.disabled = true;
+        } else if (status === "done") {
+          statusEl.classList.add("done");
+          statusEl.innerHTML =
+            "<span class='file-status-dot'></span><span class='file-status-text'>fertig</span>";
+          downloadBtn.disabled = false;
+
+          if (item.previewUrl) {
+            const img = document.createElement("img");
+            img.src = item.previewUrl;
+            thumb.textContent = "";
+            thumb.appendChild(img);
+          }
+        } else if (status === "error") {
+          statusEl.classList.add("error");
+          statusEl.innerHTML =
+            "<span class='file-status-dot'></span><span class='file-status-text'>Fehler: " +
+            (errorMsg || "Konvertierung fehlgeschlagen") +
+            "</span>";
+          downloadBtn.disabled = true;
+        }
+
+        updateStats();
+      }
+
+      function isSvgFile(file) {
+        const isByType = file.type === "image/svg+xml";
+        const isByName = /\.svg$/i.test(file.name || "");
+        return isByType || isByName;
+      }
+
+      function addFiles(files) {
+        const validFiles = [];
+
+        Array.from(files).forEach((file) => {
+          if (!isSvgFile(file)) {
+            return;
+          }
+          const id = nextId++;
+          const originalName = file.name || "unnamed.svg";
+          const baseName = originalName.replace(/\.svg$/i, "") || "unnamed";
+          const item = {
+            id,
+            file,
+            name: originalName,
+            displayName: baseName,
+            size: file.size || 0,
+            status: "pending",
+            error: null,
+            pngBlobUrl: null,
+            pngBlob: null,
+            previewUrl: null,
+            dom: null,
+          };
+          items.push(item);
+          validFiles.push(item);
+        });
+
+        if (validFiles.length === 0) {
+          return;
+        }
+
+        fileListPlaceholder.classList.add("hidden");
+        fileListEl.classList.remove("hidden");
+
+        validFiles.forEach((item) => {
+          const row = createFileRow(item);
+          fileListEl.appendChild(row);
+        });
+
+        updateStats();
+
+        validFiles.forEach((item) => {
+          processItem(item);
+        });
+      }
+
+      function extractSizeFromSvg(svgText) {
+        const size = { width: null, height: null };
+
+        const widthMatch = svgText.match(/width="([\d.]+)(px)?"/i);
+        const heightMatch = svgText.match(/height="([\d.]+)(px)?"/i);
+        if (widthMatch && heightMatch) {
+          size.width = parseFloat(widthMatch[1]);
+          size.height = parseFloat(heightMatch[1]);
+          return size;
+        }
+
+        const viewBoxMatch = svgText.match(/viewBox="([\d.\s-]+)"/i);
+        if (viewBoxMatch) {
+          const parts = viewBoxMatch[1].trim().split(/\s+/);
+          if (parts.length === 4) {
+            const w = parseFloat(parts[2]);
+            const h = parseFloat(parts[3]);
+            if (!isNaN(w) && !isNaN(h)) {
+              size.width = w;
+              size.height = h;
+            }
+          }
+        }
+
+        return size;
+      }
+
+      function processItem(item) {
+        updateFileRowStatus(item, "pending");
+
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+          try {
+            const svgText = e.target.result;
+            const size = extractSizeFromSvg(svgText);
+
+            const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+
+            const img = new Image();
+            img.onload = function () {
+              try {
+                const canvas = document.createElement("canvas");
+                const ctx = canvas.getContext("2d");
+
+                let w = img.naturalWidth || img.width;
+                let h = img.naturalHeight || img.height;
+
+                if (!w || !h) {
+                  if (size.width && size.height) {
+                    w = size.width;
+                    h = size.height;
+                  } else {
+                    w = 1024;
+                    h = 1024;
+                  }
+                }
+
+                canvas.width = w;
+                canvas.height = h;
+
+                ctx.clearRect(0, 0, w, h);
+                ctx.drawImage(img, 0, 0, w, h);
+
+                canvas.toBlob(
+                  function (pngBlob) {
+                    if (!pngBlob) {
+                      throw new Error("Canvas toBlob fehlgeschlagen");
+                    }
+                    item.pngBlob = pngBlob;
+                    if (item.pngBlobUrl) {
+                      URL.revokeObjectURL(item.pngBlobUrl);
+                    }
+                    const pngUrl = URL.createObjectURL(pngBlob);
+                    item.pngBlobUrl = pngUrl;
+
+                    const previewCanvas = document.createElement("canvas");
+                    const maxThumb = 36;
+                    const scale = Math.min(maxThumb / w, maxThumb / h, 1);
+                    previewCanvas.width = w * scale;
+                    previewCanvas.height = h * scale;
+                    const pctx = previewCanvas.getContext("2d");
+                    pctx.drawImage(img, 0, 0, previewCanvas.width, previewCanvas.height);
+                    item.previewUrl = previewCanvas.toDataURL("image/png");
+
+                    updateFileRowStatus(item, "done");
+
+                    URL.revokeObjectURL(url);
+                  },
+                  "image/png",
+                  0.95
+                );
+              } catch (err) {
+                console.error(err);
+                updateFileRowStatus(item, "error", "Canvas-Rendering fehlgeschlagen");
+                URL.revokeObjectURL(url);
+              }
+            };
+
+            img.onerror = function () {
+              updateFileRowStatus(item, "error", "SVG konnte nicht geladen werden");
+              URL.revokeObjectURL(url);
+            };
+
+            img.src = url;
+          } catch (err) {
+            console.error(err);
+            updateFileRowStatus(item, "error", "Ungültiges SVG");
+          }
+        };
+
+        reader.onerror = function () {
+          updateFileRowStatus(item, "error", "Datei konnte nicht gelesen werden");
+        };
+
+        reader.readAsText(item.file);
+      }
+
+      function clearAll() {
+        items.forEach((item) => {
+          if (item.pngBlobUrl) {
+            URL.revokeObjectURL(item.pngBlobUrl);
+          }
+          if (item.previewUrl && item.previewUrl.startsWith("blob:")) {
+            URL.revokeObjectURL(item.previewUrl);
+          }
+        });
+        items.length = 0;
+        fileListEl.innerHTML = "";
+        fileListPlaceholder.classList.remove("hidden");
+        fileListEl.classList.add("hidden");
+        updateStats();
+      }
+
+      function downloadAll() {
+        const downloadable = items.filter((i) => i.status === "done" && i.pngBlobUrl);
+        if (downloadable.length === 0) {
+          return;
+        }
+
+        let delay = 0;
+        const step = 120;
+
+        downloadable.forEach((item, index) => {
+          setTimeout(() => {
+            const a = document.createElement("a");
+            a.href = item.pngBlobUrl;
+            const base = (item.displayName || ("image-" + (index + 1))).replace(/\.png$/i, "");
+            a.download = base + ".png";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }, delay);
+          delay += step;
+        });
+      }
+
+      browseBtn.addEventListener("click", function () {
+        fileInput.click();
+      });
+
+      fileInput.addEventListener("change", function (e) {
+        if (!e.target.files) return;
+        addFiles(e.target.files);
+        e.target.value = "";
+      });
+
+      ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+        dropzone.addEventListener(
+          eventName,
+          function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+          },
+          false
+        );
+      });
+
+      ["dragenter", "dragover"].forEach((eventName) => {
+        dropzone.addEventListener(
+          eventName,
+          function () {
+            dropzone.classList.add("dragover");
+          },
+          false
+        );
+      });
+
+      ["dragleave", "drop"].forEach((eventName) => {
+        dropzone.addEventListener(
+          eventName,
+          function () {
+            dropzone.classList.remove("dragover");
+          },
+          false
+        );
+      });
+
+      dropzone.addEventListener("drop", function (e) {
+        const dt = e.dataTransfer;
+        if (!dt) return;
+        const files = dt.files;
+        if (!files || files.length === 0) return;
+        addFiles(files);
+      });
+
+      clearListBtn.addEventListener("click", function () {
+        clearAll();
+      });
+
+      downloadAllBtn.addEventListener("click", function () {
+        if (downloadAllBtn.disabled) return;
+        downloadAll();
+      });
+
+      /* ---------- TOOL 2: SVG REWORKER ---------- */
+
+      const svgInput = document.getElementById("svgInput");
+      const svgPreviewContainer = document.getElementById("svgPreviewContainer");
+      const previewBoard = document.getElementById("previewBoard");
+      const colorListEl = document.getElementById("colorList");
+      const labelColorCount = document.getElementById("labelColorCount");
+      const previewInfo = document.getElementById("previewInfo");
+      const btnDownloadPng = document.getElementById("btnDownloadPng");
+
+      const rangeIconSize = document.getElementById("rangeIconSize");
+      const rangePadding = document.getElementById("rangePadding");
+      const rangeRotation = document.getElementById("rangeRotation");
+      const rangeStroke = document.getElementById("rangeStroke");
+      const labelIconSize = document.getElementById("labelIconSize");
+      const labelPadding = document.getElementById("labelPadding");
+      const labelRotation = document.getElementById("labelRotation");
+      const labelStroke = document.getElementById("labelStroke");
+
+      const lineColorPicker = document.getElementById("lineColorPicker");
+      const lineColorInput = document.getElementById("lineColorInput");
+
+      const btnPasteClipboard = document.getElementById("btnPasteClipboard");
+
+      let baseSvgText = "";
+      let mappedSvgText = "";
+      let colorMap = {};
+      let flipState = "none";
+      let bgShape = "none";
+
+      function extractHexColors(text) {
+        const regex = /#[0-9a-fA-F]{3,8}\b/g;
+        const set = new Set();
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+          set.add(match[0]);
+        }
+        return Array.from(set);
+      }
+
+      function rebuildColorList(colors) {
+        colorListEl.innerHTML = "";
+        colorMap = {};
+        colors.forEach((c) => {
+          colorMap[c] = c;
+          const row = document.createElement("div");
+          row.className = "color-row";
+
+          const sw = document.createElement("div");
+          sw.className = "color-swatch";
+          sw.style.background = c;
+
+          const input = document.createElement("input");
+          input.type = "text";
+          input.value = c;
+          input.dataset.original = c;
+
+          input.addEventListener("input", () => {
+            let v = input.value.trim();
+            if (!v.startsWith("#")) v = "#" + v;
+            if (/^#[0-9a-fA-F]{3,8}$/.test(v)) {
+              colorMap[input.dataset.original] = v;
+              sw.style.background = v;
+              applyMappingAndRender();
+            }
+          });
+
+          row.appendChild(sw);
+          row.appendChild(input);
+          colorListEl.appendChild(row);
+        });
+
+        labelColorCount.textContent = colors.length;
+      }
+
+      function applyMappingAndRender() {
+        if (!baseSvgText.trim()) {
+          svgPreviewContainer.innerHTML = "";
+          previewInfo.textContent = "Füge links SVG-Code ein, um eine Vorschau zu sehen.";
+          btnDownloadPng.classList.add("disabled");
+          return;
+        }
+        let t = baseSvgText;
+        const entries = Object.entries(colorMap);
+        entries.forEach(([orig, mapped]) => {
+          if (!orig || !mapped || orig === mapped) return;
+          const safeOrig = orig.replace(/[#]/g, "\\$&");
+          const re = new RegExp(safeOrig, "gi");
+          t = t.replace(re, mapped);
+        });
+
+        // Stroke-width override
+        const strokePercent = parseInt(rangeStroke.value, 10) || 0;
+        const strokeWidth = strokePercent === 0 ? 0 : Math.max(0.5, (strokePercent / 40) * 6);
+        if (strokeWidth > 0) {
+          const styleBlock =
+            '<style> * { stroke-width: ' + strokeWidth.toFixed(2) + 'px; }</style>';
+          if (t.includes("<svg")) {
+            t = t.replace(/<svg([^>]*)>/i, "<svg$1>" + styleBlock);
+          }
+        }
+
+        mappedSvgText = t;
+        renderSvg();
+      }
+
+      function renderSvg() {
+        svgPreviewContainer.innerHTML = "";
+        if (!mappedSvgText.trim()) {
+          previewInfo.textContent = "Füge links SVG-Code ein, um eine Vorschau zu sehen.";
+          btnDownloadPng.classList.add("disabled");
+          return;
+        }
+
+        try {
+          svgPreviewContainer.innerHTML = mappedSvgText;
+          const svgEl = svgPreviewContainer.querySelector("svg");
+          if (!svgEl) {
+            previewInfo.textContent = "Kein &lt;svg&gt;-Tag erkannt.";
+            btnDownloadPng.classList.add("disabled");
+            return;
+          }
+
+          const iconSize = parseInt(rangeIconSize.value, 10) || 200;
+          svgEl.style.width = iconSize + "px";
+          svgEl.style.height = iconSize + "px";
+
+          const rot = parseInt(rangeRotation.value, 10) || 0;
+          let scaleX = 1;
+          let scaleY = 1;
+          if (flipState === "h" || flipState === "hv") scaleX = -1;
+          if (flipState === "v" || flipState === "hv") scaleY = -1;
+
+          svgEl.style.transform = "scale(" + scaleX + "," + scaleY + ") rotate(" + rot + "deg)";
+          svgEl.style.transformOrigin = "50% 50%";
+
+          const pad = parseInt(rangePadding.value, 10) || 0;
+          previewBoard.style.padding = 20 + pad + "px";
+
+          // line color as CSS override
+          const lineColor = lineColorInput.value.trim();
+          if (/^#[0-9a-fA-F]{3,8}$/.test(lineColor)) {
+            svgEl.style.setProperty("stroke", lineColor);
+          }
+
+          // background shape
+          previewBoard.style.borderRadius = bgShape === "rounded" ? "28px" : "16px";
+          if (bgShape === "grid") {
+            previewBoard.style.backgroundImage = "radial-gradient(#e5e7eb 1px, transparent 0)";
+          } else if (bgShape === "circle") {
+            previewBoard.style.backgroundImage = "none";
+            previewBoard.style.backgroundColor = "#e5f2ff";
+          } else {
+            previewBoard.style.backgroundImage = "radial-gradient(#e5e7eb 1px, transparent 0)";
+            previewBoard.style.backgroundColor = "#ffffff";
+          }
+
+          previewInfo.textContent = "SVG erfolgreich gerendert. Nutze die Regler, um den Look anzupassen.";
+          btnDownloadPng.classList.remove("disabled");
+        } catch (e) {
+          console.error(e);
+          previewInfo.textContent = "Fehler beim Rendern des SVGs.";
+          btnDownloadPng.classList.add("disabled");
+        }
+      }
+
+      function handleSvgInputChange() {
+        baseSvgText = svgInput.value || "";
+        const colors = extractHexColors(baseSvgText);
+        rebuildColorList(colors);
+        applyMappingAndRender();
+      }
+
+      svgInput.addEventListener("input", handleSvgInputChange);
+
+      rangeIconSize.addEventListener("input", () => {
+        labelIconSize.textContent = rangeIconSize.value + "px";
+        renderSvg();
+      });
+
+      rangePadding.addEventListener("input", () => {
+        labelPadding.textContent = rangePadding.value + "%";
+        renderSvg();
+      });
+
+      rangeRotation.addEventListener("input", () => {
+        labelRotation.textContent = rangeRotation.value + "°";
+        renderSvg();
+      });
+
+      rangeStroke.addEventListener("input", () => {
+        labelStroke.textContent = rangeStroke.value + "%";
+        applyMappingAndRender();
+      });
+
+      lineColorPicker.addEventListener("input", () => {
+        lineColorInput.value = lineColorPicker.value;
+        renderSvg();
+      });
+
+      lineColorInput.addEventListener("input", () => {
+        let v = lineColorInput.value.trim();
+        if (!v.startsWith("#")) v = "#" + v;
+        if (/^#[0-9a-fA-F]{3,8}$/.test(v)) {
+          lineColorPicker.value = v;
+          renderSvg();
+        }
+      });
+
+      document.querySelectorAll(".preview-theme-dot").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const theme = btn.dataset.theme;
+          document.querySelectorAll(".preview-theme-dot").forEach((b) => (b.style.outline = "none"));
+          btn.style.outline = "2px solid #2563eb";
+          if (theme === "dark") {
+            previewBoard.style.backgroundColor = "#020617";
+          } else {
+            previewBoard.style.backgroundColor = "#ffffff";
+          }
+          renderSvg();
+        });
+      });
+
+      document.querySelectorAll("[data-flip]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll("[data-flip]").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          flipState = btn.dataset.flip || "none";
+          renderSvg();
+        });
+      });
+
+      document.querySelectorAll("[data-bgshape]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll("[data-bgshape]").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          bgShape = btn.dataset.bgshape || "none";
+          renderSvg();
+        });
+      });
+
+      btnDownloadPng.addEventListener("click", () => {
+        if (btnDownloadPng.classList.contains("disabled")) return;
+        const svgEl = svgPreviewContainer.querySelector("svg");
+        if (!svgEl) return;
+
+        const svgText = new XMLSerializer().serializeToString(svgEl);
+        const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = function () {
+          const canvas = document.createElement("canvas");
+          const w = img.naturalWidth || 1024;
+          const h = img.naturalHeight || 1024;
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          ctx.clearRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          canvas.toBlob(function (pngBlob) {
+            if (!pngBlob) return;
+            const pngUrl = URL.createObjectURL(pngBlob);
+            const a = document.createElement("a");
+            a.href = pngUrl;
+            a.download = "reworked-icon.png";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(pngUrl);
+            URL.revokeObjectURL(url);
+          }, "image/png");
+        };
+        img.onerror = function () {
+          URL.revokeObjectURL(url);
+        };
+        img.src = url;
+      });
+
+      btnPasteClipboard.addEventListener("click", async () => {
+        try {
+          const text = await navigator.clipboard.readText();
+          if (text && text.includes("<svg")) {
+            svgInput.value = text;
+            handleSvgInputChange();
+          }
+        } catch (e) {
+          console.warn("Clipboard not accessible", e);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
