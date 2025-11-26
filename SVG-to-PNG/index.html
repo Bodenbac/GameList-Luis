@@ -8,6 +8,7 @@
   <!-- Google Font für modernen Look -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet" />
 
+  <script src="./imagetracer_v1.2.6.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -33,13 +34,14 @@
 
     body {
       min-height: 100vh;
+      height: 100vh;
       font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--text-main);
       background: radial-gradient(circle at top, #1e293b 0, #020617 50%);
       display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
+      align-items: stretch;
+      justify-content: stretch;
+      padding: 0;
       position: relative;
       overflow-x: hidden;
     }
@@ -88,9 +90,12 @@
     }
 
     .app-shell {
-      width: 100%;
-      max-width: 1240px;
-      border-radius: var(--radius-xl);
+      width: 100vw;
+      min-height: 100vh;
+      height: 100vh;
+      flex: 1;
+      max-width: none;
+      border-radius: 0;
       background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.9));
       border: 1px solid rgba(148, 163, 184, 0.25);
       box-shadow: var(--shadow-soft);
@@ -200,6 +205,7 @@
       grid-template-columns: auto minmax(0, 1fr);
       gap: 18px;
       align-items: stretch;
+      flex: 1;
     }
 
     .tool-sidebar {
@@ -288,6 +294,10 @@
       border: 1px solid rgba(30, 64, 175, 0.6);
       background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.98));
       padding: 14px 16px;
+      height: 100%;
+      min-height: calc(100vh - 200px);
+      display: flex;
+      flex-direction: column;
     }
 
     @media (max-width: 880px) {
@@ -302,6 +312,7 @@
       }
       .tool-content {
         padding: 10px 8px;
+        min-height: auto;
       }
     }
 
@@ -965,6 +976,24 @@
       padding: 8px;
       position: relative;
       overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(51, 65, 85, 0.5);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+    }
+
+    .svg-textarea-wrapper.dragover {
+      border-color: rgba(34, 211, 238, 0.9);
+      box-shadow: 0 12px 28px rgba(34, 211, 238, 0.2), inset 0 0 0 1px rgba(51, 65, 85, 0.5);
+      background: radial-gradient(circle at top left, rgba(34, 211, 238, 0.08), rgba(15, 23, 42, 0.98));
+    }
+
+    .drop-hint {
+      position: absolute;
+      bottom: 10px;
+      right: 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      opacity: 0.8;
+      pointer-events: none;
     }
 
     textarea#svgInput {
@@ -1039,6 +1068,116 @@
       .preview-card {
         border-radius: 20px;
       }
+    }
+
+    /* --- TOOL 3: PNG -> SVG --- */
+    #tool-png2svg .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 20px;
+    }
+
+    .png2svg-preview {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+    }
+
+    .png2svg-box {
+      border-radius: 14px;
+      border: 1px solid rgba(51, 65, 85, 0.8);
+      background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.08), rgba(15, 23, 42, 0.95));
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 260px;
+    }
+
+    .png2svg-box .title {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .png2svg-box .content {
+      flex: 1;
+      border-radius: 12px;
+      border: 1px solid rgba(51, 65, 85, 0.8);
+      background: rgba(2, 6, 23, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      overflow: auto;
+    }
+
+    .png2svg-box img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      display: block;
+      border-radius: 10px;
+    }
+
+    .png2svg-box .svg-output {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+    }
+
+    .png2svg-status {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .png2svg-status .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #22d3ee, #6366f1);
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.8);
+    }
+
+    .png2svg-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .png2svg-settings {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .png2svg-settings label {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .png2svg-settings input.range {
+      flex: 1;
+    }
+
+    .png2svg-box .svg-output svg {
+      width: 100%;
+      height: auto;
+      max-width: 100%;
+      display: block;
     }
 
     .preview-top {
@@ -1341,13 +1480,18 @@
         <div class="tool-divider"></div>
 
         <button type="button" class="tool-tab active" data-tool="svg2png">
-          <div class="tool-tab-icon">①</div>
-          <span class="label">SVG → PNG</span>
+          <div class="tool-tab-icon">1</div>
+          <span class="label">SVG -> PNG</span>
         </button>
 
         <button type="button" class="tool-tab" data-tool="svgreworker">
-          <div class="tool-tab-icon">②</div>
+          <div class="tool-tab-icon">2</div>
           <span class="label">Reworker</span>
+        </button>
+
+        <button type="button" class="tool-tab" data-tool="png2svg">
+          <div class="tool-tab-icon">3</div>
+          <span class="label">PNG -> SVG</span>
         </button>
       </aside>
 
@@ -1485,9 +1629,10 @@
                 </div>
               </div>
 
-              <div class="svg-textarea-wrapper">
-                <textarea id="svgInput" spellcheck="false" placeholder="<svg ...>Dein SVG-Code hier"></textarea>
-              </div>
+                <div class="svg-textarea-wrapper" id="svgDropzone">
+                  <textarea id="svgInput" spellcheck="false" placeholder="<svg ...>Dein SVG-Code hier"></textarea>
+                  <div class="drop-hint">Oder SVG-Datei hier ablegen</div>
+                </div>
 
               <div class="code-footer">
                 <span>
@@ -1606,6 +1751,98 @@
             </section>
           </div>
         </section>
+
+        <!-- TOOL 3: PNG to SVG -->
+        <section id="tool-png2svg" class="hidden">
+          <div class="layout">
+            <section class="card">
+              <div class="card-header">
+                <h2>PNG zu SVG</h2>
+                <span class="sub">Vektorisiere einfache Raster-Grafiken</span>
+              </div>
+
+              <div id="pngDropzone" class="dropzone">
+                <div class="dropzone-inner">
+                  <div class="drop-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                      <path d="M4 17.5C4 18.8807 5.11929 20 6.5 20H17.5C18.8807 20 20 18.8807 20 17.5V9.5C20 8.11929 18.8807 7 17.5 7H6.5C5.11929 7 4 8.11929 4 9.5V17.5Z"/>
+                      <path d="M9.5 10L12 7.5L14.5 10" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M12 7.5V14.5" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                  <div class="drop-title">PNG/JPG/WebP hier ablegen</div>
+                  <div class="drop-sub">Unterstützt klare Grafiken & Logos am besten.</div>
+                  <div class="drop-actions">
+                    <button type="button" class="btn btn-primary" id="btnPngBrowse">
+                      Datei wählen
+                    </button>
+                  </div>
+                </div>
+                <input type="file" id="pngFileInput" accept="image/png,image/jpeg,image/webp" hidden />
+              </div>
+
+              <div class="png2svg-status" id="pngStatus">
+                <span class="dot"></span>
+                <span>Wähle ein PNG oder lege es hier ab.</span>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="card-header">
+                <h2>Preview</h2>
+                <span class="sub">Raster vs. SVG Ergebnis</span>
+              </div>
+
+              <div class="png2svg-preview">
+                <div class="png2svg-box">
+                  <div class="title">Original</div>
+                  <div class="content">
+                    <img id="pngPreviewImg" alt="PNG Vorschau" />
+                  </div>
+                </div>
+                <div class="png2svg-box">
+                  <div class="title">Vektor (SVG)</div>
+                  <div class="content">
+                    <div class="svg-output" id="pngSvgContainer">Noch kein SVG erzeugt.</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="png2svg-settings">
+                <label>
+                  Farben:
+                  <input type="range" id="pngOptColors" min="2" max="24" value="12" step="1" class="range" />
+                  <span id="pngOptColorsVal" style="min-width:28px;text-align:right;color:#e5e7eb;">12</span>
+                </label>
+                <label>
+                  Pfad-Filter:
+                  <input type="range" id="pngOptPathomit" min="0" max="20" value="8" step="1" class="range" />
+                  <span id="pngOptPathomitVal" style="min-width:28px;text-align:right;color:#e5e7eb;">8</span>
+                </label>
+                <label>
+                  Detail:
+                  <input type="range" id="pngOptDetail" min="0.2" max="2" value="1" step="0.1" class="range" />
+                  <span id="pngOptDetailVal" style="min-width:36px;text-align:right;color:#e5e7eb;">1.0</span>
+                </label>
+                <label>
+                  SVG Preview Größe:
+                  <input type="range" id="pngPreviewScale" min="0.3" max="1.5" step="0.1" value="1" class="range" />
+                  <span id="pngPreviewScaleVal" style="min-width:36px;text-align:right;color:#e5e7eb;">1.0x</span>
+                </label>
+              </div>
+
+              <div class="png2svg-actions">
+                <button type="button" class="btn" id="btnClearPng">Zurücksetzen</button>
+                <button type="button" class="btn btn-primary" id="btnDownloadSvg" disabled>SVG herunterladen</button>
+              </div>
+
+              <div class="png2svg-status" style="margin-top:8px;">
+                <span class="dot"></span>
+                <span>Beste Ergebnisse bei kontrastreichen Logos/Icons. Fotos werden sehr grob.</span>
+              </div>
+            </section>
+          </div>
+        </section>
       </div>
     </div>
   </div>
@@ -1616,19 +1853,19 @@
       const toolTabs = document.querySelectorAll(".tool-tab");
       const toolSvg2Png = document.getElementById("tool-svg2png");
       const toolSvgReworker = document.getElementById("tool-svg-reworker");
+      const toolPng2Svg = document.getElementById("tool-png2svg");
 
       toolTabs.forEach((btn) => {
         btn.addEventListener("click", () => {
           toolTabs.forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
           const tool = btn.dataset.tool;
-          if (tool === "svg2png") {
-            toolSvg2Png.classList.remove("hidden");
-            toolSvgReworker.classList.add("hidden");
-          } else {
-            toolSvg2Png.classList.add("hidden");
-            toolSvgReworker.classList.remove("hidden");
-          }
+          toolSvg2Png.classList.add("hidden");
+          toolSvgReworker.classList.add("hidden");
+          toolPng2Svg.classList.add("hidden");
+          if (tool === "svg2png") toolSvg2Png.classList.remove("hidden");
+          if (tool === "svgreworker") toolSvgReworker.classList.remove("hidden");
+          if (tool === "png2svg") toolPng2Svg.classList.remove("hidden");
         });
       });
 
@@ -2124,6 +2361,7 @@
       /* ---------- TOOL 2: SVG REWORKER ---------- */
 
       const svgInput = document.getElementById("svgInput");
+      const svgDropzone = document.getElementById("svgDropzone");
       const svgPreviewContainer = document.getElementById("svgPreviewContainer");
       const previewBoard = document.getElementById("previewBoard");
       const colorListEl = document.getElementById("colorList");
@@ -2287,6 +2525,19 @@
         }
       }
 
+      function loadSvgFile(file) {
+        if (!file || !isSvgFile(file)) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          svgInput.value = e.target?.result || "";
+          handleSvgInputChange();
+        };
+        reader.onerror = function () {
+          console.warn("SVG-Datei konnte nicht gelesen werden");
+        };
+        reader.readAsText(file);
+      }
+
       function handleSvgInputChange() {
         baseSvgText = svgInput.value || "";
         const colors = extractHexColors(baseSvgText);
@@ -2295,6 +2546,36 @@
       }
 
       svgInput.addEventListener("input", handleSvgInputChange);
+
+      if (svgDropzone) {
+        ["dragenter", "dragover", "dragleave", "drop"].forEach((evt) => {
+          svgDropzone.addEventListener(
+            evt,
+            (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            },
+            false
+          );
+        });
+
+        ["dragenter", "dragover"].forEach((evt) => {
+          svgDropzone.addEventListener(evt, () => svgDropzone.classList.add("dragover"), false);
+        });
+
+        ["dragleave", "drop"].forEach((evt) => {
+          svgDropzone.addEventListener(evt, () => svgDropzone.classList.remove("dragover"), false);
+        });
+
+        svgDropzone.addEventListener("drop", (e) => {
+          const files = e.dataTransfer?.files;
+          if (!files || files.length === 0) return;
+          const svgFile = Array.from(files).find((f) => isSvgFile(f));
+          if (svgFile) {
+            loadSvgFile(svgFile);
+          }
+        });
+      }
 
       rangeIconSize.addEventListener("input", () => {
         labelIconSize.textContent = rangeIconSize.value + "px";
@@ -2410,6 +2691,256 @@
           console.warn("Clipboard not accessible", e);
         }
       });
+
+      /* ---------- TOOL 3: PNG -> SVG ---------- */
+      const pngDropzone = document.getElementById("pngDropzone");
+      const pngFileInput = document.getElementById("pngFileInput");
+      const btnPngBrowse = document.getElementById("btnPngBrowse");
+      const btnClearPng = document.getElementById("btnClearPng");
+      const pngStatus = document.getElementById("pngStatus");
+      const pngPreviewImg = document.getElementById("pngPreviewImg");
+      const pngSvgContainer = document.getElementById("pngSvgContainer");
+      const btnDownloadSvg = document.getElementById("btnDownloadSvg");
+      const pngOptColors = document.getElementById("pngOptColors");
+      const pngOptColorsVal = document.getElementById("pngOptColorsVal");
+      const pngOptPathomit = document.getElementById("pngOptPathomit");
+      const pngOptPathomitVal = document.getElementById("pngOptPathomitVal");
+      const pngOptDetail = document.getElementById("pngOptDetail");
+      const pngOptDetailVal = document.getElementById("pngOptDetailVal");
+      const pngPreviewScale = document.getElementById("pngPreviewScale");
+      const pngPreviewScaleVal = document.getElementById("pngPreviewScaleVal");
+
+      let currentSvgString = "";
+      let currentSvgUrl = null;
+      let lastRasterDataUrl = null;
+
+      function setPngStatus(text, kind = "info") {
+        pngStatus.querySelector("span:last-child").textContent = text;
+        if (kind === "error") {
+          pngStatus.style.color = "#fca5a5";
+        } else {
+          pngStatus.style.color = "var(--text-muted)";
+        }
+      }
+
+      function clearCurrentSvgUrl() {
+        if (currentSvgUrl) {
+          URL.revokeObjectURL(currentSvgUrl);
+          currentSvgUrl = null;
+        }
+      }
+
+      function postProcessSvg(svgstr) {
+        if (!svgstr) return "";
+        const rgbRegex = /rgb\((\d{1,3}),(\d{1,3}),(\d{1,3})\)/gi;
+        const toHex = (r, g, b) => {
+          const c = (n) => {
+            const v = Math.max(0, Math.min(255, parseInt(n, 10) || 0));
+            return v.toString(16).padStart(2, "0");
+          };
+          return "#" + c(r) + c(g) + c(b);
+        };
+        let out = svgstr.replace(rgbRegex, (_, r, g, b) => toHex(r, g, b));
+        out = out.replace(/\s{2,}/g, " ");
+        return out;
+      }
+
+      function getTraceOptions() {
+        const colors = parseInt(pngOptColors?.value || "12", 10) || 12;
+        const pathomit = parseInt(pngOptPathomit?.value || "8", 10) || 8;
+        const detail = parseFloat(pngOptDetail?.value || "1") || 1;
+        return {
+          ltres: detail,
+          qtres: detail,
+          numberofcolors: colors,
+          pathomit: pathomit,
+          linefilter: true,
+          blur: 0
+        };
+      }
+
+      function resetPng() {
+        clearCurrentSvgUrl();
+        currentSvgString = "";
+        lastRasterDataUrl = null;
+        pngPreviewImg.removeAttribute("src");
+        pngSvgContainer.textContent = "Noch kein SVG erzeugt.";
+        btnDownloadSvg.disabled = true;
+        setPngStatus("Wähle ein PNG oder lege es hier ab.");
+      }
+
+      function isRasterFile(file) {
+        if (!file) return false;
+        const t = (file.type || "").toLowerCase();
+        return t === "image/png" || t === "image/jpeg" || t === "image/jpg" || t === "image/webp";
+      }
+
+      function traceImage(dataUrl) {
+        if (typeof ImageTracer === "undefined") {
+          setPngStatus("ImageTracer nicht geladen.", "error");
+          return;
+        }
+        setPngStatus("Vektorisierung läuft ...");
+        pngSvgContainer.textContent = "Tracing ...";
+        const options = getTraceOptions();
+        ImageTracer.imageToSVG(
+          dataUrl,
+          function (svgstr) {
+            const processed = postProcessSvg(svgstr || "");
+            currentSvgString = processed;
+            pngSvgContainer.innerHTML = processed || "Kein Ergebnis.";
+            const svgEl = pngSvgContainer.querySelector("svg");
+            if (svgEl) {
+              svgEl.style.maxWidth = "100%";
+              svgEl.style.height = "auto";
+              applySvgScale();
+            }
+            btnDownloadSvg.disabled = !processed;
+            if (svgstr) {
+              clearCurrentSvgUrl();
+              const blob = new Blob([processed], { type: "image/svg+xml;charset=utf-8" });
+              currentSvgUrl = URL.createObjectURL(blob);
+              setPngStatus("Vektorisierung fertig. SVG vereinfacht erstellt.");
+            } else {
+              setPngStatus("Keine SVG-Ausgabe erzeugt.", "error");
+            }
+          },
+          options
+        );
+      }
+
+      function handlePngFile(file) {
+        if (!isRasterFile(file)) {
+          setPngStatus("Nur PNG/JPG/WebP werden unterstützt.", "error");
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const dataUrl = e.target?.result;
+          if (!dataUrl) {
+            setPngStatus("Datei konnte nicht gelesen werden.", "error");
+            return;
+          }
+          lastRasterDataUrl = dataUrl;
+          pngPreviewImg.src = dataUrl;
+          traceImage(dataUrl);
+        };
+        reader.onerror = function () {
+          setPngStatus("Datei konnte nicht gelesen werden.", "error");
+        };
+        reader.readAsDataURL(file);
+      }
+
+      if (btnPngBrowse) {
+        btnPngBrowse.addEventListener("click", () => pngFileInput?.click());
+      }
+
+      if (pngFileInput) {
+        pngFileInput.addEventListener("change", (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (file) handlePngFile(file);
+          pngFileInput.value = "";
+        });
+      }
+
+      if (btnClearPng) {
+        btnClearPng.addEventListener("click", () => resetPng());
+      }
+
+      if (btnDownloadSvg) {
+        btnDownloadSvg.addEventListener("click", () => {
+          if (!currentSvgString) return;
+          if (!currentSvgUrl) {
+            const blob = new Blob([currentSvgString], { type: "image/svg+xml;charset=utf-8" });
+            currentSvgUrl = URL.createObjectURL(blob);
+          }
+          const a = document.createElement("a");
+          a.href = currentSvgUrl;
+          a.download = "vectorized.svg";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        });
+      }
+
+      if (pngDropzone) {
+        ["dragenter", "dragover", "dragleave", "drop"].forEach((evt) => {
+          pngDropzone.addEventListener(
+            evt,
+            (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            },
+            false
+          );
+        });
+
+        ["dragenter", "dragover"].forEach((evt) => {
+          pngDropzone.addEventListener(evt, () => pngDropzone.classList.add("dragover"), false);
+        });
+
+        ["dragleave", "drop"].forEach((evt) => {
+          pngDropzone.addEventListener(evt, () => pngDropzone.classList.remove("dragover"), false);
+        });
+
+        pngDropzone.addEventListener("drop", (e) => {
+          const files = e.dataTransfer?.files;
+          if (!files || files.length === 0) return;
+          const file = Array.from(files).find((f) => isRasterFile(f));
+          if (file) {
+            handlePngFile(file);
+          } else {
+            setPngStatus("Nur PNG/JPG/WebP werden unterstützt.", "error");
+          }
+        });
+      }
+
+      function retraceIfPossible() {
+        if (lastRasterDataUrl) {
+          traceImage(lastRasterDataUrl);
+        }
+      }
+
+      function applySvgScale() {
+        const svgEl = pngSvgContainer.querySelector("svg");
+        if (!svgEl || !pngPreviewScale) return;
+        const scale = parseFloat(pngPreviewScale.value) || 1;
+        svgEl.style.transform = "scale(" + scale + ")";
+        svgEl.style.transformOrigin = "top left";
+        svgEl.style.width = "100%";
+        svgEl.style.height = "auto";
+        svgEl.setAttribute("preserveAspectRatio", "xMidYMid meet");
+      }
+
+      if (pngOptColors && pngOptColorsVal) {
+        pngOptColors.addEventListener("input", () => {
+          pngOptColorsVal.textContent = pngOptColors.value;
+          retraceIfPossible();
+        });
+      }
+
+      if (pngOptPathomit && pngOptPathomitVal) {
+        pngOptPathomit.addEventListener("input", () => {
+          pngOptPathomitVal.textContent = pngOptPathomit.value;
+          retraceIfPossible();
+        });
+      }
+
+      if (pngOptDetail && pngOptDetailVal) {
+        pngOptDetail.addEventListener("input", () => {
+          pngOptDetailVal.textContent = parseFloat(pngOptDetail.value).toFixed(1);
+          retraceIfPossible();
+        });
+      }
+
+      if (pngPreviewScale && pngPreviewScaleVal) {
+        pngPreviewScale.addEventListener("input", () => {
+          pngPreviewScaleVal.textContent = parseFloat(pngPreviewScale.value).toFixed(1) + "x";
+          applySvgScale();
+        });
+      }
+
+      resetPng();
     })();
   </script>
 </body>
