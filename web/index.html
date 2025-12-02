@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlackJack - Modern Casino Experience</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Title Screen -->
+    <div class="overlay-screen title-screen" id="titleScreen">
+        <div class="title-inner">
+            <div class="title-spacer"></div>
+            <div class="title-center">
+                <h1 class="game-title">Modern Blackjack</h1>
+                <div class="title-buttons">
+                    <button class="game-button title-button" id="singleplayerButton">
+                        <span class="button-icon">🎮</span>
+                        <span class="button-text">Singleplayer</span>
+                    </button>
+                    <button class="game-button reset-button title-button" id="multiplayerButton">
+                        <span class="button-icon">🤝</span>
+                        <span class="button-text">Multiplayer</span>
+                    </button>
+                </div>
+            </div>
+            <div class="title-spacer"></div>
+        </div>
+    </div>
+
+    <!-- Multiplayer Lobby Screen -->
+    <div class="overlay-screen lobby-screen hidden" id="lobbyScreen">
+        <div class="title-inner">
+            <div class="title-spacer"></div>
+            <div class="title-center">
+                <h2 class="game-title">Multiplayer</h2>
+                <div class="title-buttons">
+                    <button class="game-button title-button" id="createLobbyButton">
+                        <span class="button-icon">➕</span>
+                        <span class="button-text">Host Lobby</span>
+                    </button>
+                    <button class="game-button reset-button title-button" id="joinLobbyButton">
+                        <span class="button-icon">🔗</span>
+                        <span class="button-text">Join Lobby</span>
+                    </button>
+                    <div class="join-form hidden" id="joinForm">
+                        <div class="join-inputs" id="joinCodeInputs">
+                            <input class="join-input" type="text" maxlength="1" inputmode="numeric" autocomplete="one-time-code" />
+                            <input class="join-input" type="text" maxlength="1" inputmode="numeric" autocomplete="one-time-code" />
+                            <input class="join-input" type="text" maxlength="1" inputmode="numeric" autocomplete="one-time-code" />
+                            <input class="join-input" type="text" maxlength="1" inputmode="numeric" autocomplete="one-time-code" />
+                            <input class="join-input" type="text" maxlength="1" inputmode="numeric" autocomplete="one-time-code" />
+                            <input class="join-input" type="text" maxlength="1" inputmode="numeric" autocomplete="one-time-code" />
+                        </div>
+                        <button class="game-button connect-button" id="connectLobbyButton" disabled>
+                            <span class="button-text">Connect</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="title-spacer"></div>
+        </div>
+    </div>
+
+    <!-- Creating Lobby Screen -->
+    <div class="overlay-screen loading-screen hidden" id="creatingLobbyScreen">
+        <div class="title-inner">
+            <div class="title-spacer"></div>
+            <div class="title-center">
+                <div class="loading-ring">
+                    <div class="ring-segment ring-1"></div>
+                    <div class="ring-segment ring-2"></div>
+                    <div class="ring-segment ring-3"></div>
+                </div>
+                <p class="loading-text" id="loadingMessage">Creating a lobby ...</p>
+            </div>
+            <div class="title-spacer"></div>
+        </div>
+    </div>
+
+    <!-- Lobby Room Screen -->
+    <div class="overlay-screen lobby-room-screen hidden" id="lobbyRoomScreen">
+        <div class="lobby-room">
+            <div class="lobby-header">
+                <div class="lobby-title">
+                    <span class="label">Lobby Code</span>
+                    <div class="code-row">
+                        <span class="lobby-code" id="lobbyCode">------</span>
+                        <button class="game-button code-copy" id="copyLobbyCode">
+                            <span class="button-icon">📋</span>
+                            <span class="button-text">Copy</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="lobby-body">
+                <div class="lobby-users">
+                    <div class="section-title">Connected Players</div>
+                    <ul class="user-list" id="userList">
+                        <!-- dynamic -->
+                    </ul>
+                </div>
+                <div class="lobby-chat">
+                    <div class="section-title">Chat</div>
+                    <div class="chat-window" id="chatWindow"></div>
+                    <div class="chat-input-row">
+                        <input type="text" id="chatInput" placeholder="Type a message..." />
+                        <button class="game-button chat-send" id="sendChat">
+                            <span class="button-text">Send</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dealer Section (Top Half) -->
+    <div class="dealer-section">
+        <div class="dealer-info">
+            <div class="score-container">
+                <div class="score-badge dealer-score">
+                    <span class="score-label">DEALER</span>
+                    <span class="score-value" id="dealerScore">0</span>
+                </div>
+            </div>
+        </div>
+        <div class="card-area dealer-cards" id="dealerCards">
+            <!-- Dealer cards will be rendered here -->
+        </div>
+    </div>
+
+    <!-- Middle Section (Deck & Controls) -->
+    <div class="middle-section">
+        <!-- Deck Stack -->
+        <div class="deck-container" id="deckContainer">
+            <div class="deck-stack">
+                <div class="card-back deck-card deck-card-1"></div>
+                <div class="card-back deck-card deck-card-2"></div>
+                <div class="card-back deck-card deck-card-3"></div>
+                <div class="card-back deck-card deck-card-4"></div>
+                <div class="card-back deck-card deck-card-5"></div>
+            </div>
+            <div class="card-count" id="cardCount">312 cards</div>
+        </div>
+
+        <!-- Control Buttons -->
+        <div class="controls">
+            <button class="game-button" id="hitButton">
+                <span class="button-icon">🎴</span>
+                <span class="button-text">HIT</span>
+            </button>
+            <button class="game-button" id="standButton">
+                <span class="button-icon">✋</span>
+                <span class="button-text">STAND</span>
+            </button>
+            <button class="game-button reset-button" id="resetButton">
+                <span class="button-icon">🔄</span>
+                <span class="button-text">NEW GAME</span>
+            </button>
+        </div>
+
+        <!-- Game Status -->
+        <div class="game-status" id="gameStatus">
+            <div class="status-message"></div>
+        </div>
+    </div>
+
+    <!-- Player Section (Bottom Half) -->
+    <div class="player-section">
+        <div class="card-area player-cards" id="playerCards">
+            <!-- Player cards will be rendered here -->
+        </div>
+        <div class="player-info">
+            <div class="score-container">
+                <div class="score-badge player-score">
+                    <span class="score-label">YOU</span>
+                    <span class="score-value" id="playerScore">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal" id="gameModal">
+        <div class="modal-content">
+            <div class="modal-icon" id="modalIcon"></div>
+            <h2 class="modal-title" id="modalTitle">Game Over</h2>
+            <p class="modal-message" id="modalMessage">You won!</p>
+            <button class="modal-button" id="modalButton">Play Again</button>
+        </div>
+    </div>
+
+    <script src="deck.js"></script>
+    <script src="cardRenderer.js"></script>
+    <script src="lobbyClient.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
