@@ -17,6 +17,12 @@ class LobbyClient {
         (this.handlers[type] || []).forEach((fn) => fn(payload));
     }
 
+    setPlayerName(name) {
+        const safe = (name || '').toString().trim();
+        if (!safe) return;
+        this.playerName = safe.slice(0, 32);
+    }
+
     ensureConnection() {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             return Promise.resolve();
@@ -79,6 +85,10 @@ class LobbyClient {
 
     startGame() {
         this.send('start_game', {});
+    }
+
+    leaveLobby() {
+        this.send('leave_lobby', {});
     }
 }
 

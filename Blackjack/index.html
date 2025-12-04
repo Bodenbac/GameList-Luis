@@ -4,9 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BlackJack - Modern Casino Experience</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="web/styles.css">
 </head>
 <body>
+    <!-- Profile / Name Entry -->
+    <div class="profile-shell" id="profileShell">
+        <div class="profile-chip" id="profileNameChip" title="Your display name">Player</div>
+        <button class="profile-button" id="profileButton" aria-label="Edit profile name">
+            <img src="assets/profile.svg" alt="Profile" />
+        </button>
+        <div class="profile-popover hidden" id="profilePopover">
+            <div class="profile-popover-header">
+                <div>
+                    <div class="profile-popover-title">Your Name</div>
+                    <div class="profile-popover-subtitle">Shown in multiplayer lobbies</div>
+                </div>
+                <button class="profile-close" id="profileCloseButton" aria-label="Close profile">X</button>
+            </div>
+            <label class="profile-input-label" for="profileNameInput">Display name</label>
+            <input type="text" id="profileNameInput" maxlength="24" autocomplete="name" />
+            <button class="game-button profile-save" id="profileSaveButton">
+                <span class="button-text">Accept</span>
+            </button>
+        </div>
+    </div>
+
     <!-- Title Screen -->
     <div class="overlay-screen title-screen" id="titleScreen">
         <div class="title-inner">
@@ -15,11 +37,11 @@
                 <h1 class="game-title">Modern Blackjack</h1>
                 <div class="title-buttons">
                     <button class="game-button title-button" id="singleplayerButton">
-                        <span class="button-icon">🎮</span>
+                        <img class="button-icon svg-icon" src="assets/Singleplayer.svg" alt="Singleplayer icon" />
                         <span class="button-text">Singleplayer</span>
                     </button>
                     <button class="game-button reset-button title-button" id="multiplayerButton">
-                        <span class="button-icon">🤝</span>
+                        <img class="button-icon svg-icon" src="assets/Multiplayer.svg" alt="Multiplayer icon" />
                         <span class="button-text">Multiplayer</span>
                     </button>
                 </div>
@@ -36,11 +58,11 @@
                 <h2 class="game-title">Multiplayer</h2>
                 <div class="title-buttons">
                     <button class="game-button title-button" id="createLobbyButton">
-                        <span class="button-icon">➕</span>
+                        <img class="button-icon svg-icon" src="assets/host_lobby.svg" alt="Host lobby icon" />
                         <span class="button-text">Host Lobby</span>
                     </button>
                     <button class="game-button reset-button title-button" id="joinLobbyButton">
-                        <span class="button-icon">🔗</span>
+                        <img class="button-icon svg-icon" src="assets/join_lobby.svg" alt="Join lobby icon" />
                         <span class="button-text">Join Lobby</span>
                     </button>
                     <div class="join-form hidden" id="joinForm">
@@ -54,6 +76,9 @@
                         </div>
                         <button class="game-button connect-button" id="connectLobbyButton" disabled>
                             <span class="button-text">Connect</span>
+                        </button>
+                        <button class="game-button ghost-button paste-button" id="pasteLobbyCodeButton" type="button">
+                            <span class="button-text">Paste</span>
                         </button>
                     </div>
                 </div>
@@ -111,6 +136,14 @@
                     </div>
                 </div>
             </div>
+            <div class="lobby-actions">
+                <button class="game-button ghost-button control-hidden" id="guestReadyButton">
+                    <span class="button-text">Ready?</span>
+                </button>
+                <button class="game-button reset-button control-hidden" id="hostStartButton" disabled>
+                    <span class="button-text">Start Game (Waiting)</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -122,6 +155,11 @@
                     <span class="score-label">DEALER</span>
                     <span class="score-value" id="dealerScore">0</span>
                 </div>
+            </div>
+            <div class="lives-row" id="dealerLives" aria-label="Dealer lives">
+                <img class="life-icon" src="assets/lifes.svg" alt="Dealer life" />
+                <img class="life-icon" src="assets/lifes.svg" alt="Dealer life" />
+                <img class="life-icon" src="assets/lifes.svg" alt="Dealer life" />
             </div>
         </div>
         <div class="card-area dealer-cards" id="dealerCards">
@@ -177,6 +215,11 @@
                     <span class="score-value" id="playerScore">0</span>
                 </div>
             </div>
+            <div class="lives-row" id="playerLives" aria-label="Your lives">
+                <img class="life-icon" src="assets/lifes.svg" alt="Your life" />
+                <img class="life-icon" src="assets/lifes.svg" alt="Your life" />
+                <img class="life-icon" src="assets/lifes.svg" alt="Your life" />
+            </div>
         </div>
     </div>
 
@@ -186,13 +229,54 @@
             <div class="modal-icon" id="modalIcon"></div>
             <h2 class="modal-title" id="modalTitle">Game Over</h2>
             <p class="modal-message" id="modalMessage">You won!</p>
+            <div class="rematch-status" id="rematchStatus">
+                <span class="ready-dot not-ready" id="rematchReadyDot"></span>
+                <span id="rematchReadyText">Waiting...</span>
+            </div>
             <button class="modal-button" id="modalButton">Play Again</button>
         </div>
     </div>
 
-    <script src="deck.js"></script>
-    <script src="cardRenderer.js"></script>
-    <script src="lobbyClient.js"></script>
-    <script src="game.js"></script>
+    <!-- Back Confirmation Overlay -->
+    <div class="confirm-overlay hidden" id="backConfirmOverlay">
+        <div class="confirm-card">
+            <div class="confirm-icon">↩</div>
+            <h3 class="confirm-title">Leave current game?</h3>
+            <p class="confirm-text">Your current hand will be abandoned. Return to the previous screen?</p>
+            <div class="confirm-actions">
+                <button class="game-button ghost-button" id="backConfirmStay">
+                    <span class="button-text">Keep Playing</span>
+                </button>
+                <button class="game-button reset-button" id="backConfirmExit">
+                    <span class="button-text">Exit Game</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Overlay -->
+    <div class="confirm-overlay hidden" id="errorOverlay">
+        <div class="confirm-card alert-card">
+            <div class="confirm-icon alert-icon">!</div>
+            <h3 class="confirm-title" id="errorTitle">Connection Failed</h3>
+            <p class="confirm-text" id="errorMessage">Failed to reach server.</p>
+            <div class="confirm-actions">
+                <button class="game-button ghost-button" id="errorOkButton">
+                    <span class="button-text">OK</span>
+                </button>
+                <button class="game-button reset-button" id="errorRetryButton">
+                    <span class="button-text">Retry</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="web/deck.js"></script>
+    <script src="web/cardRenderer.js"></script>
+    <script src="web/lobbyClient.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="web/peerLobbyClient.js"></script>
+    <script src="web/game.js"></script>
 </body>
 </html>
+

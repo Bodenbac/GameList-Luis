@@ -1,9 +1,29 @@
-const { WebSocketServer } = require('ws');
+const fs = require('fs');
+const http = require('http');
+const path = require('path');
+const { WebSocketServer, WebSocket } = require('ws');
 
-const PORT = process.env.PORT || 8080;
-const MAX_PLAYERS = 2;
-const lobbies = new Map(); // code -> { code, players: [{ id, name, role, socket }], status }
+const HOST = process.env.HOST || '0.0.0.0';
+const PORT = Number(process.env.PORT || 8080);
+const MAX_PLAYERS = Number(process.env.MAX_PLAYERS || 2);
+const WEB_ROOT = __dirname;
+const PING_INTERVAL_MS = 30_000;
+
+const lobbies = new Map(); // code -> { code, status, players: [{ id, name, role, socket }] }
 const clients = new Map(); // socket -> { id, name, lobbyCode }
+
+const MIME_TYPES = {
+    '.html': 'text/html; charset=utf-8',
+    '.js': 'text/javascript; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.svg': 'image/svg+xml',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.ico': 'image/x-icon',
+};
 
 function randomId() {
     return Math.random().toString(36).slice(2, 10);
@@ -26,7 +46,7 @@ function generateUniqueCode() {
 }
 
 function send(socket, type, payload = {}) {
-    if (socket.readyState === socket.OPEN) {
+    if (socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({ type, ...payload }));
     }
 }
@@ -47,14 +67,16 @@ function removeFromLobby(socket) {
     const client = getClient(socket);
     if (!client || !client.lobbyCode) return;
     const lobby = lobbies.get(client.lobbyCode);
-    if (!lobby) return;
+    if (!lobby) {
+        client.lobbyCode = null;
+        return;
+    }
 
     lobby.players = lobby.players.filter((p) => p.socket !== socket);
 
     if (lobby.players.length === 0) {
         lobbies.delete(client.lobbyCode);
     } else {
-        // Promote next player to host if needed
         if (!lobby.players.some((p) => p.role === 'host')) {
             lobby.players[0].role = 'host';
         }
@@ -75,9 +97,7 @@ function handleCreateLobby(socket, payload) {
     const lobby = {
         code,
         status: 'waiting',
-        players: [
-            { id: client.id, name, role: 'host', socket }
-        ]
+        players: [{ id: client.id, name, role: 'host', socket }],
     };
 
     lobbies.set(code, lobby);
@@ -113,6 +133,16 @@ function handleJoinLobby(socket, payload) {
     broadcast(lobby, 'lobby_update', { players: serializePlayers(lobby) });
 }
 
+function handleLeaveLobby(socket) {
+    const client = getClient(socket);
+    if (!client || !client.lobbyCode) return;
+    const lobby = lobbies.get(client.lobbyCode);
+    removeFromLobby(socket);
+    if (lobby) {
+        broadcast(lobby, 'lobby_update', { players: serializePlayers(lobby) });
+    }
+}
+
 function handleChat(socket, payload) {
     const client = getClient(socket);
     if (!client || !client.lobbyCode) return;
@@ -125,7 +155,7 @@ function handleChat(socket, payload) {
     const message = {
         from: client.name || 'Player',
         text,
-        ts: Date.now()
+        ts: Date.now(),
     };
 
     broadcast(lobby, 'chat_message', message);
@@ -164,6 +194,8 @@ function handleMessage(socket, data) {
             return handleCreateLobby(socket, payload);
         case 'join_lobby':
             return handleJoinLobby(socket, payload);
+        case 'leave_lobby':
+            return handleLeaveLobby(socket);
         case 'chat_message':
             return handleChat(socket, payload);
         case 'start_game':
@@ -173,11 +205,66 @@ function handleMessage(socket, data) {
     }
 }
 
+function serveStatic(req, res) {
+    if (req.url === '/health') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ status: 'ok' }));
+    }
+
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+        res.writeHead(405);
+        return res.end();
+    }
+
+    const urlPath = decodeURI(req.url.split('?')[0]);
+    const normalized = path
+        .normalize(urlPath)
+        .replace(/^(\.\.[/\\])+/, '')
+        .replace(/^[/\\]+/, '');
+    const target = normalized === '' || normalized === path.sep || normalized === '.' ? 'index.html' : normalized;
+    let filePath = path.join(WEB_ROOT, target);
+
+    if (!filePath.startsWith(WEB_ROOT)) {
+        res.writeHead(403);
+        return res.end('Forbidden');
+    }
+
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
+        filePath = path.join(filePath, 'index.html');
+    }
+
+    if (!fs.existsSync(filePath)) {
+        res.writeHead(404);
+        return res.end('Not found');
+    }
+
+    const ext = path.extname(filePath).toLowerCase();
+    const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+
+    res.writeHead(200, { 'Content-Type': contentType });
+    if (req.method === 'HEAD') {
+        return res.end();
+    }
+
+    const stream = fs.createReadStream(filePath);
+    stream.pipe(res);
+    stream.on('error', (err) => {
+        console.error('File stream error:', err.message);
+        res.writeHead(500);
+        res.end('Server error');
+    });
+}
+
 function startServer() {
-    const wss = new WebSocketServer({ port: PORT });
-    console.log(`WebSocket lobby server running on ws://localhost:${PORT}`);
+    const server = http.createServer(serveStatic);
+    const wss = new WebSocketServer({ server });
 
     wss.on('connection', (socket) => {
+        socket.isAlive = true;
+        socket.on('pong', () => {
+            socket.isAlive = true;
+        });
+
         const client = { id: randomId(), name: `Player-${randomId().slice(0, 4)}`, lobbyCode: null };
         clients.set(socket, client);
 
@@ -193,6 +280,21 @@ function startServer() {
         });
 
         send(socket, 'welcome', { id: client.id });
+    });
+
+    const interval = setInterval(() => {
+        wss.clients.forEach((ws) => {
+            if (ws.isAlive === false) return ws.terminate();
+            ws.isAlive = false;
+            ws.ping();
+        });
+    }, PING_INTERVAL_MS);
+
+    wss.on('close', () => clearInterval(interval));
+
+    server.listen(PORT, HOST, () => {
+        console.log(`HTTP server running at http://${HOST}:${PORT}`);
+        console.log(`WebSocket lobby server running at ws://${HOST}:${PORT}`);
     });
 }
 

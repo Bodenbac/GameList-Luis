@@ -63,11 +63,12 @@ class CardRenderer {
         // For dealer (u-form): center cards go DOWN (positive Y)
         // For player (n-form): center cards go UP (negative Y)
         const y = isDealer ? arcOffset : -arcOffset;
+        const rotation = isDealer ? -angle : angle;
 
         return {
             x: x,
             y: y,
-            rotation: angle,
+            rotation,
             zIndex: cardIndex
         };
     }
@@ -170,6 +171,25 @@ class CardRenderer {
                 rotate(${position.rotation}deg)
             `;
             cardEl.style.zIndex = position.zIndex;
+        });
+    }
+
+    /**
+     * Render a full hand instantly (no animation)
+     */
+    renderHand(container, cards = [], isDealer = false) {
+        if (!container) return;
+        container.innerHTML = '';
+        cards.forEach((card, index) => {
+            const cardDisplay = getCardDisplay(card);
+            const cardEl = this.createCardElement(cardDisplay, isDealer);
+            const position = this.calculateFanPosition(index, cards.length, isDealer);
+            cardEl.style.transform = `
+                translate(${position.x}px, ${position.y}px)
+                rotate(${position.rotation}deg)
+            `;
+            cardEl.style.zIndex = position.zIndex;
+            container.appendChild(cardEl);
         });
     }
 }

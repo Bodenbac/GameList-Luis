@@ -37,49 +37,47 @@ A beautiful, modern BlackJack game with stunning blue-green gradients, smooth an
 ## 🚀 How to Run
 
 ### Option 1: Open Directly
-Simply open `index.html` in a modern web browser:
+Simply open the root `index.html` in a modern web browser:
 ```bash
-# Navigate to web folder
-cd /Users/luis_bod/IdeaProjects/BlackJack/web
-
+cd /path/to/Blackjack
 # Open in default browser (macOS)
 open index.html
-
 # Or drag index.html into your browser
 ```
 
 ### Option 2: Local Server (Recommended)
-For best performance, use a local server:
+For best performance, use a local server from the repo root:
 
 **Python:**
 ```bash
-cd /Users/luis_bod/IdeaProjects/BlackJack/web
+cd /path/to/Blackjack
 python3 -m http.server 8000
 # Open browser to: http://localhost:8000
 ```
 
 **Node.js (with http-server):**
 ```bash
-cd /Users/luis_bod/IdeaProjects/BlackJack/web
+cd /path/to/Blackjack
 npx http-server -p 8000
 # Open browser to: http://localhost:8000
 ```
 
 **VS Code Live Server:**
-Right-click `index.html` → "Open with Live Server"
+Right-click the root `index.html` → "Open with Live Server"
 
 ---
 
 ## 📁 File Structure
 
 ```
+index.html            # Main HTML structure (root)
 web/
-├── index.html          # Main HTML structure
-├── styles.css          # Blue-green gradient theme & animations
-├── deck.js             # Deck management (6-deck shoe)
-├── cardRenderer.js     # Card rendering & fan animations
-├── game.js             # Game logic & state management
-└── README.md           # This file
+├── styles.css        # Blue-green gradient theme & animations
+├── deck.js           # Deck management (6-deck shoe)
+├── cardRenderer.js   # Card rendering & fan animations
+├── game.js           # Game logic & state management
+└── README.md         # This file
+assets/               # Icons, hearts, etc.
 ```
 
 ---
