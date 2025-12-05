@@ -746,10 +746,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const renderLives = () => {
-        const playerLivesCount = playerSide === 'host' ? hostLives : guestLives;
-        const dealerLivesCount = playerSide === 'host' ? guestLives : hostLives;
-        setLivesRow(playerLivesRow, playerLivesCount);
-        setLivesRow(dealerLivesRow, dealerLivesCount);
+        // Align displayed hearts with the viewer's perspective (bottom vs top)
+        const viewerSide = viewerControlledSide(); // 'player' -> bottom shows player hand; 'dealer' -> bottom shows dealer hand
+        const bottomRole = viewerSide === 'player' ? playerSide : dealerRole();
+        const topRole = bottomRole === 'host' ? 'guest' : 'host';
+        const bottomLives = bottomRole === 'host' ? hostLives : guestLives;
+        const topLives = topRole === 'host' ? hostLives : guestLives;
+        setLivesRow(playerLivesRow, bottomLives);
+        setLivesRow(dealerLivesRow, topLives);
     };
 
     const roleDisplayName = (role) => {
@@ -853,6 +857,7 @@ document.addEventListener('DOMContentLoaded', () => {
         matchWinner = snapshot.matchWinner !== undefined ? snapshot.matchWinner : matchWinner;
         if (myRole === 'guest') {
             game.setNetworkRole('guest');
+            game.setManualDealerMode(true); // allow guest to act during dealer/manual turns
             if (!isInGameplayView()) {
                 startPlay({ autoDeal: false });
             }
@@ -1845,7 +1850,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (myRole === 'guest') {
             game.setNetworkRole('guest');
-            game.setManualDealerMode(false);
+            game.setManualDealerMode(true); // enable manual dealer control for the remote player
             startPlay({ autoDeal: false });
             game.setButtonsEnabled(false);
             syncActionButtons();
