@@ -211,6 +211,30 @@
     .workspace { display: flex; gap: 28px; align-items: flex-start; }
     .ingredients-col { flex: 1 1 0; min-width: 0; }
 
+    /* ── Ingredients Toggle (mobile only) ── */
+    .ingredients-toggle {
+      display: none;
+      width: 100%;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 16px;
+      border-radius: 14px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-card);
+      font-size: 14px; font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+    .toggle-arrow {
+      transition: transform 250ms ease;
+      flex-shrink: 0;
+      color: var(--text-muted);
+    }
+    .ingredients-toggle[aria-expanded="true"] .toggle-arrow {
+      transform: rotate(180deg);
+    }
+
     /* ── Category Tabs ── */
     .category-tabs {
       display: flex; gap: 8px;
@@ -414,6 +438,35 @@
     @media (max-width: 899px) {
       .page { padding-bottom: 82px; }
       .workspace { flex-direction: column; align-items: stretch; }
+
+      /* Recipe strip → 3-column grid */
+      .recipes-strip {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        overflow-x: visible;
+        scroll-snap-type: none;
+        gap: 10px;
+        padding-bottom: 0;
+      }
+      .recipe-card {
+        flex: none;
+        width: auto;
+        height: auto;
+        min-height: 88px;
+        padding: 12px;
+      }
+      .recipe-name { font-size: 13px; }
+
+      /* Ingredients toggle */
+      .ingredients-toggle { display: flex; }
+      .ingredients-body {
+        overflow: hidden;
+        max-height: 0;
+        transition: max-height 320ms cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .ingredients-body.expanded { max-height: 9999px; }
+
+      /* Cart panel: fixed to bottom, slides up on expand */
       .cart-panel {
         position: fixed;
         top: auto;
@@ -427,6 +480,7 @@
         transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1);
       }
       .cart-panel.expanded { transform: translateY(0); }
+
       .cart-tab-bar {
         display: flex;
         align-items: center; justify-content: space-between;
@@ -442,6 +496,7 @@
       }
       .cart-tab-bar-label { font-size: 15px; font-weight: 600; }
       .cart-tab-bar-info  { font-size: 13px; opacity: 0.8; }
+
       .cart-panel-inner {
         display: flex;
         flex-direction: column;
@@ -452,8 +507,10 @@
         box-shadow: none;
         border-top: 1px solid var(--border-subtle);
       }
+
       .cart-header,
       .budget-block { flex-shrink: 0; }
+
       .cart-list {
         flex: 1 1 0;
         max-height: none;
@@ -461,7 +518,9 @@
         -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
       }
+
       .cart-empty { flex-shrink: 0; }
+
       .cart-actions {
         flex-shrink: 0;
         margin-top: 12px;
@@ -476,13 +535,20 @@
         padding-bottom: max(82px, calc(58px + env(safe-area-inset-bottom, 0px) + 24px));
       }
       .site-header { padding: 0 16px; }
-      .recipe-card { flex: 0 0 154px; width: 154px; height: 100px; }
-      .recipe-name { font-size: 14px; }
-      .recipe-vibe { font-size: 10px; }
+
+      /* Recipe cards: slightly more compact on small phones */
+      .recipe-card { padding: 10px; min-height: 76px; }
+      .recipe-name { font-size: 12px; }
+      .recipe-vibe { font-size: 9px; }
+      .recipe-count { font-size: 9px; }
+
+      /* 2-column ingredient grid with slightly tighter spacing */
       .ingredient-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
       .ingredient-card { padding: 11px 12px; min-height: 76px; }
       .ingredient-name { font-size: 12px; }
       .ingredient-amount { font-size: 10px; }
+
+      /* Taller cart panel on small phones */
       .cart-panel { height: 78vh; height: 78dvh; }
       .cart-panel-inner { height: calc(78vh - 58px); height: calc(78dvh - 58px); }
     }
@@ -512,8 +578,14 @@
     <div class="workspace">
 
       <div class="ingredients-col">
-        <div class="category-tabs" id="category-tabs"></div>
-        <div class="ingredient-grid" id="ingredient-grid"></div>
+        <button class="ingredients-toggle" id="ingredients-toggle" aria-expanded="false">
+          <span>Zutaten anpassen</span>
+          <svg class="toggle-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="ingredients-body" id="ingredients-body">
+          <div class="category-tabs" id="category-tabs"></div>
+          <div class="ingredient-grid" id="ingredient-grid"></div>
+        </div>
       </div>
 
       <aside class="cart-panel" id="cart-panel">
@@ -655,7 +727,7 @@
       },
       {
         name: "Chia Power",
-        vibe: "ballastoffreich, leicht, nachhaltig satt",
+        vibe: "ballaststoffreich, leicht, nachhaltig satt",
         color: "#7B9EA6",
         ingredients: ["Leinsamen oder Chiasamen", "TK-Beerenmix", "Bananen", "Skyr oder Naturjoghurt"]
       }
@@ -983,6 +1055,14 @@
     document.getElementById('btn-starter').addEventListener('click', selectStarter);
     document.getElementById('btn-reset').addEventListener('click', clearAll);
     document.getElementById('btn-export').addEventListener('click', exportToNotes);
+
+    /* ── INGREDIENTS TOGGLE ── */
+    document.getElementById('ingredients-toggle').addEventListener('click', () => {
+      const body = document.getElementById('ingredients-body');
+      const btn  = document.getElementById('ingredients-toggle');
+      const expanded = body.classList.toggle('expanded');
+      btn.setAttribute('aria-expanded', expanded);
+    });
 
     /* ── INIT ── */
     if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
