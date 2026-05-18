@@ -270,8 +270,8 @@
 
     /* ── Ingredient Card ── */
     .ingredient-card {
-      display: flex; flex-direction: column; justify-content: space-between;
-      padding: 13px 14px; min-height: 82px;
+      display: flex; flex-direction: column;
+      padding: 13px 14px; min-height: 90px;
       background: var(--bg-surface);
       border: 1px solid var(--border-subtle);
       border-radius: 14px;
@@ -300,6 +300,13 @@
       .ingredient-card.selected:hover { border-color: var(--green-500); }
     }
 
+    .card-emoji {
+      font-size: 22px;
+      line-height: 1;
+      margin-bottom: 6px;
+      display: block;
+    }
+
     .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
     .ingredient-name {
       font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1.3;
@@ -312,13 +319,11 @@
     }
     .ingredient-card.selected .card-check { opacity: 1; }
 
-    .card-bottom { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 8px; }
-    .ingredient-amount { font-size: 11px; font-weight: 300; color: var(--text-muted); }
-
-    .price-pill { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
-    .price-1 { background: var(--green-50);  color: var(--green-700); }
-    .price-2 { background: var(--amber-100); color: var(--amber-500); }
-    .price-3 { background: #FAE8E8;          color: #C0392B; }
+    .ingredient-amount {
+      font-size: 11px; font-weight: 300; color: var(--text-muted);
+      margin-top: 5px;
+      display: block;
+    }
 
     /* ── Cart Panel ── */
     .cart-panel {
@@ -348,16 +353,9 @@
       padding: 3px 11px; border-radius: 999px;
     }
 
-    .budget-block {
-      background: var(--bg-muted); border-radius: 12px;
-      padding: 13px 15px; margin-bottom: 18px;
-    }
-    .budget-block .section-label { margin-bottom: 4px; }
-    .budget-amount { font-size: 22px; font-weight: 600; color: var(--green-900); }
-
     .cart-list {
       display: flex; flex-direction: column;
-      max-height: 300px; overflow-y: auto;
+      max-height: 380px; overflow-y: auto;
       scrollbar-width: thin;
       scrollbar-color: var(--border-subtle) transparent;
     }
@@ -373,6 +371,8 @@
     .cart-row.entering { animation: slide-in 200ms ease-out; }
     .cart-row.leaving  { animation: slide-out 160ms ease-in forwards; }
 
+    .cart-row-left { display: flex; align-items: center; gap: 10px; }
+    .cart-item-emoji { font-size: 20px; line-height: 1; flex-shrink: 0; }
     .cart-item-name   { font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1.25; }
     .cart-item-amount { font-size: 11px; font-weight: 300; color: var(--text-muted); margin-top: 2px; }
 
@@ -508,8 +508,7 @@
         border-top: 1px solid var(--border-subtle);
       }
 
-      .cart-header,
-      .budget-block { flex-shrink: 0; }
+      .cart-header { flex-shrink: 0; }
 
       .cart-list {
         flex: 1 1 0;
@@ -544,9 +543,10 @@
 
       /* 2-column ingredient grid with slightly tighter spacing */
       .ingredient-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-      .ingredient-card { padding: 11px 12px; min-height: 76px; }
+      .ingredient-card { padding: 11px 12px; min-height: 84px; }
       .ingredient-name { font-size: 12px; }
       .ingredient-amount { font-size: 10px; }
+      .card-emoji { font-size: 20px; }
 
       /* Taller cart panel on small phones */
       .cart-panel { height: 78vh; height: 78dvh; }
@@ -598,10 +598,6 @@
             <h2 class="cart-title">Einkaufszettel</h2>
             <span class="cart-count-badge" id="cart-count-badge">0</span>
           </div>
-          <div class="budget-block">
-            <p class="section-label">Geschätzte Kosten</p>
-            <p class="budget-amount" id="budget-amount">ca. 12–18 €</p>
-          </div>
           <div class="cart-list" id="cart-list"></div>
           <div class="cart-empty" id="cart-empty">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--green-100)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -632,40 +628,40 @@
       {
         name: "Basis & Sattmacher",
         items: [
-          { name: "Haferflocken",            amount: "1 Packung",      price: "€"  },
-          { name: "Bananen",                 amount: "8–10 Stück",     price: "€"  },
-          { name: "Skyr oder Naturjoghurt",  amount: "500 g – 1 kg",   price: "€€" },
-          { name: "Milch oder Hafermilch",   amount: "1–2 Liter",      price: "€"  },
-          { name: "Erdnussmus",              amount: "1 Glas",         price: "€€" },
-          { name: "Leinsamen oder Chiasamen",amount: "1 Packung",      price: "€€" },
-          { name: "Kakao ungesüßt",          amount: "1 Packung",      price: "€"  }
+          { name: "Haferflocken",            amount: "1 Packung",      emoji: "🌾" },
+          { name: "Bananen",                 amount: "8–10 Stück",     emoji: "🍌" },
+          { name: "Skyr oder Naturjoghurt",  amount: "500 g – 1 kg",   emoji: "🍶" },
+          { name: "Milch oder Hafermilch",   amount: "1–2 Liter",      emoji: "🥛" },
+          { name: "Erdnussmus",              amount: "1 Glas",         emoji: "🥜" },
+          { name: "Leinsamen oder Chiasamen",amount: "1 Packung",      emoji: "🌱" },
+          { name: "Kakao ungesüßt",          amount: "1 Packung",      emoji: "🍫" }
         ]
       },
       {
         name: "Obst",
         items: [
-          { name: "TK-Beerenmix",             amount: "1 große Packung", price: "€€" },
-          { name: "TK-Mango oder TK-Ananas",  amount: "1 Packung",       price: "€€" },
-          { name: "Äpfel",                    amount: "4–6 Stück",       price: "€"  },
-          { name: "Zitronen oder Limetten",   amount: "3–4 Stück",       price: "€"  },
-          { name: "Datteln",                  amount: "1 kleine Packung",price: "€€" }
+          { name: "TK-Beerenmix",             amount: "1 große Packung", emoji: "🫐" },
+          { name: "TK-Mango oder TK-Ananas",  amount: "1 Packung",       emoji: "🥭" },
+          { name: "Äpfel",                    amount: "4–6 Stück",       emoji: "🍎" },
+          { name: "Zitronen oder Limetten",   amount: "3–4 Stück",       emoji: "🍋" },
+          { name: "Datteln",                  amount: "1 kleine Packung", emoji: "🌴" }
         ]
       },
       {
         name: "Gemüse",
         items: [
-          { name: "Babyspinat oder TK-Spinat", amount: "1 Packung", price: "€" },
-          { name: "Karotten",                  amount: "1 kg",       price: "€" },
-          { name: "Gurke",                     amount: "1 Stück",    price: "€" },
-          { name: "Gekochte Rote Bete",        amount: "1 Packung",  price: "€" }
+          { name: "Babyspinat oder TK-Spinat", amount: "1 Packung", emoji: "🥬" },
+          { name: "Karotten",                  amount: "1 kg",       emoji: "🥕" },
+          { name: "Gurke",                     amount: "1 Stück",    emoji: "🥒" },
+          { name: "Gekochte Rote Bete",        amount: "1 Packung",  emoji: "🫐" }
         ]
       },
       {
         name: "Geschmack & Extras",
         items: [
-          { name: "Ingwer",   amount: "1 kleines Stück", price: "€" },
-          { name: "Zimt",     amount: "1 Dose",          price: "€" },
-          { name: "Kurkuma",  amount: "1 Dose",          price: "€" }
+          { name: "Ingwer",   amount: "1 kleines Stück", emoji: "🌿" },
+          { name: "Zimt",     amount: "1 Dose",          emoji: "🫙" },
+          { name: "Kurkuma",  amount: "1 Dose",          emoji: "🌻" }
         ]
       }
     ];
@@ -738,6 +734,10 @@
       "Erdnussmus", "TK-Beerenmix", "Äpfel", "Babyspinat oder TK-Spinat"
     ]);
 
+    /* ── EMOJI LOOKUP ── */
+    const emojiMap = {};
+    categories.forEach(cat => cat.items.forEach(item => { emojiMap[item.name] = item.emoji; }));
+
     /* ── STATE ── */
     const state = { selected: {}, activeCategory: 'all' };
 
@@ -770,21 +770,10 @@
       );
     }
 
-    function computeBudget(items) {
-      const score = items.reduce((s, i) => s + i.price.length, 0);
-      if (score <= 9)  return "ca. 12–18 €";
-      if (score <= 15) return "ca. 18–28 €";
-      return "ca. 28–40 €";
-    }
-
     function getFilteredItems(cat) {
       if (cat === 'all') return categories.flatMap(c => c.items);
       const found = categories.find(c => c.name === cat);
       return found ? found.items : [];
-    }
-
-    function priceClass(price) {
-      return price === '€' ? 'price-1' : price === '€€' ? 'price-2' : 'price-3';
     }
 
     function isRecipeLoaded(recipe) {
@@ -873,14 +862,12 @@
       card.dataset.ingredient = item.name;
       card.setAttribute('aria-pressed', state.selected[item.name] ? 'true' : 'false');
       card.innerHTML = `
+        <span class="card-emoji" aria-hidden="true">${item.emoji}</span>
         <div class="card-top">
           <span class="ingredient-name">${item.name}</span>
           <span class="card-check" aria-hidden="true">✓</span>
         </div>
-        <div class="card-bottom">
-          <span class="ingredient-amount">${item.amount}</span>
-          <span class="price-pill ${priceClass(item.price)}">${item.price}</span>
-        </div>`;
+        <span class="ingredient-amount">${item.amount}</span>`;
       card.addEventListener('click', () => toggleItem(item.name));
       return card;
     }
@@ -903,14 +890,11 @@
       const listEl   = document.getElementById('cart-list');
       const emptyEl  = document.getElementById('cart-empty');
       const countBadge = document.getElementById('cart-count-badge');
-      const budgetEl = document.getElementById('budget-amount');
       const tabInfo  = document.getElementById('cart-tab-info');
 
       const count = items.length;
       countBadge.textContent = count;
-      const budget = computeBudget(items);
-      budgetEl.textContent = budget;
-      if (tabInfo) tabInfo.textContent = `${count} Artikel — ${budget}`;
+      if (tabInfo) tabInfo.textContent = `${count} Artikel`;
 
       if (count === 0) {
         listEl.querySelectorAll('.cart-row').forEach(row => {
@@ -939,9 +923,12 @@
           row.className = 'cart-row entering';
           row.dataset.cartItem = item.name;
           row.innerHTML = `
-            <div>
-              <p class="cart-item-name">${item.name}</p>
-              <p class="cart-item-amount">${item.amount}</p>
+            <div class="cart-row-left">
+              <span class="cart-item-emoji" aria-hidden="true">${item.emoji}</span>
+              <div>
+                <p class="cart-item-name">${item.name}</p>
+                <p class="cart-item-amount">${item.amount}</p>
+              </div>
             </div>
             <button class="cart-remove-btn" aria-label="${item.name} entfernen">−</button>`;
           row.querySelector('.cart-remove-btn').addEventListener('click', e => {
@@ -1028,8 +1015,7 @@
       const items = getSelectedItems();
       if (items.length === 0) return;
       const text = 'Einkaufsliste blend.\n\n' +
-        items.map(i => `• ${i.name} (${i.amount})`).join('\n') +
-        `\n\n${computeBudget(items)}`;
+        items.map(i => `${i.emoji} ${i.name} (${i.amount})`).join('\n');
       try {
         await navigator.share({ title: 'Einkaufsliste blend.', text });
       } catch(e) {}
