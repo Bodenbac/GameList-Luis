@@ -6,7 +6,12 @@
   <title>blend. — Smoothie Planner</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Nunito:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    @font-face { font-family: 'LittleLord';  src: url('Fonts/LittleLord.ttf')  format('truetype'); font-weight: normal; font-display: swap; }
+    @font-face { font-family: 'QuirkyRobot'; src: url('Fonts/QuirkyRobot.ttf') format('truetype'); font-weight: normal; font-display: swap; }
+    @font-face { font-family: 'GreatVibes';  src: url('Fonts/GreatVibes.ttf')  format('truetype'); font-weight: normal; font-display: swap; }
+  </style>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -42,13 +47,17 @@
     }
 
     /* ── Font-Themes ── */
-    [data-font="modern"] {
-      --font-display: 'Plus Jakarta Sans', sans-serif;
-      --font-body:    'Plus Jakarta Sans', sans-serif;
+    [data-font="littlelord"] {
+      --font-display: 'LittleLord', Georgia, serif;
+      --font-body:    'DM Sans', system-ui, sans-serif;
     }
-    [data-font="soft"] {
-      --font-display: 'Nunito', sans-serif;
-      --font-body:    'Nunito', sans-serif;
+    [data-font="quirkyrobot"] {
+      --font-display: 'QuirkyRobot', monospace;
+      --font-body:    'DM Sans', system-ui, sans-serif;
+    }
+    [data-font="greatvibes"] {
+      --font-display: 'GreatVibes', cursive;
+      --font-body:    'DM Sans', system-ui, sans-serif;
     }
 
     @keyframes card-select {
@@ -562,6 +571,21 @@
     }
     .settings-modal-cancel:hover { background: var(--bg-muted); }
 
+    /* Desktop: Modals zentriert + schmal */
+    @media (min-width: 640px) {
+      .settings-modal-sheet,
+      .export-modal-sheet {
+        left: 50%;
+        right: auto;
+        bottom: auto;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 440px;
+        border-radius: 22px;
+        animation: none;
+      }
+    }
+
     /* ── Export Modal ── */
     .export-modal {
       display: none;
@@ -868,22 +892,29 @@
       <div class="font-options">
         <button class="font-option-btn" data-font-key="classic" id="font-classic">
           <div>
-            <div class="font-preview-name" style="font-family:'Playfair Display',serif">Klassisch</div>
-            <div class="font-preview-sub" style="font-family:'DM Sans',sans-serif">Playfair Display + DM Sans</div>
+            <div class="font-preview-name" style="font-family:'Playfair Display',serif">blend.</div>
+            <div class="font-preview-sub">Standard</div>
           </div>
           <span class="font-option-check">✓</span>
         </button>
-        <button class="font-option-btn" data-font-key="modern" id="font-modern">
+        <button class="font-option-btn" data-font-key="littlelord" id="font-littlelord">
           <div>
-            <div class="font-preview-name" style="font-family:'Plus Jakarta Sans',sans-serif">Modern</div>
-            <div class="font-preview-sub" style="font-family:'Plus Jakarta Sans',sans-serif">Plus Jakarta Sans</div>
+            <div class="font-preview-name" style="font-family:'LittleLord',serif">blend.</div>
+            <div class="font-preview-sub">LittleLord</div>
           </div>
           <span class="font-option-check">✓</span>
         </button>
-        <button class="font-option-btn" data-font-key="soft" id="font-soft">
+        <button class="font-option-btn" data-font-key="quirkyrobot" id="font-quirkyrobot">
           <div>
-            <div class="font-preview-name" style="font-family:'Nunito',sans-serif">Soft</div>
-            <div class="font-preview-sub" style="font-family:'Nunito',sans-serif">Nunito</div>
+            <div class="font-preview-name" style="font-family:'QuirkyRobot',monospace">blend.</div>
+            <div class="font-preview-sub">QuirkyRobot</div>
+          </div>
+          <span class="font-option-check">✓</span>
+        </button>
+        <button class="font-option-btn" data-font-key="greatvibes" id="font-greatvibes">
+          <div>
+            <div class="font-preview-name" style="font-family:'GreatVibes',cursive;font-size:22px">blend.</div>
+            <div class="font-preview-sub">GreatVibes</div>
           </div>
           <span class="font-option-check">✓</span>
         </button>
