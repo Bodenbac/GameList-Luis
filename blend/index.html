@@ -6,7 +6,7 @@
   <title>blend. — Smoothie Planner</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Nunito:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -39,6 +39,16 @@
 
       --font-display: 'Playfair Display', Georgia, serif;
       --font-body:    'DM Sans', system-ui, sans-serif;
+    }
+
+    /* ── Font-Themes ── */
+    [data-font="modern"] {
+      --font-display: 'Plus Jakarta Sans', sans-serif;
+      --font-body:    'Plus Jakarta Sans', sans-serif;
+    }
+    [data-font="soft"] {
+      --font-display: 'Nunito', sans-serif;
+      --font-body:    'Nunito', sans-serif;
     }
 
     @keyframes card-select {
@@ -110,6 +120,12 @@
       padding: 0 28px;
     }
 
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
     .wordmark {
       font-family: var(--font-display);
       font-weight: 700;
@@ -117,7 +133,21 @@
       color: var(--green-900);
       text-decoration: none;
       letter-spacing: -0.5px;
+      margin-right: 2px;
     }
+
+    /* Runde Icon-Buttons (Profile, Settings) */
+    .icon-btn {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: var(--bg-muted);
+      color: var(--text-body);
+      display: flex; align-items: center; justify-content: center;
+      transition: background 150ms ease, color 150ms ease;
+      flex-shrink: 0;
+    }
+    .icon-btn:hover { background: var(--border-subtle); color: var(--text-primary); }
+    .icon-btn svg { width: 17px; height: 17px; }
 
     .cart-btn {
       position: relative;
@@ -446,6 +476,92 @@
     }
     .btn-export:hover { background: var(--green-100); }
 
+    /* ── Settings Modal ── */
+    .settings-modal {
+      display: none; position: fixed; inset: 0; z-index: 300;
+    }
+    .settings-modal.visible { display: block; }
+
+    .settings-modal-backdrop {
+      position: absolute; inset: 0;
+      background: rgba(26, 51, 40, 0.45);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    .settings-modal-sheet {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: var(--bg-surface);
+      border-radius: 22px 22px 0 0;
+      padding: 28px 20px 20px;
+      padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
+      display: flex; flex-direction: column; gap: 12px;
+      animation: sheet-up 260ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+
+    .settings-modal-title {
+      font-family: var(--font-display);
+      font-size: 19px; font-weight: 600;
+      color: var(--text-primary);
+      text-align: center; margin-bottom: 4px;
+    }
+
+    .settings-section-label {
+      font-size: 11px; font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.15em;
+      color: var(--text-muted);
+      margin-bottom: -4px;
+    }
+
+    .font-options {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+
+    .font-option-btn {
+      display: flex; align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: var(--bg-muted);
+      border: 2px solid transparent;
+      transition: background 140ms ease, border-color 140ms ease;
+      text-align: left;
+      cursor: pointer;
+    }
+    .font-option-btn:hover  { background: var(--green-50); }
+    .font-option-btn.active { background: var(--green-50); border-color: var(--green-700); }
+
+    .font-preview-name {
+      font-size: 17px; font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+    .font-preview-sub {
+      font-size: 12px; font-weight: 400;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+    .font-option-check {
+      margin-left: auto;
+      font-size: 14px; font-weight: 700;
+      color: var(--green-700);
+      opacity: 0;
+      transition: opacity 150ms ease;
+    }
+    .font-option-btn.active .font-option-check { opacity: 1; }
+
+    .settings-modal-cancel {
+      height: 44px; border-radius: 12px;
+      font-size: 14px; font-weight: 500;
+      color: var(--text-muted);
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      margin-top: 2px;
+      transition: background 140ms ease;
+    }
+    .settings-modal-cancel:hover { background: var(--bg-muted); }
+
     /* ── Export Modal ── */
     .export-modal {
       display: none;
@@ -640,7 +756,9 @@
         padding: 76px 14px 82px;
         padding-bottom: max(82px, calc(58px + env(safe-area-inset-bottom, 0px) + 24px));
       }
-      .site-header { padding: 0 16px; }
+      .site-header { padding: 0 14px; }
+      .icon-btn { width: 34px; height: 34px; }
+      .icon-btn svg { width: 15px; height: 15px; }
 
       /* Recipe cards: compact on small phones */
       .recipe-card { padding: 9px 10px; }
@@ -664,7 +782,20 @@
 <body>
 
   <header class="site-header">
-    <a class="wordmark" href="#">blend.</a>
+    <div class="header-left">
+      <a class="wordmark" href="#">blend.</a>
+      <button class="icon-btn" id="btn-profile" aria-label="Profil">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+      </button>
+      <button class="icon-btn" id="btn-settings" aria-label="Einstellungen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
     <button class="cart-btn" id="cart-btn" aria-label="Warenkorb öffnen">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
@@ -727,6 +858,39 @@
   </main>
 
   <div class="cart-overlay" id="cart-overlay"></div>
+
+  <!-- Settings Modal -->
+  <div class="settings-modal" id="settings-modal" role="dialog" aria-modal="true" aria-label="Einstellungen">
+    <div class="settings-modal-backdrop" id="settings-modal-backdrop"></div>
+    <div class="settings-modal-sheet">
+      <p class="settings-modal-title">Einstellungen</p>
+      <p class="settings-section-label">Schriftart</p>
+      <div class="font-options">
+        <button class="font-option-btn" data-font-key="classic" id="font-classic">
+          <div>
+            <div class="font-preview-name" style="font-family:'Playfair Display',serif">Klassisch</div>
+            <div class="font-preview-sub" style="font-family:'DM Sans',sans-serif">Playfair Display + DM Sans</div>
+          </div>
+          <span class="font-option-check">✓</span>
+        </button>
+        <button class="font-option-btn" data-font-key="modern" id="font-modern">
+          <div>
+            <div class="font-preview-name" style="font-family:'Plus Jakarta Sans',sans-serif">Modern</div>
+            <div class="font-preview-sub" style="font-family:'Plus Jakarta Sans',sans-serif">Plus Jakarta Sans</div>
+          </div>
+          <span class="font-option-check">✓</span>
+        </button>
+        <button class="font-option-btn" data-font-key="soft" id="font-soft">
+          <div>
+            <div class="font-preview-name" style="font-family:'Nunito',sans-serif">Soft</div>
+            <div class="font-preview-sub" style="font-family:'Nunito',sans-serif">Nunito</div>
+          </div>
+          <span class="font-option-check">✓</span>
+        </button>
+      </div>
+      <button class="settings-modal-cancel" id="btn-settings-cancel">Schließen</button>
+    </div>
+  </div>
 
   <!-- Export Modal -->
   <div class="export-modal" id="export-modal" role="dialog" aria-modal="true" aria-label="Exportieren als">
@@ -1127,6 +1291,39 @@
       saveState();
     }
 
+    /* ── SETTINGS MODAL ── */
+    function showSettingsModal() {
+      document.getElementById('settings-modal').classList.add('visible');
+    }
+    function hideSettingsModal() {
+      document.getElementById('settings-modal').classList.remove('visible');
+    }
+
+    function setFont(key) {
+      document.documentElement.setAttribute('data-font', key);
+      try { localStorage.setItem('blend-font', key); } catch(e) {}
+      document.querySelectorAll('.font-option-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.fontKey === key);
+      });
+    }
+
+    function loadFont() {
+      try {
+        const saved = localStorage.getItem('blend-font');
+        if (saved) setFont(saved);
+        else setFont('classic');
+      } catch(e) { setFont('classic'); }
+    }
+
+    document.getElementById('btn-settings').addEventListener('click', showSettingsModal);
+    document.getElementById('btn-settings-cancel').addEventListener('click', hideSettingsModal);
+    document.getElementById('settings-modal-backdrop').addEventListener('click', hideSettingsModal);
+    document.getElementById('btn-profile').addEventListener('click', () => { /* Profil: Platzhalter */ });
+
+    document.querySelectorAll('.font-option-btn').forEach(btn => {
+      btn.addEventListener('click', () => setFont(btn.dataset.fontKey));
+    });
+
     /* ── EXPORT MODAL ── */
     function showExportModal() {
       if (getSelectedItems().length === 0) return;
@@ -1214,6 +1411,8 @@
     });
 
     /* ── INIT ── */
+    loadFont();
+
     if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
       document.getElementById('btn-export').style.display = '';
     }
