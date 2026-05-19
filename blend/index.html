@@ -77,6 +77,10 @@
       from { opacity: 0; transform: translateY(10px); }
       to   { opacity: 1; transform: translateY(0); }
     }
+    @keyframes sheet-up {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
 
     html { scroll-behavior: smooth; }
 
@@ -162,27 +166,22 @@
     .recipes-section { margin-bottom: 44px; }
     .recipes-section .section-label { margin-bottom: 14px; }
 
+    /* Desktop: flex wrap (kein Scroll mehr) */
     .recipes-strip {
       display: flex;
+      flex-wrap: wrap;
       gap: 12px;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-      padding-bottom: 4px;
     }
-    .recipes-strip::-webkit-scrollbar { display: none; }
 
     .recipe-card {
-      flex: 0 0 196px; width: 196px; height: 118px;
+      flex: 0 0 196px; width: 196px;
       background: var(--bg-surface);
       border: 1px solid var(--border-subtle);
       border-radius: 20px;
       box-shadow: var(--shadow-card);
-      padding: 16px;
-      scroll-snap-align: start;
+      padding: 14px 16px;
       cursor: pointer;
-      display: flex; flex-direction: column; justify-content: space-between;
+      display: flex; flex-direction: column;
       transition: transform 200ms ease, box-shadow 200ms ease, border-color 150ms ease, border-width 0ms;
       user-select: none;
     }
@@ -194,18 +193,42 @@
 
     .recipe-card-top {
       display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
+      margin-bottom: 8px;
     }
     .recipe-name {
       font-family: var(--font-display);
-      font-weight: 600; font-size: 15px;
+      font-weight: 600; font-size: 14px;
       color: var(--text-primary);
       line-height: 1.25;
     }
-    .recipe-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+    .recipe-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
     .recipe-check { font-size: 12px; font-weight: 600; color: var(--green-700); flex-shrink: 0; margin-top: 2px; }
-    .recipe-card-bottom { display: flex; flex-direction: column; gap: 3px; }
-    .recipe-vibe { font-size: 11px; font-style: italic; font-weight: 300; color: var(--text-muted); }
-    .recipe-count { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); }
+
+    /* Trennlinie in Rezeptkarte */
+    .recipe-divider {
+      height: 1px;
+      background: var(--border-subtle);
+      margin-bottom: 8px;
+      flex-shrink: 0;
+    }
+
+    /* Zutatenliste in Rezeptkarte */
+    .recipe-ingredient-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .recipe-ingredient-item {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-muted);
+      line-height: 1.35;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .recipe-card.loaded .recipe-ingredient-item { color: var(--green-700); opacity: 0.75; }
 
     /* ── Workspace ── */
     .workspace { display: flex; gap: 28px; align-items: flex-start; }
@@ -423,6 +446,89 @@
     }
     .btn-export:hover { background: var(--green-100); }
 
+    /* ── Export Modal ── */
+    .export-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+    }
+    .export-modal.visible { display: block; }
+
+    .export-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(26, 51, 40, 0.45);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    .export-modal-sheet {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: var(--bg-surface);
+      border-radius: 22px 22px 0 0;
+      padding: 28px 20px 20px;
+      padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      animation: sheet-up 260ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+
+    .export-modal-title {
+      font-family: var(--font-display);
+      font-size: 19px;
+      font-weight: 600;
+      color: var(--text-primary);
+      text-align: center;
+      margin-bottom: 6px;
+    }
+
+    .export-option-btn {
+      height: auto;
+      min-height: 60px;
+      border-radius: 14px;
+      background: var(--bg-muted);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      text-align: left;
+      transition: background 140ms ease;
+      border: 1.5px solid transparent;
+    }
+    .export-option-btn:hover  { background: var(--green-50); border-color: var(--green-100); }
+    .export-option-btn:active { background: var(--green-100); }
+
+    .export-option-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .export-option-text { display: flex; flex-direction: column; gap: 2px; }
+    .export-option-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .export-option-desc {
+      font-size: 12px;
+      font-weight: 300;
+      color: var(--text-muted);
+    }
+
+    .export-modal-cancel {
+      height: 44px; border-radius: 12px;
+      font-size: 14px; font-weight: 500;
+      color: var(--text-muted);
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      margin-top: 2px;
+      transition: background 140ms ease;
+    }
+    .export-modal-cancel:hover { background: var(--bg-muted); }
+
     /* ── Cart bottom bar (tablet/mobile only) ── */
     .cart-tab-bar { display: none; }
 
@@ -443,19 +549,16 @@
       .recipes-strip {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        overflow-x: visible;
-        scroll-snap-type: none;
         gap: 10px;
-        padding-bottom: 0;
+        flex-wrap: unset; /* reset desktop wrap */
       }
       .recipe-card {
         flex: none;
         width: auto;
-        height: auto;
-        min-height: 88px;
-        padding: 12px;
+        padding: 10px 12px;
       }
-      .recipe-name { font-size: 13px; }
+      .recipe-name { font-size: 12px; }
+      .recipe-ingredient-item { font-size: 10px; }
 
       /* Ingredients toggle */
       .ingredients-toggle { display: flex; }
@@ -535,13 +638,13 @@
       }
       .site-header { padding: 0 16px; }
 
-      /* Recipe cards: slightly more compact on small phones */
-      .recipe-card { padding: 10px; min-height: 76px; }
-      .recipe-name { font-size: 12px; }
-      .recipe-vibe { font-size: 9px; }
-      .recipe-count { font-size: 9px; }
+      /* Recipe cards: compact on small phones */
+      .recipe-card { padding: 9px 10px; }
+      .recipe-name { font-size: 11px; }
+      .recipe-ingredient-item { font-size: 9px; }
+      .recipe-divider { margin-bottom: 6px; }
 
-      /* 2-column ingredient grid with slightly tighter spacing */
+      /* 2-column ingredient grid */
       .ingredient-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
       .ingredient-card { padding: 11px 12px; min-height: 84px; }
       .ingredient-name { font-size: 12px; }
@@ -608,9 +711,9 @@
           </div>
           <div class="cart-actions">
             <button class="btn btn-primary" id="btn-starter">✨ Starter-Liste</button>
-            <button class="btn btn-export" id="btn-export" style="display:none" aria-label="Einkaufsliste teilen">
+            <button class="btn btn-export" id="btn-export" style="display:none" aria-label="Einkaufsliste exportieren">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:7px;vertical-align:-2px"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-              In Notizen speichern
+              Einkaufszettel teilen
             </button>
             <button class="btn btn-secondary" id="btn-reset">Zurücksetzen</button>
           </div>
@@ -621,6 +724,29 @@
   </main>
 
   <div class="cart-overlay" id="cart-overlay"></div>
+
+  <!-- Export Modal -->
+  <div class="export-modal" id="export-modal" role="dialog" aria-modal="true" aria-label="Exportieren als">
+    <div class="export-modal-backdrop" id="export-modal-backdrop"></div>
+    <div class="export-modal-sheet">
+      <p class="export-modal-title">Einkaufszettel teilen</p>
+      <button class="export-option-btn" id="btn-export-by-drink">
+        <span class="export-option-icon">🥤</span>
+        <div class="export-option-text">
+          <span class="export-option-title">Nach Smoothie aufgeteilt</span>
+          <span class="export-option-desc">Green Glow → Spinat, Bananen, Äpfel …</span>
+        </div>
+      </button>
+      <button class="export-option-btn" id="btn-export-all">
+        <span class="export-option-icon">📋</span>
+        <div class="export-option-text">
+          <span class="export-option-title">Gesamter Einkaufszettel</span>
+          <span class="export-option-desc">Alle ausgewählten Zutaten auf einen Blick</span>
+        </div>
+      </button>
+      <button class="export-modal-cancel" id="btn-export-cancel">Abbrechen</button>
+    </div>
+  </div>
 
   <script>
     /* ── DATA ── */
@@ -669,61 +795,51 @@
     const recipes = [
       {
         name: "Sattmacher Shake",
-        vibe: "cremig, günstig, Frühstück-tauglich",
         color: "#C8A96E",
         ingredients: ["Haferflocken", "Bananen", "Milch oder Hafermilch", "Erdnussmus", "Kakao ungesüßt"]
       },
       {
         name: "Berry Protein",
-        vibe: "fruchtig, proteinreich, easy",
         color: "#9B6EA8",
         ingredients: ["TK-Beerenmix", "Bananen", "Skyr oder Naturjoghurt", "Milch oder Hafermilch", "Haferflocken"]
       },
       {
         name: "Green Glow",
-        vibe: "frisch, gesund, nicht zu herb",
         color: "#4A9B6F",
         ingredients: ["Babyspinat oder TK-Spinat", "Bananen", "Äpfel", "Zitronen oder Limetten"]
       },
       {
         name: "Mango Karotte",
-        vibe: "tropisch, frisch, vitaminreich",
         color: "#E07B39",
         ingredients: ["TK-Mango oder TK-Ananas", "Karotten", "Bananen", "Ingwer"]
       },
       {
         name: "Detox Grün",
-        vibe: "entgiftend, leicht, erfrischend",
         color: "#5BAD72",
         ingredients: ["Babyspinat oder TK-Spinat", "Gurke", "Äpfel", "Zitronen oder Limetten", "Ingwer"]
       },
       {
         name: "Golden Glow",
-        vibe: "entzündungshemmend, warm, kraftvoll",
         color: "#D4A017",
         ingredients: ["Karotten", "Bananen", "Kurkuma", "Ingwer", "Milch oder Hafermilch"]
       },
       {
         name: "Schoko Power",
-        vibe: "schokoladig, sättigend, Nervennahrung",
         color: "#6B3A2A",
         ingredients: ["Kakao ungesüßt", "Bananen", "Erdnussmus", "Haferflocken", "Milch oder Hafermilch"]
       },
       {
         name: "Rote Bete Boost",
-        vibe: "kräftig, süßlich, ausdauerfördernd",
         color: "#A0264A",
         ingredients: ["Gekochte Rote Bete", "Äpfel", "Zitronen oder Limetten", "Ingwer"]
       },
       {
         name: "Tropical Vibes",
-        vibe: "tropisch, süß, sommerlich",
         color: "#F0A500",
         ingredients: ["TK-Mango oder TK-Ananas", "Bananen", "Milch oder Hafermilch", "Datteln"]
       },
       {
         name: "Chia Power",
-        vibe: "ballaststoffreich, leicht, nachhaltig satt",
         color: "#7B9EA6",
         ingredients: ["Leinsamen oder Chiasamen", "TK-Beerenmix", "Bananen", "Skyr oder Naturjoghurt"]
       }
@@ -734,9 +850,9 @@
       "Erdnussmus", "TK-Beerenmix", "Äpfel", "Babyspinat oder TK-Spinat"
     ]);
 
-    /* ── EMOJI LOOKUP ── */
-    const emojiMap = {};
-    categories.forEach(cat => cat.items.forEach(item => { emojiMap[item.name] = item.emoji; }));
+    /* ── ITEM LOOKUP ── */
+    const itemMap = {};
+    categories.forEach(cat => cat.items.forEach(item => { itemMap[item.name] = item; }));
 
     /* ── STATE ── */
     const state = { selected: {}, activeCategory: 'all' };
@@ -796,10 +912,10 @@
               ? `<span class="recipe-check">✓</span>`
               : `<span class="recipe-dot" style="background:${recipe.color}"></span>`}
           </div>
-          <div class="recipe-card-bottom">
-            <span class="recipe-vibe">${recipe.vibe}</span>
-            <span class="recipe-count">${recipe.ingredients.length} Zutaten</span>
-          </div>`;
+          <div class="recipe-divider"></div>
+          <ul class="recipe-ingredient-list">
+            ${recipe.ingredients.map(ing => `<li class="recipe-ingredient-item">${ing}</li>`).join('')}
+          </ul>`;
         card.addEventListener('click', () => toggleRecipe(recipe.name));
         strip.appendChild(card);
       });
@@ -887,10 +1003,10 @@
 
     function updateCartPanel() {
       const items = getSelectedItems();
-      const listEl   = document.getElementById('cart-list');
-      const emptyEl  = document.getElementById('cart-empty');
+      const listEl     = document.getElementById('cart-list');
+      const emptyEl    = document.getElementById('cart-empty');
       const countBadge = document.getElementById('cart-count-badge');
-      const tabInfo  = document.getElementById('cart-tab-info');
+      const tabInfo    = document.getElementById('cart-tab-info');
 
       const count = items.length;
       countBadge.textContent = count;
@@ -907,7 +1023,7 @@
 
       emptyEl.style.display = 'none';
 
-      const currentNames = new Set([...listEl.querySelectorAll('.cart-row')].map(r => r.dataset.cartItem));
+      const currentNames  = new Set([...listEl.querySelectorAll('.cart-row')].map(r => r.dataset.cartItem));
       const selectedNames = new Set(items.map(i => i.name));
 
       listEl.querySelectorAll('.cart-row').forEach(row => {
@@ -1010,8 +1126,50 @@
       saveState();
     }
 
-    /* ── IOS EXPORT ── */
-    async function exportToNotes() {
+    /* ── EXPORT MODAL ── */
+    function showExportModal() {
+      if (getSelectedItems().length === 0) return;
+      document.getElementById('export-modal').classList.add('visible');
+    }
+
+    function hideExportModal() {
+      document.getElementById('export-modal').classList.remove('visible');
+    }
+
+    /* Export Option 1: nach Smoothie aufgeteilt */
+    async function exportByDrink() {
+      hideExportModal();
+      const allSelected = getSelectedItems();
+      if (allSelected.length === 0) return;
+
+      const loadedRecipes = recipes.filter(r => isRecipeLoaded(r));
+      const coveredNames  = new Set(loadedRecipes.flatMap(r => r.ingredients));
+      const remaining     = allSelected.filter(i => !coveredNames.has(i.name));
+
+      const lines = ['Einkaufsliste blend.', ''];
+
+      loadedRecipes.forEach(recipe => {
+        lines.push(`— ${recipe.name} —`);
+        recipe.ingredients.forEach(ing => {
+          const item = itemMap[ing];
+          if (item) lines.push(`${item.emoji} ${item.name} (${item.amount})`);
+        });
+        lines.push('');
+      });
+
+      if (remaining.length > 0) {
+        if (loadedRecipes.length > 0) lines.push('— Weitere Zutaten —');
+        remaining.forEach(i => lines.push(`${i.emoji} ${i.name} (${i.amount})`));
+      }
+
+      try {
+        await navigator.share({ title: 'Einkaufsliste blend.', text: lines.join('\n') });
+      } catch(e) {}
+    }
+
+    /* Export Option 2: Gesamter Einkaufszettel */
+    async function exportAll() {
+      hideExportModal();
       const items = getSelectedItems();
       if (items.length === 0) return;
       const text = 'Einkaufsliste blend.\n\n' +
@@ -1040,7 +1198,12 @@
 
     document.getElementById('btn-starter').addEventListener('click', selectStarter);
     document.getElementById('btn-reset').addEventListener('click', clearAll);
-    document.getElementById('btn-export').addEventListener('click', exportToNotes);
+    document.getElementById('btn-export').addEventListener('click', showExportModal);
+
+    document.getElementById('btn-export-by-drink').addEventListener('click', exportByDrink);
+    document.getElementById('btn-export-all').addEventListener('click', exportAll);
+    document.getElementById('btn-export-cancel').addEventListener('click', hideExportModal);
+    document.getElementById('export-modal-backdrop').addEventListener('click', hideExportModal);
 
     /* ── INGREDIENTS TOGGLE ── */
     document.getElementById('ingredients-toggle').addEventListener('click', () => {
