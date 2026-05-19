@@ -176,20 +176,20 @@
     .recipe-card {
       flex: 0 0 196px; width: 196px;
       background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
+      border: 2px solid var(--border-subtle);   /* immer 2px → kein Layout-Shift */
       border-radius: 20px;
       box-shadow: var(--shadow-card);
       padding: 14px 16px;
       cursor: pointer;
       display: flex; flex-direction: column;
-      transition: transform 200ms ease, box-shadow 200ms ease, border-color 150ms ease, border-width 0ms;
+      transition: transform 200ms ease, box-shadow 200ms ease, border-color 150ms ease;
       user-select: none;
     }
     @media (hover: hover) {
       .recipe-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
     }
     .recipe-card:active { transform: scale(0.97) translateY(-1px); }
-    .recipe-card.loaded { border: 2px solid var(--green-700); }
+    .recipe-card.loaded { border-color: var(--green-700); }
 
     .recipe-card-top {
       display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
@@ -549,12 +549,13 @@
       .recipes-strip {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-        flex-wrap: unset; /* reset desktop wrap */
+        gap: 8px;
+        overflow: hidden;  /* kein Overflow nach rechts */
       }
       .recipe-card {
         flex: none;
-        width: auto;
+        width: 100%;       /* füllt Grid-Zelle exakt */
+        min-width: 0;      /* verhindert Grid-Overflow */
         padding: 10px 12px;
       }
       .recipe-name { font-size: 12px; }
@@ -578,6 +579,7 @@
         height: 68vh; height: 68dvh;
         z-index: 100;
         overflow: hidden;
+        overflow-x: hidden;
         transform: translateY(calc(100% - 58px));
         transform: translateY(calc(100% - 58px - env(safe-area-inset-bottom, 0px)));
         transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1);
@@ -617,8 +619,10 @@
         flex: 1 1 0;
         max-height: none;
         overflow-y: auto;
+        overflow-x: hidden;           /* kein horizontales Scrollen */
         -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
+        touch-action: pan-y;          /* nur vertikales Drag */
       }
 
       .cart-empty { flex-shrink: 0; }
@@ -710,7 +714,6 @@
             <p>Noch nichts ausgewählt.</p>
           </div>
           <div class="cart-actions">
-            <button class="btn btn-primary" id="btn-starter">✨ Starter-Liste</button>
             <button class="btn btn-export" id="btn-export" style="display:none" aria-label="Einkaufsliste exportieren">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:7px;vertical-align:-2px"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
               Einkaufszettel teilen
@@ -734,14 +737,12 @@
         <span class="export-option-icon">🥤</span>
         <div class="export-option-text">
           <span class="export-option-title">Nach Smoothie aufgeteilt</span>
-          <span class="export-option-desc">Green Glow → Spinat, Bananen, Äpfel …</span>
         </div>
       </button>
       <button class="export-option-btn" id="btn-export-all">
         <span class="export-option-icon">📋</span>
         <div class="export-option-text">
           <span class="export-option-title">Gesamter Einkaufszettel</span>
-          <span class="export-option-desc">Alle ausgewählten Zutaten auf einen Blick</span>
         </div>
       </button>
       <button class="export-modal-cancel" id="btn-export-cancel">Abbrechen</button>
@@ -1196,7 +1197,6 @@
       if (cartExpanded) toggleCart();
     });
 
-    document.getElementById('btn-starter').addEventListener('click', selectStarter);
     document.getElementById('btn-reset').addEventListener('click', clearAll);
     document.getElementById('btn-export').addEventListener('click', showExportModal);
 
