@@ -560,6 +560,42 @@
     }
     .font-option-btn.active .font-option-check { opacity: 1; }
 
+    /* Column selector */
+    .col-options {
+      display: flex; gap: 8px;
+    }
+    .col-option-btn {
+      flex: 1;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 5px;
+      padding: 12px 8px;
+      border-radius: 14px;
+      background: var(--bg-muted);
+      border: 2px solid transparent;
+      transition: background 140ms ease, border-color 140ms ease;
+      cursor: pointer;
+      font-family: var(--font-body);
+    }
+    .col-option-btn:hover  { background: var(--green-50); }
+    .col-option-btn.active { background: var(--green-50); border-color: var(--green-700); }
+    .col-option-preview {
+      display: grid;
+      gap: 3px;
+      width: 100%;
+    }
+    .col-option-preview span {
+      display: block;
+      height: 8px;
+      border-radius: 3px;
+      background: var(--border-strong);
+    }
+    .col-option-btn.active .col-option-preview span { background: var(--green-500); }
+    .col-option-label {
+      font-size: 12px; font-weight: 500;
+      color: var(--text-muted);
+    }
+    .col-option-btn.active .col-option-label { color: var(--green-700); }
+
     .settings-modal-cancel {
       height: 44px; border-radius: 12px;
       font-size: 14px; font-weight: 500;
@@ -584,6 +620,8 @@
         border-radius: 22px;
         animation: none;
       }
+      /* Column setting only relevant on mobile */
+      .col-setting-section { display: none; }
     }
 
     /* ── Export Modal ── */
@@ -685,10 +723,10 @@
       .page { padding-bottom: 82px; }
       .workspace { flex-direction: column; align-items: stretch; }
 
-      /* Recipe strip → 3-column grid */
+      /* Recipe strip → dynamic column grid */
       .recipes-strip {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(var(--recipe-cols, 3), 1fr);
         gap: 8px;
         overflow: hidden;  /* kein Overflow nach rechts */
       }
@@ -700,6 +738,16 @@
       }
       .recipe-name { font-size: 12px; }
       .recipe-ingredient-item { font-size: 10px; }
+
+      /* 2-column: slightly bigger text & padding */
+      [data-cols="2"] .recipe-card { padding: 12px 14px; }
+      [data-cols="2"] .recipe-name { font-size: 13px; }
+      [data-cols="2"] .recipe-ingredient-item { font-size: 11px; }
+
+      /* 1-column: full width, comfortable text */
+      [data-cols="1"] .recipe-card { padding: 14px 16px; }
+      [data-cols="1"] .recipe-name { font-size: 15px; }
+      [data-cols="1"] .recipe-ingredient-item { font-size: 12px; }
 
       /* Ingredients toggle */
       .ingredients-toggle { display: flex; }
@@ -918,6 +966,32 @@
           </div>
           <span class="font-option-check">✓</span>
         </button>
+      </div>
+      <div class="col-setting-section">
+        <p class="settings-section-label" style="margin-top:16px">Inspirationen pro Reihe</p>
+        <div class="col-options">
+          <button class="col-option-btn" data-cols="1" id="col-1">
+            <div class="col-option-preview" style="grid-template-columns:1fr">
+              <span></span><span></span><span></span>
+            </div>
+            <span class="col-option-label">1</span>
+          </button>
+          <button class="col-option-btn" data-cols="2" id="col-2">
+            <div class="col-option-preview" style="grid-template-columns:1fr 1fr">
+              <span></span><span></span>
+              <span></span><span></span>
+              <span></span><span></span>
+            </div>
+            <span class="col-option-label">2</span>
+          </button>
+          <button class="col-option-btn active" data-cols="3" id="col-3">
+            <div class="col-option-preview" style="grid-template-columns:1fr 1fr 1fr">
+              <span></span><span></span><span></span>
+              <span></span><span></span><span></span>
+            </div>
+            <span class="col-option-label">3</span>
+          </button>
+        </div>
       </div>
       <button class="settings-modal-cancel" id="btn-settings-cancel">Schließen</button>
     </div>
@@ -1346,6 +1420,28 @@
       } catch(e) { setFont('classic'); }
     }
 
+    function setColumns(n) {
+      const col = String(n);
+      document.documentElement.setAttribute('data-cols', col);
+      document.documentElement.style.setProperty('--recipe-cols', col);
+      try { localStorage.setItem('blend-cols', col); } catch(e) {}
+      document.querySelectorAll('.col-option-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.cols === col);
+      });
+    }
+
+    function loadColumns() {
+      try {
+        const saved = localStorage.getItem('blend-cols');
+        if (saved) setColumns(parseInt(saved, 10));
+        else setColumns(3);
+      } catch(e) { setColumns(3); }
+    }
+
+    document.querySelectorAll('.col-option-btn').forEach(btn => {
+      btn.addEventListener('click', () => setColumns(parseInt(btn.dataset.cols, 10)));
+    });
+
     document.getElementById('btn-settings').addEventListener('click', showSettingsModal);
     document.getElementById('btn-settings-cancel').addEventListener('click', hideSettingsModal);
     document.getElementById('settings-modal-backdrop').addEventListener('click', hideSettingsModal);
@@ -1443,6 +1539,7 @@
 
     /* ── INIT ── */
     loadFont();
+    loadColumns();
 
     if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
       document.getElementById('btn-export').style.display = '';
