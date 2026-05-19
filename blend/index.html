@@ -302,10 +302,9 @@
       cursor: pointer;
       text-align: left;
       transition: transform 180ms ease, box-shadow 180ms ease, background 150ms ease, border-color 150ms ease;
-      opacity: 0;
+      /* opacity bleibt immer 1 — kein Flackern beim Klick */
     }
-    .ingredient-card.visible { opacity: 1; }
-    .ingredient-card.stagger { animation: stagger-in 280ms ease forwards; }
+    .ingredient-card.stagger { animation: stagger-in 280ms ease both; }
 
     @media (hover: hover) {
       .ingredient-card:hover {
