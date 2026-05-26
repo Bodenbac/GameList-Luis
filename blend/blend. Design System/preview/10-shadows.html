@@ -1,0 +1,71 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body {
+    margin: 0;
+    background: var(--bg-base);
+    padding: 40px 28px 50px;
+    font-family: var(--font-body);
+  }
+  .intro {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 26px;
+    line-height: 1.5;
+    max-width: 600px;
+  }
+  .intro b { color: var(--text-primary); font-weight: 600; }
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 36px;
+  }
+  .box {
+    background: var(--bg-surface);
+    border-radius: 16px;
+    padding: 18px 18px 16px;
+    min-height: 130px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+  .name {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .desc {
+    font-size: 11px;
+    color: var(--text-body);
+    line-height: 1.4;
+  }
+  .code {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+</style></head><body>
+<div class="intro">
+  Drei abgestufte Schatten — alle <b>grünlich getönt</b> (rgba based on green-900), nie neutrales Schwarz. Sie heben Karten und Panels vom Papier ab, ohne sie kalt wirken zu lassen.
+</div>
+<div class="row">
+  <div class="box" style="box-shadow: var(--shadow-card);">
+    <span class="name">card</span>
+    <span class="desc">Ruhezustand aller Karten. Kaum spürbar, nur ein Anker.</span>
+    <span class="code">0 2px 12px<br>rgba(26,51,40,.07)</span>
+  </div>
+  <div class="box" style="box-shadow: var(--shadow-lift);">
+    <span class="name">lift</span>
+    <span class="desc">Hover / aktiver Druck. Karte hebt sich deutlich vom Papier ab.</span>
+    <span class="code">0 8px 32px<br>rgba(26,51,40,.14)</span>
+  </div>
+  <div class="box" style="box-shadow: var(--shadow-panel);">
+    <span class="name">panel</span>
+    <span class="desc">Einkaufszettel-Panel. Weit gestreut, weich, schwebt.</span>
+    <span class="code">0 4px 40px<br>rgba(26,51,40,.10)</span>
+  </div>
+</div>
+</body></html>
