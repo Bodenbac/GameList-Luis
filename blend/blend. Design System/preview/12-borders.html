@@ -1,0 +1,27 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; background: var(--bg-base); padding: 22px; font-family: var(--font-body); }
+  .row { display: flex; gap: 14px; }
+  .tile { flex: 1; background: var(--bg-surface); border-radius: 14px; padding: 16px; min-height: 80px; box-shadow: var(--shadow-card); display: flex; flex-direction: column; justify-content: space-between; gap: 10px; }
+  .lbl { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); }
+  .lbl b { color: var(--text-primary); font-weight: 600; }
+</style></head><body>
+<div class="row">
+  <div class="tile" style="border: 1px solid var(--border-subtle);">
+    <div class="lbl"><b>1px subtle</b></div>
+    <div class="lbl">rgba(26,51,40, .10)</div>
+    <div class="lbl">--border-subtle</div>
+  </div>
+  <div class="tile" style="border: 1px solid var(--border-strong);">
+    <div class="lbl"><b>1px strong</b></div>
+    <div class="lbl">rgba(26,51,40, .22)</div>
+    <div class="lbl">--border-strong</div>
+  </div>
+  <div class="tile" style="border: 2px solid var(--green-700);">
+    <div class="lbl"><b>2px green-700</b></div>
+    <div class="lbl">selected / loaded</div>
+    <div class="lbl">--green-700</div>
+  </div>
+</div>
+</body></html>
