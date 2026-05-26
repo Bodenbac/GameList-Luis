@@ -1,0 +1,37 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  @font-face { font-family: 'LittleLord';  src: url('../fonts/LittleLord.ttf')  format('truetype'); }
+  @font-face { font-family: 'QuirkyRobot'; src: url('../fonts/QuirkyRobot.ttf') format('truetype'); }
+  @font-face { font-family: 'GreatVibes';  src: url('../fonts/GreatVibes.ttf')  format('truetype'); }
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap');
+  body { margin: 0; background: #F7F4EF; padding: 24px; font-family: 'DM Sans', sans-serif; color: #1A3328; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .tile { background: #fff; border: 1px solid rgba(26,51,40,.10); border-radius: 14px; padding: 18px 16px; display: flex; flex-direction: column; gap: 4px; min-height: 120px; box-shadow: 0 2px 12px rgba(26,51,40,.07); }
+  .mark { font-size: 38px; line-height: 1; }
+  .lbl  { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #7A9089; font-weight: 500; font-family: 'DM Sans', sans-serif; }
+  .sub  { font-size: 13px; color: #3D4F46; }
+</style></head><body>
+<div class="grid">
+  <div class="tile">
+    <span class="lbl">Standard</span>
+    <span class="mark" style="font-family: 'Playfair Display', serif; font-weight: 700;">blend.</span>
+    <span class="sub" style="font-family: 'Playfair Display', serif;">Playfair Display</span>
+  </div>
+  <div class="tile">
+    <span class="lbl">Theme · littlelord</span>
+    <span class="mark" style="font-family: 'LittleLord';">blend.</span>
+    <span class="sub" style="font-family: 'LittleLord';">Skyr oder Naturjoghurt</span>
+  </div>
+  <div class="tile">
+    <span class="lbl">Theme · quirkyrobot</span>
+    <span class="mark" style="font-family: 'QuirkyRobot';">blend.</span>
+    <span class="sub" style="font-family: 'QuirkyRobot';">Skyr oder Naturjoghurt</span>
+  </div>
+  <div class="tile">
+    <span class="lbl">Theme · greatvibes</span>
+    <span class="mark" style="font-family: 'GreatVibes'; font-size: 50px; line-height: 0.9;">blend.</span>
+    <span class="sub" style="font-family: 'GreatVibes'; font-size: 18px;">Skyr oder Naturjoghurt</span>
+  </div>
+</div>
+</body></html>
