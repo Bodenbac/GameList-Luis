@@ -1,0 +1,17 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; background: var(--bg-base); padding: 24px; font-family: var(--font-body); }
+  .row { display: flex; gap: 14px; align-items: flex-end; }
+  .box { background: var(--bg-surface); border: 1px solid var(--border-subtle); box-shadow: var(--shadow-card); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 4px; padding: 10px; flex: 1; min-height: 78px; }
+  .v { font-family: var(--font-mono); font-size: 11px; color: var(--text-primary); font-weight: 600; }
+  .t { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); }
+</style></head><body>
+<div class="row">
+  <div class="box" style="border-radius: 12px;"><span class="v">12</span><span class="t">--radius-sm</span></div>
+  <div class="box" style="border-radius: 14px;"><span class="v">14</span><span class="t">--radius-md</span></div>
+  <div class="box" style="border-radius: 20px;"><span class="v">20</span><span class="t">--radius-lg</span></div>
+  <div class="box" style="border-radius: 22px;"><span class="v">22</span><span class="t">--radius-xl</span></div>
+  <div class="box" style="border-radius: 999px;"><span class="v">999</span><span class="t">--radius-pill</span></div>
+</div>
+</body></html>
