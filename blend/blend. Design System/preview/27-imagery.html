@@ -1,0 +1,39 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; background: var(--bg-base); padding: 22px; font-family: var(--font-body); color: var(--text-primary); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .col { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow-card); }
+  .title { font-family: var(--font-display); font-size: 16px; font-weight: 600; margin: 0 0 8px; }
+  .title.no { color: #C0392B; }
+  .title.yes { color: var(--green-700); }
+  ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+  li { font-size: 11.5px; color: var(--text-body); line-height: 1.4; }
+  .anchor { margin-top: 12px; font-family: var(--font-display); font-style: italic; font-size: 14px; color: var(--text-muted); text-align: center; }
+</style></head><body>
+<div class="grid">
+  <div class="col">
+    <h3 class="title yes">Do</h3>
+    <ul>
+      <li>Natural north-window daylight, soft and indirect</li>
+      <li>Hands pouring, mixing, carrying. Never staring faces</li>
+      <li>Off-center editorial framing, generous negative space</li>
+      <li>Cream / sage / deep green / soft amber grading</li>
+      <li>Subtle film grain, light touch</li>
+      <li>Real shadows, real mess on the counter</li>
+    </ul>
+  </div>
+  <div class="col">
+    <h3 class="title no">Don't</h3>
+    <ul>
+      <li>Studio key lights, flash, vignettes</li>
+      <li>White-background product cutouts</li>
+      <li>Smiling families clinking glasses</li>
+      <li>Color-blocked or gradient backgrounds</li>
+      <li>Glassmorphism, isometric 3D, AI-generated fruit</li>
+      <li>Plastic-perfect produce, oversaturation</li>
+    </ul>
+  </div>
+</div>
+<div class="anchor">"Sunday afternoon, kitchen counter, sun through a north window."</div>
+</body></html>
