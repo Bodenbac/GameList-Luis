@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>blend. — Smoothie Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    @font-face { font-family: 'LittleLord';  src: url('Fonts/LittleLord.ttf')  format('truetype'); font-weight: normal; font-display: swap; }
+    @font-face { font-family: 'QuirkyRobot'; src: url('Fonts/QuirkyRobot.ttf') format('truetype'); font-weight: normal; font-display: swap; }
+    @font-face { font-family: 'GreatVibes';  src: url('Fonts/GreatVibes.ttf')  format('truetype'); font-weight: normal; font-display: swap; }
+  </style>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-base:      #F7F4EF;
+      --bg-surface:   #FFFFFF;
+      --bg-muted:     #EEE9E1;
+      --bg-overlay:   rgba(247, 244, 239, 0.92);
+
+      --green-900:    #1A3328;
+      --green-700:    #2C5441;
+      --green-500:    #3D7A5E;
+      --green-100:    #D4EBE1;
+      --green-50:     #EAF5EE;
+
+      --amber-500:    #E07B39;
+      --amber-100:    #FAE5D3;
+
+      --text-primary: #1A3328;
+      --text-body:    #3D4F46;
+      --text-muted:   #7A9089;
+      --text-on-green:#F7F4EF;
+
+      --border-subtle: rgba(26, 51, 40, 0.10);
+      --border-strong: rgba(26, 51, 40, 0.22);
+
+      --shadow-card:  0 2px 12px rgba(26, 51, 40, 0.07);
+      --shadow-lift:  0 8px 32px rgba(26, 51, 40, 0.14);
+      --shadow-panel: 0 4px 40px rgba(26, 51, 40, 0.10);
+
+      --font-display: 'Playfair Display', Georgia, serif;
+      --font-body:    'DM Sans', system-ui, sans-serif;
+    }
+
+    /* ── Font-Themes ── */
+    [data-font="littlelord"] {
+      --font-display: 'LittleLord', Georgia, serif;
+      --font-body:    'LittleLord', Georgia, serif;
+    }
+    [data-font="quirkyrobot"] {
+      --font-display: 'QuirkyRobot', monospace;
+      --font-body:    'QuirkyRobot', monospace;
+    }
+    [data-font="greatvibes"] {
+      --font-display: 'GreatVibes', cursive;
+      --font-body:    'GreatVibes', cursive;
+    }
+
+    @keyframes card-select {
+      0%   { transform: scale(1); }
+      30%  { transform: scale(0.96); }
+      70%  { transform: scale(1.02); }
+      100% { transform: scale(1); }
+    }
+    @keyframes badge-pop {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.35); }
+      100% { transform: scale(1); }
+    }
+    @keyframes badge-enter {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    @keyframes slide-in {
+      from { transform: translateX(18px); opacity: 0; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+    @keyframes slide-out {
+      from { transform: translateX(0);    opacity: 1; }
+      to   { transform: translateX(18px); opacity: 0; }
+    }
+    @keyframes cart-shake {
+      0%, 100% { transform: rotate(0deg); }
+      25%      { transform: rotate(-7deg); }
+      75%      { transform: rotate(7deg); }
+    }
+    @keyframes page-in {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes stagger-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes sheet-up {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-base);
+      color: var(--text-body);
+      min-height: 100vh;
+      animation: page-in 350ms ease forwards;
+    }
+
+    button { cursor: pointer; border: none; font: inherit; background: none; }
+
+    /* ── Header ── */
+    .site-header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 64px;
+      background: var(--bg-overlay);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border-subtle);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 23px;
+      color: var(--green-900);
+      text-decoration: none;
+      letter-spacing: -0.5px;
+      margin-right: 2px;
+    }
+
+    /* Runde Icon-Buttons (Profile, Settings) */
+    .icon-btn {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: var(--bg-muted);
+      color: var(--text-body);
+      display: flex; align-items: center; justify-content: center;
+      transition: background 150ms ease, color 150ms ease;
+      flex-shrink: 0;
+    }
+    .icon-btn:hover { background: var(--border-subtle); color: var(--text-primary); }
+    .icon-btn svg { width: 17px; height: 17px; }
+
+    .cart-btn {
+      position: relative;
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--green-700);
+      color: var(--text-on-green);
+      display: flex; align-items: center; justify-content: center;
+      transition: background 150ms ease;
+    }
+    .cart-btn:hover { background: var(--green-500); }
+    .cart-btn.shaking { animation: cart-shake 280ms ease; }
+    .cart-btn svg { width: 19px; height: 19px; }
+
+    .cart-badge {
+      position: absolute;
+      top: -5px; right: -5px;
+      min-width: 20px; height: 20px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: var(--amber-500);
+      color: #fff;
+      font-size: 11px; font-weight: 600;
+      display: none; align-items: center; justify-content: center;
+      line-height: 1;
+    }
+    .cart-badge.visible { display: flex; }
+    .cart-badge.entering { animation: badge-enter 200ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+    .cart-badge.popping  { animation: badge-pop 130ms ease; }
+
+    /* ── Page ── */
+    .page {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 88px 24px 80px;
+    }
+
+    .section-label {
+      font-size: 11px; font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--text-muted);
+    }
+
+    /* ── Recipes ── */
+    .recipes-section { margin-bottom: 44px; }
+    .recipes-section .section-label { margin-bottom: 14px; }
+
+    /* Desktop: flex wrap (kein Scroll mehr) */
+    .recipes-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .recipe-card {
+      flex: 0 0 196px; width: 196px;
+      background: var(--bg-surface);
+      border: 2px solid var(--border-subtle);   /* immer 2px → kein Layout-Shift */
+      border-radius: 20px;
+      box-shadow: var(--shadow-card);
+      padding: 14px 16px;
+      cursor: pointer;
+      display: flex; flex-direction: column;
+      transition: transform 200ms ease, box-shadow 200ms ease, border-color 150ms ease;
+      user-select: none;
+    }
+    @media (hover: hover) {
+      .recipe-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
+    }
+    .recipe-card:active { transform: scale(0.97) translateY(-1px); }
+    .recipe-card.loaded { border-color: var(--green-700); }
+
+    .recipe-card-top {
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
+      margin-bottom: 8px;
+    }
+    .recipe-name {
+      font-family: var(--font-display);
+      font-weight: 600; font-size: 14px;
+      color: var(--text-primary);
+      line-height: 1.25;
+    }
+    /* Dot und Check müssen exakt gleich viel Platz einnehmen → kein Layout-Shift */
+    .recipe-dot  { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .recipe-check { font-size: 11px; font-weight: 700; line-height: 9px; color: var(--green-700); flex-shrink: 0; margin-top: 4px; }
+
+    /* Trennlinie in Rezeptkarte */
+    .recipe-divider {
+      height: 1px;
+      background: var(--border-subtle);
+      margin-bottom: 8px;
+      flex-shrink: 0;
+    }
+
+    /* Zutatenliste in Rezeptkarte */
+    .recipe-ingredient-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .recipe-ingredient-item {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-muted);
+      line-height: 1.35;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .recipe-card.loaded .recipe-ingredient-item { color: var(--green-700); opacity: 0.75; }
+
+    /* ── Workspace ── */
+    .workspace { display: flex; gap: 28px; align-items: flex-start; }
+    .ingredients-col { flex: 1 1 0; min-width: 0; }
+
+    /* ── Ingredients Toggle (mobile only) ── */
+    .ingredients-toggle {
+      display: none;
+      width: 100%;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 16px;
+      border-radius: 14px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-card);
+      font-size: 14px; font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+    .toggle-arrow {
+      transition: transform 250ms ease;
+      flex-shrink: 0;
+      color: var(--text-muted);
+    }
+    .ingredients-toggle[aria-expanded="true"] .toggle-arrow {
+      transform: rotate(180deg);
+    }
+
+    /* ── Category Tabs ── */
+    .category-tabs {
+      display: flex; gap: 8px;
+      overflow-x: auto; scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      margin-bottom: 20px; padding-bottom: 2px;
+    }
+    .category-tabs::-webkit-scrollbar { display: none; }
+
+    .cat-tab {
+      flex: 0 0 auto;
+      padding: 10px 16px;
+      min-height: 44px;
+      border-radius: 999px;
+      font-size: 13px; font-weight: 500;
+      color: var(--text-body);
+      background: var(--bg-muted);
+      transition: background 150ms ease, color 150ms ease;
+      white-space: nowrap;
+      display: flex; align-items: center;
+    }
+    @media (hover: hover) { .cat-tab:hover { background: var(--border-subtle); } }
+    .cat-tab.active { background: var(--green-700); color: var(--text-on-green); }
+
+    /* ── Ingredient Grid ── */
+    .ingredient-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+      gap: 12px;
+      transition: opacity 100ms ease;
+    }
+    .ingredient-grid.fading { opacity: 0; }
+
+    /* ── Ingredient Card ── */
+    .ingredient-card {
+      display: flex; flex-direction: column;
+      padding: 13px 14px; min-height: 90px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      box-shadow: var(--shadow-card);
+      cursor: pointer;
+      text-align: left;
+      transition: transform 180ms ease, box-shadow 180ms ease, background 150ms ease, border-color 150ms ease;
+      /* opacity bleibt immer 1 — kein Flackern beim Klick */
+    }
+    .ingredient-card.stagger { animation: stagger-in 280ms ease both; }
+
+    @media (hover: hover) {
+      .ingredient-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lift);
+        border-color: var(--border-strong);
+      }
+    }
+    .ingredient-card.selecting { animation: card-select 200ms ease; }
+    .ingredient-card.selected {
+      background: var(--green-100);
+      border-color: var(--green-700); /* Breite bleibt 1px → kein Reflow */
+    }
+    @media (hover: hover) {
+      .ingredient-card.selected:hover { border-color: var(--green-500); }
+    }
+
+    .card-emoji {
+      font-size: 22px;
+      line-height: 1;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
+    .ingredient-name {
+      font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1.3;
+      overflow-wrap: break-word; word-break: break-word;
+    }
+
+    .card-check {
+      font-size: 12px; font-weight: 600; color: var(--green-700);
+      opacity: 0; transition: opacity 150ms ease; flex-shrink: 0;
+    }
+    .ingredient-card.selected .card-check { opacity: 1; }
+
+    .ingredient-amount {
+      font-size: 11px; font-weight: 300; color: var(--text-muted);
+      margin-top: 5px;
+      display: block;
+    }
+
+    /* ── Cart Panel ── */
+    .cart-panel {
+      width: 296px; flex: 0 0 296px;
+      position: sticky; top: 80px;
+    }
+    .cart-panel-inner {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 22px;
+      box-shadow: var(--shadow-panel);
+      padding: 22px;
+    }
+
+    .cart-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .cart-title {
+      font-family: var(--font-display);
+      font-weight: 600; font-size: 20px;
+      color: var(--text-primary);
+    }
+    .cart-count-badge {
+      background: var(--green-700); color: var(--text-on-green);
+      font-size: 12px; font-weight: 600;
+      padding: 3px 11px; border-radius: 999px;
+    }
+
+    .cart-list {
+      display: flex; flex-direction: column;
+      max-height: 380px; overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-subtle) transparent;
+    }
+    .cart-list::-webkit-scrollbar { width: 3px; }
+    .cart-list::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
+
+    .cart-row {
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .cart-row:last-child { border-bottom: none; }
+    .cart-row.entering { animation: slide-in 200ms ease-out; }
+    .cart-row.leaving  { animation: slide-out 160ms ease-in forwards; }
+
+    .cart-row-left { display: flex; align-items: center; gap: 10px; }
+    .cart-item-emoji { font-size: 20px; line-height: 1; flex-shrink: 0; }
+    .cart-item-name   { font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1.25; }
+    .cart-item-amount { font-size: 11px; font-weight: 300; color: var(--text-muted); margin-top: 2px; }
+
+    .cart-remove-btn {
+      position: relative; flex-shrink: 0;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 16px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+    }
+    .cart-remove-btn::after {
+      content: ''; position: absolute; inset: -8px;
+    }
+    @media (hover: hover) {
+      .cart-remove-btn:hover { background: #FAE8E8; color: #C0392B; border-color: #e0a0a0; }
+    }
+
+    .cart-empty {
+      text-align: center; padding: 24px 0;
+      color: var(--text-muted);
+    }
+    .cart-empty svg { margin: 0 auto 12px; display: block; }
+    .cart-empty p { font-size: 13px; font-style: italic; font-weight: 300; }
+
+    .cart-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+
+    .btn {
+      height: 44px; border-radius: 12px;
+      font-size: 14px; font-weight: 600;
+      font-family: var(--font-body);
+      transition: background 140ms ease, color 140ms ease;
+      cursor: pointer;
+    }
+    .btn-primary { background: var(--green-700); color: var(--text-on-green); border: none; }
+    .btn-primary:hover { background: var(--green-500); }
+    .btn-secondary {
+      background: transparent; color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+    }
+    .btn-secondary:hover { background: var(--bg-muted); color: var(--text-body); }
+    .btn-export {
+      background: var(--green-50); color: var(--green-700);
+      border: 1.5px solid var(--green-100);
+      font-size: 13px;
+    }
+    .btn-export:hover { background: var(--green-100); }
+
+    /* ── Settings Modal ── */
+    .settings-modal {
+      display: none; position: fixed; inset: 0; z-index: 300;
+    }
+    .settings-modal.visible { display: block; }
+
+    .settings-modal-backdrop {
+      position: absolute; inset: 0;
+      background: rgba(26, 51, 40, 0.45);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    .settings-modal-sheet {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: var(--bg-surface);
+      border-radius: 22px 22px 0 0;
+      padding: 28px 20px 20px;
+      padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
+      display: flex; flex-direction: column; gap: 12px;
+      animation: sheet-up 260ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+
+    .settings-modal-title {
+      font-family: var(--font-display);
+      font-size: 19px; font-weight: 600;
+      color: var(--text-primary);
+      text-align: center; margin-bottom: 4px;
+    }
+
+    .settings-section-label {
+      font-size: 11px; font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.15em;
+      color: var(--text-muted);
+      margin-bottom: -4px;
+    }
+
+    .font-options {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+
+    .font-option-btn {
+      display: flex; align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: var(--bg-muted);
+      border: 2px solid transparent;
+      transition: background 140ms ease, border-color 140ms ease;
+      text-align: left;
+      cursor: pointer;
+    }
+    .font-option-btn:hover  { background: var(--green-50); }
+    .font-option-btn.active { background: var(--green-50); border-color: var(--green-700); }
+
+    .font-preview-name {
+      font-size: 17px; font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+    .font-preview-sub {
+      font-size: 12px; font-weight: 400;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+    .font-option-check {
+      margin-left: auto;
+      font-size: 14px; font-weight: 700;
+      color: var(--green-700);
+      opacity: 0;
+      transition: opacity 150ms ease;
+    }
+    .font-option-btn.active .font-option-check { opacity: 1; }
+
+    /* Column selector */
+    .col-options {
+      display: flex; gap: 8px;
+    }
+    .col-option-btn {
+      flex: 1;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 5px;
+      padding: 12px 8px;
+      border-radius: 14px;
+      background: var(--bg-muted);
+      border: 2px solid transparent;
+      transition: background 140ms ease, border-color 140ms ease;
+      cursor: pointer;
+      font-family: var(--font-body);
+    }
+    .col-option-btn:hover  { background: var(--green-50); }
+    .col-option-btn.active { background: var(--green-50); border-color: var(--green-700); }
+    .col-option-preview {
+      display: grid;
+      gap: 3px;
+      width: 100%;
+    }
+    .col-option-preview span {
+      display: block;
+      height: 8px;
+      border-radius: 3px;
+      background: var(--border-strong);
+    }
+    .col-option-btn.active .col-option-preview span { background: var(--green-500); }
+    .col-option-label {
+      font-size: 12px; font-weight: 500;
+      color: var(--text-muted);
+    }
+    .col-option-btn.active .col-option-label { color: var(--green-700); }
+
+    .settings-modal-cancel {
+      height: 44px; border-radius: 12px;
+      font-size: 14px; font-weight: 500;
+      color: var(--text-muted);
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      margin-top: 2px;
+      transition: background 140ms ease;
+    }
+    .settings-modal-cancel:hover { background: var(--bg-muted); }
+
+    /* Desktop: Modals zentriert + schmal */
+    @media (min-width: 640px) {
+      .settings-modal-sheet,
+      .export-modal-sheet {
+        left: 50%;
+        right: auto;
+        bottom: auto;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 440px;
+        border-radius: 22px;
+        animation: none;
+      }
+      /* Column setting only relevant on mobile */
+      .col-setting-section { display: none; }
+    }
+
+    /* ── Export Modal ── */
+    .export-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+    }
+    .export-modal.visible { display: block; }
+
+    .export-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(26, 51, 40, 0.45);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    .export-modal-sheet {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: var(--bg-surface);
+      border-radius: 22px 22px 0 0;
+      padding: 28px 20px 20px;
+      padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      animation: sheet-up 260ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+
+    .export-modal-title {
+      font-family: var(--font-display);
+      font-size: 19px;
+      font-weight: 600;
+      color: var(--text-primary);
+      text-align: center;
+      margin-bottom: 6px;
+    }
+
+    .export-option-btn {
+      height: auto;
+      min-height: 60px;
+      border-radius: 14px;
+      background: var(--bg-muted);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      text-align: left;
+      transition: background 140ms ease;
+      border: 1.5px solid transparent;
+    }
+    .export-option-btn:hover  { background: var(--green-50); border-color: var(--green-100); }
+    .export-option-btn:active { background: var(--green-100); }
+
+    .export-option-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .export-option-text { display: flex; flex-direction: column; gap: 2px; }
+    .export-option-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .export-option-desc {
+      font-size: 12px;
+      font-weight: 300;
+      color: var(--text-muted);
+    }
+
+    .export-modal-cancel {
+      height: 44px; border-radius: 12px;
+      font-size: 14px; font-weight: 500;
+      color: var(--text-muted);
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      margin-top: 2px;
+      transition: background 140ms ease;
+    }
+    .export-modal-cancel:hover { background: var(--bg-muted); }
+
+    /* ── Cart bottom bar (tablet/mobile only) ── */
+    .cart-tab-bar { display: none; }
+
+    .cart-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(26, 51, 40, 0.35);
+      backdrop-filter: blur(2px);
+      z-index: 90;
+    }
+    .cart-overlay.visible { display: block; }
+
+    /* ── Responsive: tablet + mobile ── */
+    @media (max-width: 899px) {
+      .page { padding-bottom: 82px; }
+      .workspace { flex-direction: column; align-items: stretch; }
+
+      /* Recipe strip → dynamic column grid */
+      .recipes-strip {
+        display: grid;
+        grid-template-columns: repeat(var(--recipe-cols, 3), 1fr);
+        gap: 8px;
+        overflow: hidden;  /* kein Overflow nach rechts */
+      }
+      .recipe-card {
+        flex: none;
+        width: 100%;       /* füllt Grid-Zelle exakt */
+        min-width: 0;      /* verhindert Grid-Overflow */
+        padding: 10px 12px;
+      }
+      .recipe-name { font-size: 12px; }
+      .recipe-ingredient-item { font-size: 10px; }
+
+      /* 2-column: slightly bigger text & padding */
+      [data-cols="2"] .recipe-card { padding: 12px 14px; }
+      [data-cols="2"] .recipe-name { font-size: 13px; }
+      [data-cols="2"] .recipe-ingredient-item { font-size: 11px; }
+
+      /* 1-column: full width, comfortable text */
+      [data-cols="1"] .recipe-card { padding: 14px 16px; }
+      [data-cols="1"] .recipe-name { font-size: 15px; }
+      [data-cols="1"] .recipe-ingredient-item { font-size: 12px; }
+
+      /* Ingredients toggle */
+      .ingredients-toggle { display: flex; }
+      .ingredients-body {
+        overflow: hidden;
+        max-height: 0;
+        transition: max-height 320ms cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .ingredients-body.expanded { max-height: 9999px; }
+
+      /* Cart panel: fixed to bottom, slides up on expand */
+      .cart-panel {
+        position: fixed;
+        top: auto;
+        bottom: 0; left: 0; right: 0;
+        width: 100%; flex: none;
+        height: 68vh; height: 68dvh;
+        z-index: 100;
+        overflow: hidden;
+        overflow-x: hidden;
+        transform: translateY(calc(100% - 58px));
+        transform: translateY(calc(100% - 58px - env(safe-area-inset-bottom, 0px)));
+        transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1);
+      }
+      .cart-panel.expanded { transform: translateY(0); }
+
+      .cart-tab-bar {
+        display: flex;
+        align-items: center; justify-content: space-between;
+        height: 58px;
+        background: var(--green-700);
+        color: var(--text-on-green);
+        padding: 0 22px;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        height: calc(58px + env(safe-area-inset-bottom, 0px));
+        border-radius: 20px 20px 0 0;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+      .cart-tab-bar-label { font-size: 15px; font-weight: 600; }
+      .cart-tab-bar-info  { font-size: 13px; opacity: 0.8; }
+
+      .cart-panel-inner {
+        display: flex;
+        flex-direction: column;
+        height: calc(68vh - 58px); height: calc(68dvh - 58px);
+        overflow: hidden;
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+        border-top: 1px solid var(--border-subtle);
+      }
+
+      .cart-header { flex-shrink: 0; }
+
+      .cart-list {
+        flex: 1 1 0;
+        max-height: none;
+        overflow-y: auto;
+        overflow-x: hidden;           /* kein horizontales Scrollen */
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        touch-action: pan-y;          /* nur vertikales Drag */
+      }
+
+      .cart-empty { flex-shrink: 0; }
+
+      .cart-actions {
+        flex-shrink: 0;
+        margin-top: 12px;
+        padding-bottom: 16px;
+      }
+    }
+
+    /* ── Responsive: mobile only ── */
+    @media (max-width: 599px) {
+      .page {
+        padding: 76px 14px 82px;
+        padding-bottom: max(82px, calc(58px + env(safe-area-inset-bottom, 0px) + 24px));
+      }
+      .site-header { padding: 0 14px; }
+      .icon-btn { width: 34px; height: 34px; }
+      .icon-btn svg { width: 15px; height: 15px; }
+
+      /* Recipe cards: compact on small phones */
+      .recipe-card { padding: 9px 10px; }
+      .recipe-name { font-size: 11px; }
+      .recipe-ingredient-item { font-size: 9px; }
+      .recipe-divider { margin-bottom: 6px; }
+
+      /* 2-column ingredient grid */
+      .ingredient-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .ingredient-card { padding: 11px 12px; min-height: 84px; }
+      .ingredient-name { font-size: 12px; }
+      .ingredient-amount { font-size: 10px; }
+      .card-emoji { font-size: 20px; }
+
+      /* Taller cart panel on small phones */
+      .cart-panel { height: 78vh; height: 78dvh; }
+      .cart-panel-inner { height: calc(78vh - 58px); height: calc(78dvh - 58px); }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-left">
+      <a class="wordmark" href="#">blend.</a>
+      <button class="icon-btn" id="btn-profile" aria-label="Profil">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+      </button>
+      <button class="icon-btn" id="btn-settings" aria-label="Einstellungen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+    <button class="cart-btn" id="cart-btn" aria-label="Warenkorb öffnen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <path d="M16 10a4 4 0 0 1-8 0"/>
+      </svg>
+      <span class="cart-badge" id="cart-badge">0</span>
+    </button>
+  </header>
+
+  <main class="page">
+
+    <section class="recipes-section">
+      <p class="section-label">Inspiration</p>
+      <div class="recipes-strip" id="recipes-strip"></div>
+    </section>
+
+    <div class="workspace">
+
+      <div class="ingredients-col">
+        <button class="ingredients-toggle" id="ingredients-toggle" aria-expanded="false">
+          <span>Zutaten anpassen</span>
+          <svg class="toggle-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="ingredients-body" id="ingredients-body">
+          <div class="category-tabs" id="category-tabs"></div>
+          <div class="ingredient-grid" id="ingredient-grid"></div>
+        </div>
+      </div>
+
+      <aside class="cart-panel" id="cart-panel">
+        <div class="cart-tab-bar" id="cart-tab-bar">
+          <span class="cart-tab-bar-label">Einkaufszettel</span>
+          <span class="cart-tab-bar-info" id="cart-tab-info">0 Artikel</span>
+        </div>
+        <div class="cart-panel-inner">
+          <div class="cart-header">
+            <h2 class="cart-title">Einkaufszettel</h2>
+            <span class="cart-count-badge" id="cart-count-badge">0</span>
+          </div>
+          <div class="cart-list" id="cart-list"></div>
+          <div class="cart-empty" id="cart-empty">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--green-100)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/>
+              <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+            </svg>
+            <p>Noch nichts ausgewählt.</p>
+          </div>
+          <div class="cart-actions">
+            <button class="btn btn-export" id="btn-export" style="display:none" aria-label="Einkaufsliste exportieren">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:7px;vertical-align:-2px"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+              Einkaufszettel teilen
+            </button>
+            <button class="btn btn-secondary" id="btn-reset">Zurücksetzen</button>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+
+  <div class="cart-overlay" id="cart-overlay"></div>
+
+  <!-- Settings Modal -->
+  <div class="settings-modal" id="settings-modal" role="dialog" aria-modal="true" aria-label="Einstellungen">
+    <div class="settings-modal-backdrop" id="settings-modal-backdrop"></div>
+    <div class="settings-modal-sheet">
+      <p class="settings-modal-title">Einstellungen</p>
+      <p class="settings-section-label">Schriftart</p>
+      <div class="font-options">
+        <button class="font-option-btn" data-font-key="classic" id="font-classic">
+          <div>
+            <div class="font-preview-name" style="font-family:'Playfair Display',serif">blend.</div>
+            <div class="font-preview-sub">Standard</div>
+          </div>
+          <span class="font-option-check">✓</span>
+        </button>
+        <button class="font-option-btn" data-font-key="littlelord" id="font-littlelord">
+          <div>
+            <div class="font-preview-name" style="font-family:'LittleLord',serif">blend.</div>
+            <div class="font-preview-sub">LittleLord</div>
+          </div>
+          <span class="font-option-check">✓</span>
+        </button>
+        <button class="font-option-btn" data-font-key="quirkyrobot" id="font-quirkyrobot">
+          <div>
+            <div class="font-preview-name" style="font-family:'QuirkyRobot',monospace">blend.</div>
+            <div class="font-preview-sub">QuirkyRobot</div>
+          </div>
+          <span class="font-option-check">✓</span>
+        </button>
+        <button class="font-option-btn" data-font-key="greatvibes" id="font-greatvibes">
+          <div>
+            <div class="font-preview-name" style="font-family:'GreatVibes',cursive;font-size:22px">blend.</div>
+            <div class="font-preview-sub">GreatVibes</div>
+          </div>
+          <span class="font-option-check">✓</span>
+        </button>
+      </div>
+      <div class="col-setting-section">
+        <p class="settings-section-label" style="margin-top:16px">Inspirationen pro Reihe</p>
+        <div class="col-options">
+          <button class="col-option-btn" data-cols="1" id="col-1">
+            <div class="col-option-preview" style="grid-template-columns:1fr">
+              <span></span><span></span><span></span>
+            </div>
+            <span class="col-option-label">1</span>
+          </button>
+          <button class="col-option-btn" data-cols="2" id="col-2">
+            <div class="col-option-preview" style="grid-template-columns:1fr 1fr">
+              <span></span><span></span>
+              <span></span><span></span>
+              <span></span><span></span>
+            </div>
+            <span class="col-option-label">2</span>
+          </button>
+          <button class="col-option-btn active" data-cols="3" id="col-3">
+            <div class="col-option-preview" style="grid-template-columns:1fr 1fr 1fr">
+              <span></span><span></span><span></span>
+              <span></span><span></span><span></span>
+            </div>
+            <span class="col-option-label">3</span>
+          </button>
+        </div>
+      </div>
+      <button class="settings-modal-cancel" id="btn-settings-cancel">Schließen</button>
+    </div>
+  </div>
+
+  <!-- Export Modal -->
+  <div class="export-modal" id="export-modal" role="dialog" aria-modal="true" aria-label="Exportieren als">
+    <div class="export-modal-backdrop" id="export-modal-backdrop"></div>
+    <div class="export-modal-sheet">
+      <p class="export-modal-title">Einkaufszettel teilen</p>
+      <button class="export-option-btn" id="btn-export-by-drink">
+        <span class="export-option-icon">🥤</span>
+        <div class="export-option-text">
+          <span class="export-option-title">Nach Smoothie aufgeteilt</span>
+        </div>
+      </button>
+      <button class="export-option-btn" id="btn-export-all">
+        <span class="export-option-icon">📋</span>
+        <div class="export-option-text">
+          <span class="export-option-title">Gesamter Einkaufszettel</span>
+        </div>
+      </button>
+      <button class="export-modal-cancel" id="btn-export-cancel">Abbrechen</button>
+    </div>
+  </div>
+
+  <script>
+    /* ── DATA ── */
+    const categories = [
+      {
+        name: "Basis & Sattmacher",
+        items: [
+          { name: "Haferflocken",            amount: "1 Packung",      emoji: "🌾" },
+          { name: "Bananen",                 amount: "8–10 Stück",     emoji: "🍌" },
+          { name: "Skyr oder Naturjoghurt",  amount: "500 g – 1 kg",   emoji: "🍶" },
+          { name: "Milch oder Hafermilch",   amount: "1–2 Liter",      emoji: "🥛" },
+          { name: "Erdnussmus",              amount: "1 Glas",         emoji: "🥜" },
+          { name: "Leinsamen oder Chiasamen",amount: "1 Packung",      emoji: "🌱" },
+          { name: "Kakao ungesüßt",          amount: "1 Packung",      emoji: "🍫" }
+        ]
+      },
+      {
+        name: "Obst",
+        items: [
+          { name: "TK-Beerenmix",             amount: "1 große Packung", emoji: "🫐" },
+          { name: "TK-Mango oder TK-Ananas",  amount: "1 Packung",       emoji: "🥭" },
+          { name: "Äpfel",                    amount: "4–6 Stück",       emoji: "🍎" },
+          { name: "Zitronen oder Limetten",   amount: "3–4 Stück",       emoji: "🍋" },
+          { name: "Datteln",                  amount: "1 kleine Packung", emoji: "🌴" }
+        ]
+      },
+      {
+        name: "Gemüse",
+        items: [
+          { name: "Babyspinat oder TK-Spinat", amount: "1 Packung", emoji: "🥬" },
+          { name: "Karotten",                  amount: "1 kg",       emoji: "🥕" },
+          { name: "Gurke",                     amount: "1 Stück",    emoji: "🥒" },
+          { name: "Gekochte Rote Bete",        amount: "1 Packung",  emoji: "🫐" }
+        ]
+      },
+      {
+        name: "Geschmack & Extras",
+        items: [
+          { name: "Ingwer",   amount: "1 kleines Stück", emoji: "🌿" },
+          { name: "Zimt",     amount: "1 Dose",          emoji: "🫙" },
+          { name: "Kurkuma",  amount: "1 Dose",          emoji: "🌻" }
+        ]
+      }
+    ];
+
+    const recipes = [
+      {
+        name: "Sattmacher Shake",
+        color: "#C8A96E",
+        ingredients: ["Haferflocken", "Bananen", "Milch oder Hafermilch", "Erdnussmus", "Kakao ungesüßt"]
+      },
+      {
+        name: "Berry Protein",
+        color: "#9B6EA8",
+        ingredients: ["TK-Beerenmix", "Bananen", "Skyr oder Naturjoghurt", "Milch oder Hafermilch", "Haferflocken"]
+      },
+      {
+        name: "Green Glow",
+        color: "#4A9B6F",
+        ingredients: ["Babyspinat oder TK-Spinat", "Bananen", "Äpfel", "Zitronen oder Limetten"]
+      },
+      {
+        name: "Mango Karotte",
+        color: "#E07B39",
+        ingredients: ["TK-Mango oder TK-Ananas", "Karotten", "Bananen", "Ingwer"]
+      },
+      {
+        name: "Detox Grün",
+        color: "#5BAD72",
+        ingredients: ["Babyspinat oder TK-Spinat", "Gurke", "Äpfel", "Zitronen oder Limetten", "Ingwer"]
+      },
+      {
+        name: "Golden Glow",
+        color: "#D4A017",
+        ingredients: ["Karotten", "Bananen", "Kurkuma", "Ingwer", "Milch oder Hafermilch"]
+      },
+      {
+        name: "Schoko Power",
+        color: "#6B3A2A",
+        ingredients: ["Kakao ungesüßt", "Bananen", "Erdnussmus", "Haferflocken", "Milch oder Hafermilch"]
+      },
+      {
+        name: "Rote Bete Boost",
+        color: "#A0264A",
+        ingredients: ["Gekochte Rote Bete", "Äpfel", "Zitronen oder Limetten", "Ingwer"]
+      },
+      {
+        name: "Tropical Vibes",
+        color: "#F0A500",
+        ingredients: ["TK-Mango oder TK-Ananas", "Bananen", "Milch oder Hafermilch", "Datteln"]
+      },
+      {
+        name: "Chia Power",
+        color: "#7B9EA6",
+        ingredients: ["Leinsamen oder Chiasamen", "TK-Beerenmix", "Bananen", "Skyr oder Naturjoghurt"]
+      }
+    ];
+
+    const starterItems = new Set([
+      "Haferflocken", "Bananen", "Skyr oder Naturjoghurt", "Milch oder Hafermilch",
+      "Erdnussmus", "TK-Beerenmix", "Äpfel", "Babyspinat oder TK-Spinat"
+    ]);
+
+    /* ── ITEM LOOKUP ── */
+    const itemMap = {};
+    categories.forEach(cat => cat.items.forEach(item => { itemMap[item.name] = item; }));
+
+    /* ── STATE ── */
+    const state = { selected: {}, activeCategory: 'all' };
+
+    categories.forEach(cat => cat.items.forEach(item => {
+      state.selected[item.name] = starterItems.has(item.name);
+    }));
+
+    /* ── LOCALSTORAGE ── */
+    function saveState() {
+      try { localStorage.setItem('blend-selected', JSON.stringify(state.selected)); } catch(e) {}
+    }
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem('blend-selected');
+        if (!saved) return;
+        const parsed = JSON.parse(saved);
+        Object.keys(state.selected).forEach(key => {
+          if (Object.prototype.hasOwnProperty.call(parsed, key)) state.selected[key] = parsed[key];
+        });
+      } catch(e) {}
+    }
+
+    loadState();
+
+    /* ── HELPERS ── */
+    function getSelectedItems() {
+      return categories.flatMap(cat =>
+        cat.items.filter(i => state.selected[i.name]).map(i => ({ ...i, category: cat.name }))
+      );
+    }
+
+    function getFilteredItems(cat) {
+      if (cat === 'all') return categories.flatMap(c => c.items);
+      const found = categories.find(c => c.name === cat);
+      return found ? found.items : [];
+    }
+
+    function isRecipeLoaded(recipe) {
+      return recipe.ingredients.every(n => state.selected[n]);
+    }
+
+    /* ── RENDER: Recipe Strip ── */
+    function renderRecipeStrip() {
+      const strip = document.getElementById('recipes-strip');
+      strip.innerHTML = '';
+      recipes.forEach(recipe => {
+        const loaded = isRecipeLoaded(recipe);
+        const card = document.createElement('div');
+        card.className = 'recipe-card' + (loaded ? ' loaded' : '');
+        card.dataset.recipe = recipe.name;
+        card.innerHTML = `
+          <div class="recipe-card-top">
+            <span class="recipe-name">${recipe.name}</span>
+            ${loaded
+              ? `<span class="recipe-check">✓</span>`
+              : `<span class="recipe-dot" style="background:${recipe.color}"></span>`}
+          </div>
+          <div class="recipe-divider"></div>
+          <ul class="recipe-ingredient-list">
+            ${recipe.ingredients.map(ing => `<li class="recipe-ingredient-item">${ing}</li>`).join('')}
+          </ul>`;
+        card.addEventListener('click', () => toggleRecipe(recipe.name));
+        strip.appendChild(card);
+      });
+    }
+
+    function updateRecipeCard(recipeName) {
+      const recipe = recipes.find(r => r.name === recipeName);
+      if (!recipe) return;
+      const card = document.querySelector(`.recipe-card[data-recipe="${CSS.escape(recipeName)}"]`);
+      if (!card) return;
+      const loaded = isRecipeLoaded(recipe);
+      card.classList.toggle('loaded', loaded);
+      const indicator = card.querySelector('.recipe-check, .recipe-dot');
+      if (indicator) {
+        indicator.outerHTML = loaded
+          ? `<span class="recipe-check">✓</span>`
+          : `<span class="recipe-dot" style="background:${recipe.color}"></span>`;
+      }
+    }
+
+    /* ── RENDER: Category Tabs ── */
+    function renderCategoryTabs() {
+      const container = document.getElementById('category-tabs');
+      container.innerHTML = '';
+      const tabs = [{ key: 'all', label: 'Alle' }, ...categories.map(c => ({ key: c.name, label: c.name }))];
+      tabs.forEach(tab => {
+        const btn = document.createElement('button');
+        btn.className = 'cat-tab' + (state.activeCategory === tab.key ? ' active' : '');
+        btn.textContent = tab.label;
+        btn.addEventListener('click', () => {
+          if (state.activeCategory === tab.key) return;
+          state.activeCategory = tab.key;
+          document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+          btn.classList.add('active');
+          renderIngredientGrid(tab.key);
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    /* ── RENDER: Ingredient Grid ── */
+    function renderIngredientGrid(category) {
+      const grid = document.getElementById('ingredient-grid');
+      grid.classList.add('fading');
+      setTimeout(() => {
+        grid.innerHTML = '';
+        getFilteredItems(category).forEach((item, i) => {
+          const card = buildIngredientCard(item);
+          card.classList.add('stagger');
+          card.style.animationDelay = `${i * 28}ms`;
+          grid.appendChild(card);
+        });
+        grid.classList.remove('fading');
+      }, 110);
+    }
+
+    function buildIngredientCard(item) {
+      const card = document.createElement('button');
+      card.className = 'ingredient-card' + (state.selected[item.name] ? ' selected' : '');
+      card.dataset.ingredient = item.name;
+      card.setAttribute('aria-pressed', state.selected[item.name] ? 'true' : 'false');
+      card.innerHTML = `
+        <span class="card-emoji" aria-hidden="true">${item.emoji}</span>
+        <div class="card-top">
+          <span class="ingredient-name">${item.name}</span>
+          <span class="card-check" aria-hidden="true">✓</span>
+        </div>
+        <span class="ingredient-amount">${item.amount}</span>`;
+      card.addEventListener('click', () => toggleItem(item.name));
+      return card;
+    }
+
+    /* ── TARGETED DOM UPDATES ── */
+    function updateIngredientCard(name) {
+      const card = document.querySelector(`.ingredient-card[data-ingredient="${CSS.escape(name)}"]`);
+      if (!card) return;
+      const sel = state.selected[name];
+      card.classList.toggle('selected', sel);
+      card.setAttribute('aria-pressed', sel ? 'true' : 'false');
+      card.classList.remove('selecting');
+      void card.offsetWidth;
+      card.classList.add('selecting');
+      card.addEventListener('animationend', () => card.classList.remove('selecting'), { once: true });
+    }
+
+    function updateCartPanel() {
+      const items = getSelectedItems();
+      const listEl     = document.getElementById('cart-list');
+      const emptyEl    = document.getElementById('cart-empty');
+      const countBadge = document.getElementById('cart-count-badge');
+      const tabInfo    = document.getElementById('cart-tab-info');
+
+      const count = items.length;
+      countBadge.textContent = count;
+      if (tabInfo) tabInfo.textContent = `${count} Artikel`;
+
+      if (count === 0) {
+        listEl.querySelectorAll('.cart-row').forEach(row => {
+          row.classList.add('leaving');
+          row.addEventListener('animationend', () => row.remove(), { once: true });
+        });
+        emptyEl.style.display = '';
+        return;
+      }
+
+      emptyEl.style.display = 'none';
+
+      const currentNames  = new Set([...listEl.querySelectorAll('.cart-row')].map(r => r.dataset.cartItem));
+      const selectedNames = new Set(items.map(i => i.name));
+
+      listEl.querySelectorAll('.cart-row').forEach(row => {
+        if (!selectedNames.has(row.dataset.cartItem)) {
+          row.classList.add('leaving');
+          row.addEventListener('animationend', () => row.remove(), { once: true });
+        }
+      });
+
+      items.forEach(item => {
+        if (!currentNames.has(item.name)) {
+          const row = document.createElement('div');
+          row.className = 'cart-row entering';
+          row.dataset.cartItem = item.name;
+          row.innerHTML = `
+            <div class="cart-row-left">
+              <span class="cart-item-emoji" aria-hidden="true">${item.emoji}</span>
+              <div>
+                <p class="cart-item-name">${item.name}</p>
+                <p class="cart-item-amount">${item.amount}</p>
+              </div>
+            </div>
+            <button class="cart-remove-btn" aria-label="${item.name} entfernen">−</button>`;
+          row.querySelector('.cart-remove-btn').addEventListener('click', e => {
+            e.stopPropagation();
+            toggleItem(item.name);
+          });
+          row.addEventListener('animationend', () => row.classList.remove('entering'), { once: true });
+          listEl.appendChild(row);
+        }
+      });
+    }
+
+    function updateHeaderBadge() {
+      const count = getSelectedItems().length;
+      const badge = document.getElementById('cart-badge');
+      if (count === 0) {
+        badge.classList.remove('visible', 'popping', 'entering');
+      } else {
+        const wasVisible = badge.classList.contains('visible');
+        badge.textContent = count;
+        if (!wasVisible) {
+          badge.classList.add('visible', 'entering');
+          badge.addEventListener('animationend', () => badge.classList.remove('entering'), { once: true });
+        } else {
+          badge.classList.remove('popping');
+          void badge.offsetWidth;
+          badge.classList.add('popping');
+          badge.addEventListener('animationend', () => badge.classList.remove('popping'), { once: true });
+        }
+      }
+      const btn = document.getElementById('cart-btn');
+      btn.classList.remove('shaking');
+      void btn.offsetWidth;
+      btn.classList.add('shaking');
+      btn.addEventListener('animationend', () => btn.classList.remove('shaking'), { once: true });
+    }
+
+    /* ── ACTIONS ── */
+    function toggleItem(name) {
+      state.selected[name] = !state.selected[name];
+      updateIngredientCard(name);
+      updateCartPanel();
+      updateHeaderBadge();
+      recipes.forEach(r => { if (r.ingredients.includes(name)) updateRecipeCard(r.name); });
+      saveState();
+    }
+
+    function toggleRecipe(name) {
+      const recipe = recipes.find(r => r.name === name);
+      if (!recipe) return;
+      const allLoaded = isRecipeLoaded(recipe);
+      recipe.ingredients.forEach(n => { state.selected[n] = !allLoaded; });
+      recipe.ingredients.forEach(n => updateIngredientCard(n));
+      updateCartPanel();
+      updateHeaderBadge();
+      updateRecipeCard(name);
+      saveState();
+    }
+
+    function selectStarter() {
+      categories.forEach(cat => cat.items.forEach(item => {
+        state.selected[item.name] = starterItems.has(item.name);
+      }));
+      document.getElementById('cart-list').innerHTML = '';
+      renderIngredientGrid(state.activeCategory);
+      updateCartPanel();
+      updateHeaderBadge();
+      renderRecipeStrip();
+      saveState();
+    }
+
+    function clearAll() {
+      categories.forEach(cat => cat.items.forEach(item => { state.selected[item.name] = false; }));
+      document.getElementById('cart-list').innerHTML = '';
+      renderIngredientGrid(state.activeCategory);
+      updateCartPanel();
+      updateHeaderBadge();
+      renderRecipeStrip();
+      saveState();
+    }
+
+    /* ── SETTINGS MODAL ── */
+    function showSettingsModal() {
+      document.getElementById('settings-modal').classList.add('visible');
+    }
+    function hideSettingsModal() {
+      document.getElementById('settings-modal').classList.remove('visible');
+    }
+
+    function setFont(key) {
+      document.documentElement.setAttribute('data-font', key);
+      try { localStorage.setItem('blend-font', key); } catch(e) {}
+      document.querySelectorAll('.font-option-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.fontKey === key);
+      });
+    }
+
+    function loadFont() {
+      try {
+        const saved = localStorage.getItem('blend-font');
+        if (saved) setFont(saved);
+        else setFont('classic');
+      } catch(e) { setFont('classic'); }
+    }
+
+    function setColumns(n) {
+      const col = String(n);
+      document.documentElement.setAttribute('data-cols', col);
+      document.documentElement.style.setProperty('--recipe-cols', col);
+      try { localStorage.setItem('blend-cols', col); } catch(e) {}
+      document.querySelectorAll('.col-option-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.cols === col);
+      });
+    }
+
+    function loadColumns() {
+      try {
+        const saved = localStorage.getItem('blend-cols');
+        if (saved) setColumns(parseInt(saved, 10));
+        else setColumns(3);
+      } catch(e) { setColumns(3); }
+    }
+
+    document.querySelectorAll('.col-option-btn').forEach(btn => {
+      btn.addEventListener('click', () => setColumns(parseInt(btn.dataset.cols, 10)));
+    });
+
+    document.getElementById('btn-settings').addEventListener('click', showSettingsModal);
+    document.getElementById('btn-settings-cancel').addEventListener('click', hideSettingsModal);
+    document.getElementById('settings-modal-backdrop').addEventListener('click', hideSettingsModal);
+    document.getElementById('btn-profile').addEventListener('click', () => { /* Profil: Platzhalter */ });
+
+    document.querySelectorAll('.font-option-btn').forEach(btn => {
+      btn.addEventListener('click', () => setFont(btn.dataset.fontKey));
+    });
+
+    /* ── EXPORT MODAL ── */
+    function showExportModal() {
+      if (getSelectedItems().length === 0) return;
+      document.getElementById('export-modal').classList.add('visible');
+    }
+
+    function hideExportModal() {
+      document.getElementById('export-modal').classList.remove('visible');
+    }
+
+    /* Export Option 1: nach Smoothie aufgeteilt */
+    async function exportByDrink() {
+      hideExportModal();
+      const allSelected = getSelectedItems();
+      if (allSelected.length === 0) return;
+
+      const loadedRecipes = recipes.filter(r => isRecipeLoaded(r));
+      const coveredNames  = new Set(loadedRecipes.flatMap(r => r.ingredients));
+      const remaining     = allSelected.filter(i => !coveredNames.has(i.name));
+
+      const lines = ['Einkaufsliste blend.', ''];
+
+      loadedRecipes.forEach(recipe => {
+        lines.push(`— ${recipe.name} —`);
+        recipe.ingredients.forEach(ing => {
+          const item = itemMap[ing];
+          if (item) lines.push(`${item.emoji} ${item.name} (${item.amount})`);
+        });
+        lines.push('');
+      });
+
+      if (remaining.length > 0) {
+        if (loadedRecipes.length > 0) lines.push('— Weitere Zutaten —');
+        remaining.forEach(i => lines.push(`${i.emoji} ${i.name} (${i.amount})`));
+      }
+
+      try {
+        await navigator.share({ title: 'Einkaufsliste blend.', text: lines.join('\n') });
+      } catch(e) {}
+    }
+
+    /* Export Option 2: Gesamter Einkaufszettel */
+    async function exportAll() {
+      hideExportModal();
+      const items = getSelectedItems();
+      if (items.length === 0) return;
+      const text = 'Einkaufsliste blend.\n\n' +
+        items.map(i => `${i.emoji} ${i.name} (${i.amount})`).join('\n');
+      try {
+        await navigator.share({ title: 'Einkaufsliste blend.', text });
+      } catch(e) {}
+    }
+
+    /* ── MOBILE CART ── */
+    let cartExpanded = false;
+
+    function toggleCart() {
+      cartExpanded = !cartExpanded;
+      document.getElementById('cart-panel').classList.toggle('expanded', cartExpanded);
+      document.getElementById('cart-overlay').classList.toggle('visible', cartExpanded);
+    }
+
+    document.getElementById('cart-tab-bar').addEventListener('click', toggleCart);
+    document.getElementById('cart-btn').addEventListener('click', () => {
+      if (window.innerWidth < 900) toggleCart();
+    });
+    document.getElementById('cart-overlay').addEventListener('click', () => {
+      if (cartExpanded) toggleCart();
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', clearAll);
+    document.getElementById('btn-export').addEventListener('click', showExportModal);
+
+    document.getElementById('btn-export-by-drink').addEventListener('click', exportByDrink);
+    document.getElementById('btn-export-all').addEventListener('click', exportAll);
+    document.getElementById('btn-export-cancel').addEventListener('click', hideExportModal);
+    document.getElementById('export-modal-backdrop').addEventListener('click', hideExportModal);
+
+    /* ── INGREDIENTS TOGGLE ── */
+    document.getElementById('ingredients-toggle').addEventListener('click', () => {
+      const body = document.getElementById('ingredients-body');
+      const btn  = document.getElementById('ingredients-toggle');
+      const expanded = body.classList.toggle('expanded');
+      btn.setAttribute('aria-expanded', expanded);
+    });
+
+    /* ── INIT ── */
+    loadFont();
+    loadColumns();
+
+    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      document.getElementById('btn-export').style.display = '';
+    }
+
+    renderRecipeStrip();
+    renderCategoryTabs();
+    renderIngredientGrid('all');
+    updateCartPanel();
+    updateHeaderBadge();
+  </script>
+</body>
+</html>
