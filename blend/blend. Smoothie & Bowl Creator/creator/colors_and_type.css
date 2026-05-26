@@ -1,0 +1,342 @@
+/* ============================================================
+   blend. Design System — Colors & Type
+   ------------------------------------------------------------
+   CSS custom properties for color, type, spacing, radius, shadow.
+   Drop into <head> of any blend.-branded design.
+   ------------------------------------------------------------ */
+
+/* ---- Webfonts ---------------------------------------------- */
+/* Default body + display: Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=Playfair+Display:wght@600;700&display=swap');
+
+/* User-switchable display fonts (local TTFs in fonts/) */
+@font-face {
+  font-family: 'LittleLord';
+  src: url('fonts/LittleLord.ttf') format('truetype');
+  font-weight: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'QuirkyRobot';
+  src: url('fonts/QuirkyRobot.ttf') format('truetype');
+  font-weight: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'GreatVibes';
+  src: url('fonts/GreatVibes.ttf') format('truetype');
+  font-weight: normal;
+  font-display: swap;
+}
+
+/* ---- Tokens ------------------------------------------------ */
+:root {
+  /* Surfaces */
+  --bg-base:        #F7F4EF;   /* page background — warm paper */
+  --bg-surface:     #FFFFFF;   /* cards, modals */
+  --bg-muted:       #EEE9E1;   /* inactive tabs, icon-btn bg */
+  --bg-overlay:     rgba(247, 244, 239, 0.92); /* frosted header */
+
+  /* Brand greens */
+  --green-900:      #1A3328;   /* primary text, brand-dark */
+  --green-700:      #2C5441;   /* primary buttons, active tab */
+  --green-500:      #3D7A5E;   /* hover for green-700 */
+  --green-100:      #D4EBE1;   /* selected card fill */
+  --green-50:       #EAF5EE;   /* soft tint (export btn, hover) */
+
+  /* Accent amber */
+  --amber-500:      #E07B39;   /* cart badge, "Mango Karotte" */
+  --amber-100:      #FAE5D3;   /* reserved soft amber */
+
+  /* Text */
+  --text-primary:   #1A3328;   /* same as green-900 */
+  --text-body:      #3D4F46;   /* secondary text */
+  --text-muted:     #7A9089;   /* tertiary, captions, amounts */
+  --text-on-green:  #F7F4EF;   /* text on green-700 / 900 */
+
+  /* Borders — green-tinted, never neutral gray */
+  --border-subtle:  rgba(26, 51, 40, 0.10);
+  --border-strong:  rgba(26, 51, 40, 0.22);
+
+  /* Elevation — green-tinted shadows */
+  --shadow-card:    0 2px 12px rgba(26, 51, 40, 0.07);
+  --shadow-lift:    0 8px 32px rgba(26, 51, 40, 0.14);
+  --shadow-panel:   0 4px 40px rgba(26, 51, 40, 0.10);
+
+  /* Radii */
+  --radius-sm:      12px;   /* buttons */
+  --radius-md:      14px;   /* ingredient cards, options */
+  --radius-lg:      20px;   /* recipe cards */
+  --radius-xl:      22px;   /* cart panel, sheet tops */
+  --radius-pill:    999px;  /* tabs, badges, icon-btns */
+
+  /* Spacing — used loosely; not a strict scale */
+  --space-1:        4px;
+  --space-2:        8px;
+  --space-3:        12px;
+  --space-4:        16px;
+  --space-5:        20px;
+  --space-6:        24px;
+  --space-7:        28px;
+  --space-8:        32px;
+
+  /* Layout */
+  --page-max:       1160px;
+  --header-height:  64px;
+
+  /* Type families */
+  --font-display:   'Playfair Display', Georgia, serif;
+  --font-body:      'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-mono:      ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Type scale — base font size 13–16px range; this brand reads small */
+  --fs-eyebrow:     11px;   /* uppercase section labels */
+  --fs-caption:     11px;   /* card amounts */
+  --fs-body-sm:     12px;
+  --fs-body:        13px;   /* most card text */
+  --fs-body-lg:     14px;   /* buttons, modal options */
+  --fs-h4:          17px;   /* font-option name */
+  --fs-h3:          19px;   /* modal titles */
+  --fs-h2:          20px;   /* cart title */
+  --fs-h1:          23px;   /* wordmark */
+
+  --lh-tight:       1.2;
+  --lh-snug:        1.25;
+  --lh-normal:      1.35;
+
+  /* Easing & duration */
+  --ease-ios:       cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-pop:       cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast:       130ms;
+  --dur-base:       200ms;
+  --dur-slow:       300ms;
+}
+
+/* ---- Font theme switchers --------------------------------- */
+[data-font="littlelord"] {
+  --font-display: 'LittleLord', Georgia, serif;
+  --font-body:    'LittleLord', Georgia, serif;
+}
+[data-font="quirkyrobot"] {
+  --font-display: 'QuirkyRobot', monospace;
+  --font-body:    'QuirkyRobot', monospace;
+}
+[data-font="greatvibes"] {
+  --font-display: 'GreatVibes', cursive;
+  --font-body:    'GreatVibes', cursive;
+}
+
+/* ============================================================
+   Semantic type classes — use these directly when you can.
+   ============================================================ */
+
+.blend-wordmark {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-h1);
+  color: var(--green-900);
+  letter-spacing: -0.5px;
+  text-decoration: none;
+}
+
+.blend-h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 32px;
+  line-height: var(--lh-tight);
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+
+.blend-h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--fs-h2);
+  line-height: var(--lh-snug);
+  color: var(--text-primary);
+}
+
+.blend-h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--fs-h3);
+  line-height: var(--lh-snug);
+  color: var(--text-primary);
+}
+
+.blend-eyebrow {
+  font-family: var(--font-body);
+  font-size: var(--fs-eyebrow);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+}
+
+.blend-body {
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  font-weight: 400;
+  line-height: var(--lh-normal);
+  color: var(--text-body);
+}
+
+.blend-caption {
+  font-family: var(--font-body);
+  font-size: var(--fs-caption);
+  font-weight: 300;
+  color: var(--text-muted);
+  line-height: var(--lh-normal);
+}
+
+.blend-label {
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   Component classes — minimal vocabulary lifted from the app.
+   ============================================================ */
+
+.blend-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: 13px 14px;
+}
+
+.blend-card-recipe {
+  background: var(--bg-surface);
+  border: 2px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 14px 16px;
+}
+.blend-card-recipe.loaded { border-color: var(--green-700); }
+
+.blend-card-ingredient {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: 13px 14px;
+  min-height: 90px;
+}
+.blend-card-ingredient.selected {
+  background: var(--green-100);
+  border-color: var(--green-700);
+}
+
+.blend-pill-tab {
+  padding: 10px 16px;
+  min-height: 44px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-body);
+  font-weight: 500;
+  color: var(--text-body);
+  background: var(--bg-muted);
+  border: none;
+  cursor: pointer;
+  transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.blend-pill-tab:hover { background: var(--border-subtle); }
+.blend-pill-tab.active {
+  background: var(--green-700);
+  color: var(--text-on-green);
+}
+
+.blend-btn {
+  height: 44px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: var(--fs-body-lg);
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+  padding: 0 18px;
+}
+.blend-btn-primary {
+  background: var(--green-700);
+  color: var(--text-on-green);
+}
+.blend-btn-primary:hover { background: var(--green-500); }
+
+.blend-btn-secondary {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+}
+.blend-btn-secondary:hover {
+  background: var(--bg-muted);
+  color: var(--text-body);
+}
+
+.blend-btn-export {
+  background: var(--green-50);
+  color: var(--green-700);
+  border: 1.5px solid var(--green-100);
+  font-size: var(--fs-body);
+}
+.blend-btn-export:hover { background: var(--green-100); }
+
+.blend-icon-btn {
+  width: 38px; height: 38px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-muted);
+  color: var(--text-body);
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; cursor: pointer;
+  transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.blend-icon-btn:hover {
+  background: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.blend-cart-btn {
+  position: relative;
+  width: 40px; height: 40px;
+  border-radius: var(--radius-pill);
+  background: var(--green-700);
+  color: var(--text-on-green);
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; cursor: pointer;
+  transition: background var(--dur-fast) ease;
+}
+.blend-cart-btn:hover { background: var(--green-500); }
+
+.blend-badge-count {
+  background: var(--amber-500);
+  color: #fff;
+  min-width: 20px; height: 20px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-eyebrow);
+  font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center;
+  line-height: 1;
+}
+
+.blend-badge-count--green {
+  background: var(--green-700);
+  color: var(--text-on-green);
+  padding: 3px 11px;
+  font-size: var(--fs-body-sm);
+  height: auto;
+}
+
+.blend-header {
+  height: var(--header-height);
+  background: var(--bg-overlay);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+}
