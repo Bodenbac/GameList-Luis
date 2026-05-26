@@ -1,0 +1,32 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; background: var(--bg-base); padding: 22px; font-family: var(--font-body); }
+  .panel { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 22px; box-shadow: var(--shadow-panel); padding: 22px; max-width: 320px; }
+  .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .title { font-family: var(--font-display); font-weight: 600; font-size: 20px; color: var(--text-primary); }
+  .pill  { background: var(--green-700); color: var(--text-on-green); font-size: 12px; font-weight: 600; padding: 3px 11px; border-radius: 999px; }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border-subtle); }
+  .row:last-child { border-bottom: none; }
+  .left { display: flex; align-items: center; gap: 10px; }
+  .emoji { font-size: 20px; line-height: 1; flex-shrink: 0; }
+  .name { font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1.25; }
+  .amt  { font-size: 11px; font-weight: 300; color: var(--text-muted); margin-top: 2px; }
+  .rm { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border-subtle); background: transparent; color: var(--text-muted); font-size: 16px; cursor: pointer; }
+</style></head><body>
+<div class="panel">
+  <div class="head"><h2 class="title">Einkaufszettel</h2><span class="pill">3</span></div>
+  <div class="row">
+    <div class="left"><span class="emoji">🍌</span><div><div class="name">Bananen</div><div class="amt">8–10 Stück</div></div></div>
+    <button class="rm">−</button>
+  </div>
+  <div class="row">
+    <div class="left"><span class="emoji">🥛</span><div><div class="name">Milch oder Hafermilch</div><div class="amt">1–2 Liter</div></div></div>
+    <button class="rm">−</button>
+  </div>
+  <div class="row">
+    <div class="left"><span class="emoji">🫐</span><div><div class="name">TK-Beerenmix</div><div class="amt">1 große Packung</div></div></div>
+    <button class="rm">−</button>
+  </div>
+</div>
+</body></html>
