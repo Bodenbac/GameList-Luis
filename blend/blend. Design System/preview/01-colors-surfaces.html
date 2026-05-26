@@ -1,0 +1,29 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; background: var(--bg-base); font-family: var(--font-body); padding: 24px; }
+  .row { display: flex; gap: 12px; }
+  .sw { flex: 1; border-radius: 14px; padding: 16px; border: 1px solid var(--border-subtle); display: flex; flex-direction: column; justify-content: space-between; min-height: 110px; box-shadow: var(--shadow-card); }
+  .name { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+  .hex  { font-family: var(--font-mono); font-size: 11px; font-weight: 400; opacity: 0.85; }
+  .var  { font-family: var(--font-mono); font-size: 10px; opacity: 0.7; margin-top: 4px; }
+</style></head><body>
+<div class="row">
+  <div class="sw" style="background: var(--bg-base); color: var(--green-900);">
+    <span class="name">Paper</span>
+    <div><span class="hex">#F7F4EF</span><div class="var">--bg-base</div></div>
+  </div>
+  <div class="sw" style="background: var(--bg-surface); color: var(--green-900);">
+    <span class="name">Surface</span>
+    <div><span class="hex">#FFFFFF</span><div class="var">--bg-surface</div></div>
+  </div>
+  <div class="sw" style="background: var(--bg-muted); color: var(--green-900);">
+    <span class="name">Muted</span>
+    <div><span class="hex">#EEE9E1</span><div class="var">--bg-muted</div></div>
+  </div>
+  <div class="sw" style="background: var(--bg-overlay); color: var(--green-900); backdrop-filter: blur(18px);">
+    <span class="name">Overlay</span>
+    <div><span class="hex" style="font-size:10px;">rgba(247,244,239,.92)</span><div class="var">--bg-overlay</div></div>
+  </div>
+</div>
+</body></html>
