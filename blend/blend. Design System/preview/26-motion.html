@@ -1,0 +1,27 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; background: var(--bg-base); padding: 22px; font-family: var(--font-body); color: var(--text-primary); }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
+  th { font-family: var(--font-body); font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+  td.mono { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-body); }
+  td.tag { color: var(--text-primary); font-weight: 600; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green-700); margin-right: 6px; vertical-align: middle; }
+</style></head><body>
+<table>
+  <thead><tr><th>Pattern</th><th>Duration</th><th>Easing</th></tr></thead>
+  <tbody>
+    <tr><td class="tag">page-in</td><td class="mono">350ms</td><td class="mono">ease</td></tr>
+    <tr><td class="tag">stagger-in</td><td class="mono">280ms · step 28ms</td><td class="mono">ease</td></tr>
+    <tr><td class="tag">card-select</td><td class="mono">200ms</td><td class="mono">ease  · scale .96 → 1.02 → 1</td></tr>
+    <tr><td class="tag">badge-pop</td><td class="mono">130ms</td><td class="mono">ease  · scale 1 → 1.35 → 1</td></tr>
+    <tr><td class="tag">badge-enter</td><td class="mono">200ms</td><td class="mono" style="color: var(--green-700);">cubic-bezier(.34, 1.56, .64, 1)</td></tr>
+    <tr><td class="tag">cart-shake</td><td class="mono">280ms</td><td class="mono">ease · rotate ±7°</td></tr>
+    <tr><td class="tag">slide-in / out</td><td class="mono">200 / 160ms</td><td class="mono">ease-out / ease-in · translateX 18px</td></tr>
+    <tr><td class="tag">sheet-up</td><td class="mono">260ms</td><td class="mono" style="color: var(--green-700);">cubic-bezier(.32, .72, 0, 1)</td></tr>
+    <tr><td class="tag">cart-panel slide</td><td class="mono">300ms</td><td class="mono" style="color: var(--green-700);">cubic-bezier(.32, .72, 0, 1)</td></tr>
+    <tr><td class="tag">hover lift</td><td class="mono">200ms</td><td class="mono">ease · translateY −3px</td></tr>
+  </tbody>
+</table>
+</body></html>
