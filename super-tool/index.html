@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>SuperTool - All-in-One Toolkit</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet" />
+
+  <!-- External Libraries -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+  <script src="https://unpkg.com/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+  <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+  <script src="https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+  <div class="noise-overlay"></div>
+
+  <div class="app-shell">
+    <!-- Header -->
+    <div class="app-header">
+      <div class="title-group">
+        <div class="badge">
+          <span class="badge-dot"></span>
+          <span>Professional Tools</span>
+        </div>
+        <h1><span class="highlight">Super</span>Tool</h1>
+        <p class="subtitle">All-in-One Toolkit für Bild-, Video- und Dokumentenbearbeitung</p>
+      </div>
+    </div>
+
+    <!-- Main Body: Sidebar + Content -->
+    <div class="app-body">
+      <!-- Sidebar -->
+      <div class="tool-sidebar">
+        <div class="tool-logo">ST</div>
+        <div class="tool-divider"></div>
+
+        <button class="tool-tab active" data-tool="image-editor">
+          <div class="tool-tab-icon">🖼️</div>
+          <span class="label">Bild</span>
+        </button>
+
+        <button class="tool-tab" data-tool="multi-image">
+          <div class="tool-tab-icon">🖼️×</div>
+          <span class="label">Multi</span>
+        </button>
+
+        <button class="tool-tab" data-tool="video-editor">
+          <div class="tool-tab-icon">🎬</div>
+          <span class="label">Video</span>
+        </button>
+
+        <button class="tool-tab" data-tool="pdf-converter">
+          <div class="tool-tab-icon">📄</div>
+          <span class="label">PDF</span>
+        </button>
+
+        <button class="tool-tab" data-tool="svg-to-png">
+          <div class="tool-tab-icon">📐</div>
+          <span class="label">SVG→PNG</span>
+        </button>
+
+        <button class="tool-tab" data-tool="svg-reworker">
+          <div class="tool-tab-icon">🎨</div>
+          <span class="label">SVG Edit</span>
+        </button>
+
+        <button class="tool-tab" data-tool="png-to-svg">
+          <div class="tool-tab-icon">🔄</div>
+          <span class="label">PNG→SVG</span>
+        </button>
+      </div>
+
+      <!-- Tool Content Area -->
+      <div class="tool-content-wrapper">
+
+        <!-- Image Editor Pro -->
+        <div id="tool-image-editor" class="tool-panel active">
+          <div class="tool-header">
+            <h2>🖼️ Bildbearbeitung Pro</h2>
+            <p>Professionelle Bildbearbeitung direkt im Browser</p>
+          </div>
+
+          <div class="upload-zone" id="imageUploadZone">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text"><strong>Bild hierher ziehen oder klicken</strong></div>
+            <div class="supported-formats">PNG, JPG, JPEG</div>
+            <input type="file" id="imageFileInput" accept="image/png,image/jpg,image/jpeg" hidden>
+          </div>
+
+          <div id="imageInfoSection" class="info-section hidden">
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">Breite</div>
+                <div class="info-value" id="imgWidth">-</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Höhe</div>
+                <div class="info-value" id="imgHeight">-</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Format</div>
+                <div class="info-value" id="imgFormat">-</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Größe</div>
+                <div class="info-value" id="imgSize">-</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="imageToolsSection" class="tools-section hidden">
+            <div class="tools-grid">
+              <div class="tool-card">
+                <div class="tool-title">✂️ Zuschneiden</div>
+                <button class="btn btn-primary" onclick="imageTools.startCrop()">Zuschnitt starten</button>
+                <div id="cropControls" class="crop-controls hidden">
+                  <input type="number" id="cropX" placeholder="X" min="0">
+                  <input type="number" id="cropY" placeholder="Y" min="0">
+                  <input type="number" id="cropWidth" placeholder="Breite" min="1">
+                  <input type="number" id="cropHeight" placeholder="Höhe" min="1">
+                  <button class="btn" onclick="imageTools.applyCrop()">Anwenden</button>
+                </div>
+              </div>
+
+              <div class="tool-card">
+                <div class="tool-title">📏 Größe ändern</div>
+                <input type="number" id="resizeWidth" placeholder="Breite" min="1" value="800">
+                <input type="number" id="resizeHeight" placeholder="Höhe" min="1" value="600">
+                <label>
+                  <input type="checkbox" id="maintainRatio" checked> Seitenverhältnis
+                </label>
+                <button class="btn btn-primary" onclick="imageTools.resizeImage()">Größe ändern</button>
+              </div>
+
+              <div class="tool-card">
+                <div class="tool-title">🎨 Filter</div>
+                <label>Helligkeit: <span id="brightnessValue">100</span>%</label>
+                <input type="range" id="brightness" min="0" max="200" value="100" oninput="imageTools.applyFilters()">
+                <label>Kontrast: <span id="contrastValue">100</span>%</label>
+                <input type="range" id="contrast" min="0" max="200" value="100" oninput="imageTools.applyFilters()">
+                <label>Sättigung: <span id="saturationValue">100</span>%</label>
+                <input type="range" id="saturation" min="0" max="200" value="100" oninput="imageTools.applyFilters()">
+                <button class="btn" onclick="imageTools.resetFilters()">Zurücksetzen</button>
+              </div>
+            </div>
+
+            <div class="canvas-container">
+              <canvas id="imageCanvas"></canvas>
+            </div>
+
+            <div class="download-section">
+              <div class="format-selector">
+                <button class="format-option selected" data-format="png">PNG</button>
+                <button class="format-option" data-format="jpeg">JPEG</button>
+                <button class="format-option" data-format="webp">WebP</button>
+              </div>
+              <button class="btn btn-primary btn-lg" onclick="imageTools.downloadImage()">📥 Herunterladen</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Multi Image Editor -->
+        <div id="tool-multi-image" class="tool-panel">
+          <div class="tool-header">
+            <h2>🖼️ Multi-Bildbearbeitung</h2>
+            <p>Bis zu 20 Bilder gleichzeitig bearbeiten</p>
+          </div>
+
+          <div class="upload-zone" id="multiImageUploadZone">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text"><strong>Bilder hierher ziehen oder klicken</strong></div>
+            <div class="supported-formats">PNG, JPG, JPEG (max. 20 Bilder)</div>
+            <input type="file" id="multiImageFileInput" accept="image/png,image/jpg,image/jpeg" multiple hidden>
+          </div>
+
+          <div id="imageGallery" class="image-gallery hidden">
+            <div class="image-counter"><span id="imageCount">0</span>/20 Bilder geladen</div>
+            <div class="gallery-grid" id="galleryGrid"></div>
+          </div>
+
+          <div id="multiImageToolsSection" class="tools-section hidden">
+            <p class="info-text">Wählen Sie ein Bild aus der Galerie aus, um es zu bearbeiten.</p>
+            <div class="canvas-container">
+              <canvas id="multiImageCanvas"></canvas>
+            </div>
+            <button class="btn btn-primary btn-lg" onclick="multiImageTools.downloadCurrent()">📥 Aktuelles Bild herunterladen</button>
+          </div>
+        </div>
+
+        <!-- Video Editor Pro -->
+        <div id="tool-video-editor" class="tool-panel">
+          <div class="tool-header">
+            <h2>🎬 Video Editor Pro</h2>
+            <p>Video schneiden und exportieren</p>
+          </div>
+
+          <div class="upload-zone" id="videoUploadZone">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text"><strong>Video hierher ziehen oder klicken</strong></div>
+            <div class="supported-formats">MP4, WebM, OGG, MOV, MKV, AVI</div>
+            <input type="file" id="videoFileInput" accept="video/*,.mp4,.webm,.ogg,.mov,.mkv,.avi" hidden>
+          </div>
+
+          <div id="videoInfoSection" class="info-section hidden">
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">Dauer</div>
+                <div class="info-value" id="vidDuration">-</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Auflösung</div>
+                <div class="info-value" id="vidResolution">-</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Format</div>
+                <div class="info-value" id="vidFormat">-</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Größe</div>
+                <div class="info-value" id="vidSize">-</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="videoToolsSection" class="tools-section hidden">
+            <div class="tools-grid">
+              <div class="tool-card">
+                <div class="tool-title">✂️ Schneiden</div>
+                <label>Start (Sekunden):</label>
+                <input type="number" id="startTime" min="0" step="0.1" value="0">
+                <button class="btn" onclick="videoTools.setStartTime()">Aktuelle Zeit setzen</button>
+                <label>Ende (Sekunden):</label>
+                <input type="number" id="endTime" min="0" step="0.1" value="0">
+                <button class="btn" onclick="videoTools.setEndTime()">Aktuelle Zeit setzen</button>
+                <button class="btn btn-primary" onclick="videoTools.previewCut()">Vorschau</button>
+              </div>
+
+              <div class="tool-card">
+                <div class="tool-title">🎚️ Export</div>
+                <label>Format:</label>
+                <select id="formatSelect">
+                  <option value="webm" selected>WebM</option>
+                  <option value="mp4">MP4</option>
+                </select>
+                <label>FPS:</label>
+                <select id="fpsSelect">
+                  <option value="30" selected>30</option>
+                  <option value="25">25</option>
+                  <option value="60">60</option>
+                </select>
+                <button class="btn btn-primary" onclick="videoTools.exportVideo()">Video exportieren</button>
+              </div>
+            </div>
+
+            <div class="video-container">
+              <video id="videoPlayer" controls></video>
+              <div class="timeline" id="timeline">
+                <div class="timeline-progress" id="timelineProgress"></div>
+              </div>
+            </div>
+
+            <div id="progressIndicator" class="progress-indicator hidden">
+              <h3>🔄 Video wird verarbeitet...</h3>
+              <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+              <p id="progressText">Initialisierung...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- PDF Converter -->
+        <div id="tool-pdf-converter" class="tool-panel">
+          <div class="tool-header">
+            <h2>📄 PDF ↔ DOCX Konverter</h2>
+            <p>PDF und DOCX Dateien konvertieren (mit OCR-Unterstützung)</p>
+          </div>
+
+          <div class="upload-zone" id="pdfUploadZone">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text"><strong>PDF oder DOCX hier ablegen</strong></div>
+            <div class="supported-formats">.pdf, .docx</div>
+            <input type="file" id="pdfFileInput" accept=".pdf,application/pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+          </div>
+
+          <div id="pdfFileInfo" class="info-section hidden">
+            <div class="info-item">
+              <div class="info-label">Datei</div>
+              <div class="info-value" id="pdfFileName">-</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Typ</div>
+              <div class="info-value" id="pdfFileType">-</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Größe</div>
+              <div class="info-value" id="pdfFileSize">-</div>
+            </div>
+            <div id="pdfActionButtons" class="action-buttons"></div>
+            <div id="pdfStatus" class="status-text"></div>
+          </div>
+
+          <div id="pdfPreview" class="preview-section hidden">
+            <h3>Vorschau</h3>
+            <div id="pdfPreviewContent" class="preview-content"></div>
+          </div>
+        </div>
+
+        <!-- SVG to PNG Converter -->
+        <div id="tool-svg-to-png" class="tool-panel">
+          <div class="tool-header">
+            <h2>📐 SVG → PNG Konverter</h2>
+            <p>Mehrere SVG-Dateien gleichzeitig in PNG konvertieren</p>
+          </div>
+
+          <div class="upload-zone" id="svgUploadZone">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text"><strong>SVG-Dateien hierher ziehen oder klicken</strong></div>
+            <div class="supported-formats">SVG-Dateien (mehrere auswählbar)</div>
+            <input type="file" id="svgFileInput" accept=".svg,image/svg+xml" multiple hidden>
+          </div>
+
+          <div id="svgFileList" class="file-list-section hidden">
+            <div class="info-section">
+              <h3>📊 Konvertierungsliste (<span id="svgFileCount">0</span> Dateien)</h3>
+              <div class="action-buttons" style="margin-top: 12px;">
+                <button class="btn" onclick="svgTools.clearAll()">Liste leeren</button>
+                <button class="btn btn-primary" id="svgDownloadAllBtn" onclick="svgTools.downloadAll()">Alle herunterladen</button>
+              </div>
+            </div>
+            <div class="file-list-container" id="svgFileListContainer"></div>
+          </div>
+
+          <div id="svgStats" class="info-section hidden">
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">Konvertiert</div>
+                <div class="info-value" id="svgStatsConverted">0</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Fehlgeschlagen</div>
+                <div class="info-value" id="svgStatsFailed">0</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Gesamt</div>
+                <div class="info-value" id="svgStatsTotal">0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SVG Reworker -->
+        <div id="tool-svg-reworker" class="tool-panel">
+          <div class="tool-header">
+            <h2>🎨 SVG Reworker</h2>
+            <p>SVG-Farben ändern, drehen, spiegeln und als PNG exportieren</p>
+          </div>
+
+          <div class="tools-grid" style="grid-template-columns: 1fr 1fr;">
+            <!-- Left: Code Input -->
+            <div class="tool-card">
+              <div class="tool-title">📝 SVG-Code</div>
+              <textarea id="svgCodeInput" placeholder="SVG-Code hier einfügen..." style="width: 100%; min-height: 300px; font-family: monospace; padding: 12px; border-radius: 8px; background: rgba(15, 23, 42, 0.8); color: #e5e7eb; border: 2px solid rgba(148, 163, 184, 0.3);"></textarea>
+              <input type="file" id="svgReworkerFileInput" accept=".svg,image/svg+xml" hidden>
+              <div class="action-buttons">
+                <button class="btn" onclick="document.getElementById('svgReworkerFileInput').click()">Datei laden</button>
+                <button class="btn" onclick="svgReworker.pasteFromClipboard()">Aus Zwischenablage</button>
+              </div>
+            </div>
+
+            <!-- Right: Preview & Controls -->
+            <div class="tool-card">
+              <div class="tool-title">👁️ Vorschau</div>
+              <div id="svgPreviewBox" style="width: 100%; min-height: 200px; background: rgba(15, 23, 42, 0.6); border-radius: 10px; padding: 20px; display: flex; align-items: center; justify-content: center; border: 2px solid rgba(148, 163, 184, 0.3);">
+                <div id="svgPreviewContent"></div>
+              </div>
+
+              <div style="margin-top: 16px;">
+                <div class="tool-title">🎨 Farben (<span id="colorCount">0</span> gefunden)</div>
+                <div id="colorList" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tools-section">
+            <div class="tools-grid">
+              <div class="tool-card">
+                <div class="tool-title">🔄 Transformationen</div>
+                <label>Größe: <span id="iconSizeValue">200</span>px</label>
+                <input type="range" id="iconSize" min="50" max="500" value="200" oninput="svgReworker.updatePreview()">
+
+                <label>Rotation: <span id="rotationValue">0</span>°</label>
+                <input type="range" id="rotation" min="0" max="360" value="0" oninput="svgReworker.updatePreview()">
+
+                <label>Padding: <span id="paddingValue">0</span>px</label>
+                <input type="range" id="padding" min="0" max="100" value="0" oninput="svgReworker.updatePreview()">
+
+                <div class="action-buttons">
+                  <button class="btn" onclick="svgReworker.flipHorizontal()">↔️ Horizontal</button>
+                  <button class="btn" onclick="svgReworker.flipVertical()">↕️ Vertikal</button>
+                </div>
+              </div>
+
+              <div class="tool-card">
+                <div class="tool-title">💾 Export</div>
+                <label>PNG-Größe:</label>
+                <input type="number" id="pngExportSize" value="512" min="64" max="4096" step="64">
+                <button class="btn btn-primary btn-lg" onclick="svgReworker.downloadAsPng()">📥 Als PNG herunterladen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PNG to SVG Converter -->
+        <div id="tool-png-to-svg" class="tool-panel">
+          <div class="tool-header">
+            <h2>🔄 PNG → SVG Konverter</h2>
+            <p>Rastergrafiken in skalierbare Vektorgrafiken umwandeln</p>
+          </div>
+
+          <div class="upload-zone" id="pngToSvgUploadZone">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text"><strong>PNG/JPG/JPEG hier ablegen oder klicken</strong></div>
+            <div class="supported-formats">PNG, JPG, JPEG</div>
+            <input type="file" id="pngToSvgFileInput" accept="image/png,image/jpg,image/jpeg" hidden>
+          </div>
+
+          <div id="pngToSvgControls" class="tools-section hidden">
+            <div class="tools-grid">
+              <div class="tool-card">
+                <div class="tool-title">⚙️ Tracing-Optionen</div>
+
+                <label>Farbanzahl: <span id="colorCountValue">16</span></label>
+                <input type="range" id="colorCountSlider" min="2" max="32" value="16" step="1"
+                  oninput="pngToSvg.updateLabel('colorCountValue', this.value)">
+
+                <label>Kantenglättung: <span id="blurValue">0</span></label>
+                <input type="range" id="blurSlider" min="0" max="5" value="0" step="1"
+                  oninput="pngToSvg.updateLabel('blurValue', this.value)">
+
+                <label>Pfad-Toleranz: <span id="toleranceValue">1</span></label>
+                <input type="range" id="toleranceSlider" min="0" max="10" value="1" step="0.5"
+                  oninput="pngToSvg.updateLabel('toleranceValue', this.value)">
+
+                <label>
+                  <input type="checkbox" id="transparentBg"> Transparenten Hintergrund erkennen
+                </label>
+
+                <button class="btn btn-primary" onclick="pngToSvg.convert()">🔄 Konvertieren</button>
+              </div>
+
+              <div class="tool-card">
+                <div class="tool-title">🖼️ Vorschau Eingabe</div>
+                <div id="pngToSvgInputPreview" style="width:100%;min-height:200px;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,0.6);border-radius:10px;border:2px solid rgba(148,163,184,0.3);overflow:hidden;">
+                  <img id="pngToSvgPreviewImg" style="max-width:100%;max-height:300px;display:none;">
+                </div>
+              </div>
+            </div>
+
+            <div id="pngToSvgStatus" class="status-text" style="margin:12px 0;"></div>
+
+            <div id="pngToSvgResult" class="tools-section hidden">
+              <div class="tools-grid">
+                <div class="tool-card">
+                  <div class="tool-title">✅ SVG-Ergebnis</div>
+                  <div id="pngToSvgOutputPreview" style="width:100%;min-height:200px;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,0.6);border-radius:10px;border:2px solid rgba(148,163,184,0.3);overflow:hidden;"></div>
+                </div>
+                <div class="tool-card">
+                  <div class="tool-title">💾 Export</div>
+                  <button class="btn btn-primary btn-lg" onclick="pngToSvg.downloadSvg()">📥 SVG herunterladen</button>
+                  <button class="btn" onclick="pngToSvg.copySvgCode()">📋 SVG-Code kopieren</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="js/main.js"></script>
+  <script src="js/image-editor.js"></script>
+  <script src="js/multi-image-editor.js"></script>
+  <script src="js/video-editor.js"></script>
+  <script src="js/pdf-converter.js"></script>
+  <script src="js/svg-tools.js"></script>
+  <script src="js/png-to-svg.js"></script>
+</body>
+</html>

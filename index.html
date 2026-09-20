@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spiele &amp; Werkzeuge — Luis Bodenbach</title>
+<meta name="description" content="Browserspiele und Werkzeuge von Luis Bodenbach.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23191D18'/%3E%3Crect x='2' y='2' width='7' height='5' fill='%23f5a742'/%3E%3Crect x='10' y='2' width='4' height='5' fill='%23ffcf56'/%3E%3Crect x='2' y='8' width='4' height='6' fill='%232C5441'/%3E%3Crect x='7' y='8' width='7' height='6' fill='%2322d3ee'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,600;12..96,75..100,800&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --wall:       #D8DAD3;
+    --wall-line:  #B4B8AE;
+    --ink:        #191D18;
+    --ink-soft:   #5A6159;
+    --paper:      #F2F3EF;
+
+    --gap: 14px;
+  }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    background: var(--wall);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    padding: clamp(24px, 5vw, 64px) 16px clamp(48px, 8vw, 96px);
+  }
+
+  .sheet { max-width: 1120px; margin: 0 auto; }
+
+  /* ---- masthead ---- */
+
+  .masthead { margin-bottom: clamp(28px, 4vw, 48px); }
+
+  .masthead h1 {
+    font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+    font-weight: 800;
+    font-variation-settings: 'wdth' 100;
+    font-size: clamp(2.5rem, 9vw, 5.25rem);
+    line-height: 0.92;
+    letter-spacing: -0.035em;
+    max-width: 14ch;
+  }
+
+  .masthead p {
+    margin-top: 1rem;
+    max-width: 46ch;
+    color: var(--ink-soft);
+    font-size: clamp(1rem, 1.6vw, 1.125rem);
+  }
+
+  /* ---- grid ---- */
+
+  .shelf {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: var(--gap);
+  }
+
+  .tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 190px;
+    padding: 20px 22px 24px;
+    background: var(--tile);
+    color: var(--paper);
+    border: 1px solid var(--ink);
+    text-decoration: none;
+    overflow: hidden;
+  }
+
+  .tile::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 5px;
+    background: var(--accent);
+    transition: height 140ms ease;
+  }
+
+  .tile:hover::after,
+  .tile:focus-visible::after { height: 12px; }
+
+  .tile:focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: 3px;
+  }
+
+  .tile h2 {
+    font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+    font-weight: 800;
+    font-variation-settings: 'wdth' 88;
+    font-size: clamp(1.6rem, 3.4vw, 2.6rem);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+  }
+
+  .tile p {
+    margin-top: 0.55rem;
+    max-width: 34ch;
+    font-size: 0.9375rem;
+    line-height: 1.45;
+    color: color-mix(in srgb, var(--paper) 78%, var(--tile));
+  }
+
+  .tile--wide  { grid-column: span 7; min-height: 280px; }
+  .tile--tall  { grid-column: span 5; min-height: 280px; }
+  .tile--half  { grid-column: span 6; }
+
+  /* ---- colophon ---- */
+
+  .colophon {
+    margin-top: clamp(32px, 5vw, 56px);
+    padding-top: 18px;
+    border-top: 1px solid var(--wall-line);
+    color: var(--ink-soft);
+    font-size: 0.875rem;
+  }
+
+  .colophon a { color: var(--ink); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+
+  /* ---- one page-load reveal, then nothing ---- */
+
+  @media (prefers-reduced-motion: no-preference) {
+    .shelf > * {
+      opacity: 0;
+      animation: settle 420ms cubic-bezier(.2,.7,.3,1) forwards;
+      animation-delay: calc(var(--i) * 55ms);
+    }
+    @keyframes settle {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: none; }
+    }
+  }
+
+  @media (max-width: 860px) {
+    .tile--wide, .tile--tall, .tile--half { grid-column: span 12; }
+    .tile--wide, .tile--tall { min-height: 200px; }
+  }
+</style>
+</head>
+<body>
+<main class="sheet">
+
+  <header class="masthead">
+    <h1>Spiele &amp; Werkzeuge</h1>
+    <p>Vier Sachen, die ich gebaut habe. Alle laufen direkt im Browser — anklicken und los.</p>
+  </header>
+
+  <div class="shelf">
+
+    <a class="tile tile--wide" style="--tile:#1f6191; --accent:#f5a742; --i:0" href="legion-of-towers/index.html">
+      <h2>Legion of Towers</h2>
+      <p>Tower Defense mit sechs Karten, sechs Turmtypen und einer Multiplayer-Lobby über PeerJS.</p>
+    </a>
+
+    <a class="tile tile--tall" style="--tile:#0f1c30; --accent:#ffcf56; --i:1" href="scam-slots/index.html">
+      <h2>Scam Slots</h2>
+      <p>Spielautomat mit Truhen, Items und Raritäten. Das Haus gewinnt trotzdem.</p>
+    </a>
+
+    <a class="tile tile--half" style="--tile:#2C5441; --accent:#E07B39; --i:2" href="blend/index.html">
+      <h2>blend.</h2>
+      <p>Smoothies zusammenstellen, Einkaufsliste fällt hinten raus.</p>
+    </a>
+
+    <a class="tile tile--half" style="--tile:#0f172a; --accent:#22d3ee; --i:3" href="super-tool/index.html">
+      <h2>SuperTool</h2>
+      <p>Bilder, Videos und PDFs bearbeiten. Alles im Browser, nichts wird hochgeladen.</p>
+    </a>
+
+  </div>
+
+  <p class="colophon">
+    Gebaut von Luis Bodenbach. Der Quellcode liegt auf
+    <a href="https://github.com/Bodenbac/GameList-Luis">GitHub</a>.
+  </p>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legion of Towers</title>
+    <!-- Add PeerJS CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js"></script>  
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Title Screen -->
+    <div id="titleScreen">
+        <h1>Legion of Towers</h1>
+
+        <div class="menu-section">
+            <div class="menu-title">Difficulty</div>
+            <div class="menu-options">
+                <button class="menu-btn selected" data-difficulty="easy">Easy</button>
+                <button class="menu-btn locked" data-difficulty="medium">Medium</button>
+                <button class="menu-btn locked" data-difficulty="hard">Hard</button>
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <div class="menu-title">Select Map</div>
+            <div class="maps-container">
+                <button class="menu-btn selected" data-map="1">Forest</button>
+                <button class="menu-btn locked" data-map="2">Desert</button>
+                <button class="menu-btn locked" data-map="3">Mountains</button>
+                <button class="menu-btn locked" data-map="4">Canyon</button>
+                <button class="menu-btn locked" data-map="5">Valley</button>
+                <button class="menu-btn locked" data-map="6">Hexagon</button>
+            </div>
+        </div>
+
+        <button class="menu-btn start-btn">Start Game</button>
+        <button class="menu-btn multiplayer-btn">Multiplayer</button>
+    </div>
+
+    <!-- Multiplayer Menu -->
+    <div id="multiplayerMenu">
+        <h1 class="multiplayer-title">Multiplayer Menu</h1>
+        
+        <div class="multiplayer-container">
+            <div class="multiplayer-left">
+                <div class="connection-status">
+					<label>Lobby Code:</label>
+					<input type="text" id="lobbyCodeDisplay" readonly>
+                    <h3>Connection Status</h3>
+                    <div id="connectionStatus">Disconnected</div>
+                </div>
+
+                <div class="menu-section">
+                    <div class="menu-title">Join Game</div>
+                    <div class="input-group">
+                        <label for="playerName">Your Name:</label>
+                        <input type="text" id="playerName" placeholder="Enter your name" maxlength="15">
+                    </div>
+                    <div class="menu-options">
+                        <button class="menu-btn" id="hostLobbyBtn">Host a Lobby</button>
+                        <button class="menu-btn" id="joinRandomBtn">Join Random</button>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="lobbyCode">Lobby Code:</label>
+                        <input type="text" id="lobbyCode" placeholder="Enter lobby code to join">
+                    </div>
+                    <button class="menu-btn" id="joinLobbyBtn">Join Lobby</button>
+                </div>
+            </div>
+            
+            <div class="multiplayer-right">
+                <div class="lobby-list">
+                    <h3>Available Lobbies</h3>
+                    <div id="lobbyListContainer">
+                        <div class="lobby-item">No lobbies available</div>
+                    </div>
+                </div>
+
+                <div class="player-list">
+                    <h3>Connected Players</h3>
+                    <div id="playerListContainer">
+                        <div class="player-item">
+                            <span>No players connected</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="menu-section" id="hostControls" style="display: none;">
+            <div class="menu-title">Host Controls</div>
+            <button class="menu-btn start-btn" id="startMultiplayerGame">Start Multiplayer Game</button>
+        </div>
+
+        <button class="menu-btn back-btn" id="backToMainBtn">Back to Main Menu</button>
+    </div>
+
+    <!-- Game Container -->
+    <div id="gameContainer">
+        <div id="ui">
+            <div id="resources-left">
+                <div class="resource life">
+                    <img src="assets/ui/lifes.svg" width="25" height="25">
+                    <span id="lifeAmount">20/20</span>
+                </div>
+                <div class="resource gold">
+                    <img src="assets/ui/gold.svg" width="25" height="25">
+                    <span id="goldAmount">20000</span>
+                </div>
+                <div class="resource bluecrystal">
+                    <img src="assets/ui/dia.svg" width="25" height="25">
+                    <span id="crystalAmount">5</span>
+                </div>
+            </div>
+            <div id="resources-right">
+                <div class="resource wave">
+                    <img src="assets/ui/wave.svg" width="25" height="25">
+                    <span id="waveNumber">1/5</span>
+                </div>
+                <div class="resource enemies">
+                    <img src="assets/ui/enemy.svg" width="25" height="25">
+                    <span id="enemiesKilled">0/10</span>
+                </div>
+            </div>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="towerBar">
+            <!-- Tower icons will be added here dynamically -->
+        </div>
+        <div id="towerMenu"></div>
+        <div id="upgradeMenu"></div>
+        <button id="startButton">Next Wave</button>
+
+        <div id="playerIndicators" style="display:none; position:absolute; top:10px; right:10px; z-index:1000; background:rgba(0,0,0,0.7); padding:8px; border-radius:8px; color:white;">
+            <div>Player <span id="playerNumber">1</span></div>
+            <div>Connected: <span id="connectedPlayers">1/2</span></div>
+        </div>
+    </div>
+	
+	<button id="toggleChat">💬</button>
+    <div id="chatContainer">
+        <div id="chatMessages"></div>
+        <input type="text" id="chatInput" placeholder="Type a message...">
+        <button id="sendChat">Send</button>
+    </div>
+
+
+    <script src="main.js"></script>
+</body>
+</html>

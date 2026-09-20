@@ -1,0 +1,13 @@
+# Normalise line endings so the repo stays consistent across Windows/macOS/Linux
+* text=auto
+
+*.html  text
+*.css   text
+*.js    text
+*.jsx   text
+*.py    text
+*.md    text
+*.svg   text
+
+*.png   binary
+*.ttf   binary

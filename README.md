@@ -1,36 +1,41 @@
-# 🎮 Game Library
+# Spiele & Werkzeuge
 
-Welcome to my collection of games! This repository serves as a central hub for all the games I've created.
+Meine Sammlung eigener Browserspiele und Werkzeuge. Alles läuft über GitHub Pages,
+ohne Build-Schritt und ohne Abhängigkeiten außer ein paar CDN-Skripten.
 
---------------------------------------------------------------------------
+**Startseite: https://bodenbac.github.io/GameList-Luis/**
 
+| Projekt | Was es ist | Link |
+| --- | --- | --- |
+| **Legion of Towers** | Tower Defense mit sechs Karten, sechs Turmtypen und Multiplayer-Lobby (PeerJS) | [spielen](https://bodenbac.github.io/GameList-Luis/legion-of-towers/) |
+| **Scam Slots** | Spielautomat mit Truhen, Items und Raritäten | [spielen](https://bodenbac.github.io/GameList-Luis/scam-slots/) |
+| **blend.** | Smoothie-Planer mit Einkaufsliste | [öffnen](https://bodenbac.github.io/GameList-Luis/blend/) |
+| **SuperTool** | Bild-, Video- und PDF-Werkzeuge, komplett clientseitig | [öffnen](https://bodenbac.github.io/GameList-Luis/super-tool/) |
 
-## 🎯 Games
+## Aufbau
 
-- **[Legion of Towers](https://bodenbac.github.io/GameList-Luis/Legion%20of%20Towers/)** - Simple Tower Defense (work in progress)
-- **[MobiTram](https://bodenbac.github.io/GameList-Luis/MobiTram/)** - App prototype for university project
-- **[SVG-to-PNG](https://bodenbac.github.io/GameList-Luis/SVG-to-PNG/)** - Simple tool for handling between svg and png
-- More coming soon
+Jedes Projekt liegt in einem eigenen Ordner und bringt seine Assets selbst mit.
+Einen gemeinsamen Asset-Ordner gibt es bewusst nicht mehr — so lässt sich ein Projekt
+verschieben oder kopieren, ohne dass Pfade brechen.
 
+```
+index.html              Startseite mit der Übersicht
+legion-of-towers/       index.html, main.js, styles.css + assets/{ui,maps,towers}
+scam-slots/             index.html + assets/{chests,items,slot-symbols}
+super-tool/             index.html + css/ + js/
+blend/                  index.html + assets/fonts/
+  ├── creator/          Drag-and-drop-Variante des Planers
+  └── design-system/    Farben, Typografie, Komponenten-Previews
+```
 
-## 🛠️ Technologies Used
+Pfade zu Assets sind durchgehend relativ. Ordner- und Dateinamen sind kleingeschrieben
+und mit Bindestrichen getrennt, damit die URLs ohne `%20` auskommen und auch auf
+case-sensitiven Servern funktionieren.
 
-- JavaScript
+Die `.nojekyll`-Datei sorgt dafür, dass GitHub Pages die Dateien unverändert ausliefert,
+statt sie durch Jekyll zu schicken.
 
+## Kontakt
 
-## 📞 Contact
-
-- **Email**: [luis-bodenbach@t-online.de]
-- **GitHub**: [Bodenbac]
-- **Website**: Coming soon
-
-
-## 🤝 Contributing
-
-While these are personal projects, I'm always open to feedback and suggestions! Feel free to:
-- Report bugs or issues
-- Suggest new features
-- Share your thoughts on gameplay
---------------------------------------------------------------------------
-
-⭐ **Enjoy**
+- E-Mail: luis-bodenbach@t-online.de
+- GitHub: [@Bodenbac](https://github.com/Bodenbac)

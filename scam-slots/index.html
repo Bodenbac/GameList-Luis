@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScamSlots</title>
+  <style>
+    :root {
+      --bg: #0d1b2a;
+      --card: #152238;
+      --accent: #ffcf56;
+      --accent-2: #9ae6b4;
+      --text: #e7eef9;
+      --muted: #94a3b8;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      background: radial-gradient(circle at 20% 20%, #1f3b5a, #0b1625 60%);
+      color: var(--text);
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      padding: 20px 16px 80px;
+    }
+    .app { width: min(1200px, 100%); display: flex; flex-direction: column; gap: 16px; flex: 1; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      background: linear-gradient(135deg, #16243a, #101c30);
+      border-radius: 16px; padding: 12px 16px; border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: var(--shadow);
+    }
+    .balances { display: flex; gap: 14px; align-items: center; }
+    .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); font-weight: 600; color: var(--text); font-size: 14px; }
+    .pill .icon { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: radial-gradient(circle at 30% 30%, #ffe39f, #ffb83f); border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 6px 14px rgba(0,0,0,0.2); }
+    .page-shell { flex: 1; min-height: 60vh; position: relative; }
+    .page { display: none; height: 100%; }
+    .page.active { display: block; }
+    .card {
+      background: linear-gradient(145deg, #16243a, #0f1c30);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      min-height: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      height: 100%;
+    }
+    .card h3 { font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+    .card .placeholder { flex: 1; border: 1px dashed rgba(255,255,255,0.1); border-radius: 12px; display: grid; place-items: center; color: var(--muted); font-size: 14px; }
+    .list { display: flex; flex-direction: column; gap: 14px; flex: 1; }
+    .list h4 { font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+    .list ul { list-style: none; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px; background: rgba(255,255,255,0.03); display: flex; flex-direction: column; gap: 6px; min-height: 48px; }
+    .list li { display: flex; justify-content: space-between; align-items: center; color: var(--text); font-size: 13px; }
+    
+    .machine {
+      position: relative;
+      width: calc(100% - 120px);
+      max-width: 1200px;
+      margin: 0 auto;
+      background: linear-gradient(145deg, #16243a, #0f1c30);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      min-height: 360px;
+    }
+
+    
+    .header { grid-column: 1 / 2; display: flex; gap: 10px; align-items: baseline; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; font-size: 13px; }
+
+    .header strong { color: var(--accent); font-size: 18px; letter-spacing: 0.04em; }
+    
+    .reels { grid-column: 1 / 2; background: var(--card); border-radius: 18px; padding: 8px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.06); height: 420px; }
+
+    
+    .reel { background: linear-gradient(180deg, #1f2f4d, #16243a); border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); display: grid; grid-template-rows: repeat(3, 1fr); gap: 8px; padding: 8px 4px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.1); position: relative; overflow: hidden; justify-items: center; align-items: stretch; }
+
+    
+    .cell { background: rgba(255,255,255,0.04); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: transform 0.15s ease; aspect-ratio: 1 / 1; width: 90%; height: 100%; max-width: 140px; margin: 0 auto; overflow: hidden; }
+    .cell img { width: 100%; height: 100%; object-fit: contain; }
+    .wiggle { animation: wiggle 0.25s ease-in-out infinite; }
+    @keyframes wiggle {
+      0% { transform: translate(-50%, 0) rotate(0deg); }
+      50% { transform: translate(-50%, 2px) rotate(-2deg); }
+      100% { transform: translate(-50%, 0) rotate(0deg); }
+    }
+
+    .reel.spinning .cell { opacity: 0.9; }
+    
+    .handle-area { grid-column: 2 / 3; display: flex; align-items: flex-start; justify-content: center; position: relative; padding: 6px 10px 0; }
+    .handle-stack { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+    .handle { position: relative; width: 28px; height: 200px; background: linear-gradient(180deg, #1f2f4d, #0f1c30); border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); box-shadow: inset 0 1px 0 rgba(255,255,255,0.2); cursor: grab; overflow: visible; user-select: none; }
+    .handle:active { cursor: grabbing; }
+    .handle .knob { position: absolute; left: 50%; transform: translate(-50%, 0); width: 52px; height: 52px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #ffe39f, #ffb83f); border: 2px solid #f2a623; box-shadow: 0 12px 20px rgba(0,0,0,0.25); top: 0; transition: top 0.18s ease; }
+    .multi-spin-controls { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+    .multi-spin-controls button { width: 66px; height: 66px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: var(--text); font-weight: 800; letter-spacing: 0.04em; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease; }
+    .multi-spin-controls button:hover { transform: translateY(-1px); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.08); }
+    .multi-spin-controls button.active { background: linear-gradient(145deg, #ffcf56, #ff9f1c); color: #0f1c30; box-shadow: 0 10px 24px rgba(255, 207, 86, 0.35); border-color: rgba(0,0,0,0.1); }
+    .glass { position: absolute; inset: 0; background: radial-gradient(circle at 50% 30%, rgba(255,255,255,0.06), transparent 60%); pointer-events: none; }
+    .footer { grid-column: 1 / 3; display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 12px; margin-top: 6px; }
+    .status { color: var(--accent-2); }
+    .bottom-nav { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); display: grid; grid-template-columns: 1fr 1fr 1.35fr 1fr 1fr; gap: 14px; width: min(760px, 96vw); background: rgba(12,18,30,0.86); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 10px; backdrop-filter: blur(10px); box-shadow: var(--shadow); }
+    .nav-item { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--text); font-size: 12px; padding: 10px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid transparent; transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease; cursor: pointer; }
+    .nav-item.active { border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.07); transform: translateY(-1px); }
+    .nav-item:hover { border-color: rgba(255,255,255,0.08); background: rgba(255,255,255,0.05); }
+    .nav-icon { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 30% 30%, #1f3b5a, #0f1c30); border: 1px solid rgba(255,255,255,0.08); font-size: 18px; }
+    .slot-accent { background: linear-gradient(135deg, rgba(255, 207, 86, 0.18), rgba(255,255,255,0.05)); border-color: rgba(255, 207, 86, 0.5); box-shadow: 0 12px 30px rgba(255, 207, 86, 0.2); }
+    .slot-accent .nav-icon { background: radial-gradient(circle at 30% 30%, #ffe39f, #ff9f1c); color: #0f1c30; border-color: rgba(0,0,0,0.12); }
+    .chest-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 10px; }
+    .chest-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; text-align: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); }
+    .chest-card img { width: 64px; height: 64px; object-fit: contain; }
+    .chest-card .label { margin-top: 8px; margin-bottom: 2px; font-weight: 700; color: var(--text); }
+    .chest-card .chest-btn { margin-top: 10px; width: 100%; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: var(--text); font-weight: 700; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease; }
+    .chest-card .chest-btn:hover { transform: translateY(-1px); background: rgba(255,255,255,0.1); box-shadow: 0 8px 18px rgba(0,0,0,0.25); }
+    .chest-status { min-height: 18px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+    .info-line { color: var(--text); font-size: 13px; line-height: 1.35; }
+    .info-line.uncommon { color: #80E6A8; }
+    .info-line.uncommon2 { color: #8AC2FF; }
+    .info-line.rare { color: #C7A1FF; }
+    .info-line.legendary { color: #FFE88F; }
+    .flash {
+      animation: flash-bg 0.28s ease;
+    }
+    @keyframes flash-bg {
+      0% { box-shadow: 0 0 0 rgba(255, 215, 113, 0.0); }
+      20% { box-shadow: 0 0 25px rgba(255, 215, 113, 0.5), 0 0 60px rgba(255, 166, 0, 0.35); }
+      100% { box-shadow: 0 0 0 rgba(255, 215, 113, 0.0); }
+    }
+    .info-list { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .info-head, .info-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; align-items: center; padding: 10px 14px; border-radius: 12px; }
+    .info-head { color: #7cc1ff; font-weight: 700; letter-spacing: 0.04em; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+    .info-row { gap: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
+    .info-row img { width: 36px; height: 36px; object-fit: contain; }
+    .info-row .name { font-weight: 700; color: var(--text); display: inline-flex; align-items: center; gap: 10px; }
+    .info-row .tier { color: #e5e7eb; font-weight: 600; }
+    .info-row .prob, .info-row .mult { color: #e7eef9; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="balances">
+        <div class="pill"><span class="icon">??</span><span id="goldAmt">12,345</span></div>
+        <div class="pill"><span class="icon">???</span><span id="ticketAmt">240</span></div>
+      </div>
+      <div style="font-size:13px;color:var(--muted);letter-spacing:0.08em;">ScamSlots</div>
+    </div>
+
+        <div class="page-shell">
+      <div class="page" data-page="craft">
+        <div class="card">
+          <h3>Crafting</h3>
+          <div class="placeholder">Crafting view</div>
+        </div>
+      </div>
+
+      <div class="page" data-page="shop">
+        <div class="card">
+          <h3>Chests</h3>
+          <div class="chest-grid">
+            <div class="chest-card" data-chest="common">
+              <img src="assets/chests/common-chest.png" alt="Common Chest" />
+              <div class="label" style="color:#80E6A8;">Common</div>
+              <div class="info-line" style="color:#80E6A8; margin-bottom:6px;">Cost: 10</div>
+              <div class="info-line uncommon">Common Item: 70%</div>
+              <div class="info-line uncommon2">Uncommon Item: 20%</div>
+              <div class="info-line rare">Rare Item: 9%</div>
+              <div class="info-line legendary">Legendary Item: 1%</div>
+              <button class="chest-btn" data-chest="common">Open</button>
+              <div class="chest-status" data-chest="common"></div>
+            </div>
+            <div class="chest-card" data-chest="uncommon">
+              <img src="assets/chests/uncommon-chest.png" alt="Uncommon Chest" />
+              <div class="label" style="color:#8AC2FF;">Uncommon</div>
+              <div class="info-line" style="color:#8AC2FF; margin-bottom:6px;">Cost: 70</div>
+              <div class="info-line uncommon">Common Item: 0%</div>
+              <div class="info-line uncommon2">Uncommon Item: 70%</div>
+              <div class="info-line rare">Rare Item: 20%</div>
+              <div class="info-line legendary">Legendary Item: 10%</div>
+              <button class="chest-btn" data-chest="uncommon">Open</button>
+              <div class="chest-status" data-chest="uncommon"></div>
+            </div>
+            <div class="chest-card" data-chest="rare">
+              <img src="assets/chests/rare-chest.png" alt="Rare Chest" />
+              <div class="label" style="color:#C7A1FF;">Rare</div>
+              <div class="info-line" style="color:#C7A1FF; margin-bottom:6px;">Cost: 200</div>
+              <div class="info-line uncommon">Common Item: 0%</div>
+              <div class="info-line uncommon2">Uncommon Item: 0%</div>
+              <div class="info-line rare">Rare Item: 80%</div>
+              <div class="info-line legendary">Legendary Item: 20%</div>
+              <button class="chest-btn" data-chest="rare">Open</button>
+              <div class="chest-status" data-chest="rare"></div>
+            </div>
+            <div class="chest-card" data-chest="legendary">
+              <img src="assets/chests/legendary-chest.png" alt="Legendary Chest" />
+              <div class="label" style="color:#FFE88F;">Legendary</div>
+              <div class="info-line" style="color:#FFE88F; margin-bottom:6px;">Cost: 600</div>
+              <div class="info-line uncommon">Common Item: 0%</div>
+              <div class="info-line uncommon2">Uncommon Item: 0%</div>
+              <div class="info-line rare">Rare Item: 0%</div>
+              <div class="info-line legendary">Legendary Item: 100%</div>
+              <button class="chest-btn" data-chest="legendary">Open</button>
+              <div class="chest-status" data-chest="legendary"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page active" data-page="slots">
+        <div class="machine">
+          <div class="header">
+            <strong>ScamSlots</strong>
+            <span>5x3 Slot Machine</span>
+          </div>
+
+          <div class="reels" id="reels">
+            <div class="reel"><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
+            <div class="reel"><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
+            <div class="reel"><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
+            <div class="reel"><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
+            <div class="reel"><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
+            <div class="glass"></div>
+          </div>
+
+          <div class="handle-area">
+            <div class="handle-stack">
+              <div class="handle" id="handle"><div class="knob" id="knob"></div></div>
+              <div class="multi-spin-controls" id="multiSpinControls">
+                <button data-count="5">x5</button>
+                <button data-count="20">x20</button>
+                <button data-count="100">x100</button>
+                <button data-count="500">x500</button>
+                <button data-count="inf">x inf</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="footer">
+            <span>Pull the handle to spin</span>
+            <span class="status" id="status">Ready</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="page" data-page="inventory">
+        <div class="card">
+          <h3>Inventory</h3>
+          <div class="list">
+            <div>
+              <h4>Owned Items</h4>
+              <ul id="ownedList">
+                <li style="color: var(--muted);">Nothing owned yet</li>
+              </ul>
+            </div>
+            <div>
+              <h4>Resources</h4>
+              <ul id="resourceList">
+                <li style="color: var(--muted);">No resources yet</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page" data-page="infos">
+        <div class="card">
+          <h3>Infos</h3>
+          <div class="info-list" id="infoList"></div>
+          <div class="list" style="margin-top:12px;">
+            <h4>Active Patterns</h4>
+            <div class="placeholder" id="patternBox">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item" data-target="craft"><div class="nav-icon">???</div><span>Craft</span></div>
+    <div class="nav-item" data-target="shop"><div class="nav-icon">??</div><span>Shop</span></div>
+    <div class="nav-item slot-accent active" data-target="slots"><div class="nav-icon">??</div><span>Slot Machine</span></div>
+    <div class="nav-item" data-target="inventory"><div class="nav-icon">??</div><span>Inventory</span></div>
+    <div class="nav-item" data-target="infos"><div class="nav-icon">??</div><span>Infos</span></div>
+  </div>
+
+  
+<script>
+  (() => {
+    const SPIN_COST = 10;
+    const BASE_PAYOUT = 5;
+    const SPECIAL_BASE = 0.001;
+    const baseSymbols = [
+      { name: "Avocado", tier: 1, weight: 20, mult: 1, src: "assets/slot-symbols/normal/avocado.png", special: "assets/slot-symbols/special/avocado-special.png" },
+      { name: "Banana", tier: 1, weight: 20, mult: 1, src: "assets/slot-symbols/normal/banana.png", special: "assets/slot-symbols/special/banana-special.png" },
+      { name: "Grape", tier: 1, weight: 20, mult: 1, src: "assets/slot-symbols/normal/grape.png", special: "assets/slot-symbols/special/grape-special.png" },
+      { name: "Shoe", tier: 2, weight: 15, mult: 2, src: "assets/slot-symbols/normal/shoe.png", special: "assets/slot-symbols/special/shoe-special.png" },
+      { name: "Dumbbell", tier: 2, weight: 15, mult: 2, src: "assets/slot-symbols/normal/dumbbel.png", special: "assets/slot-symbols/special/dumbbel-special.png" },
+      { name: "Steak", tier: 3, weight: 10, mult: 3, src: "assets/slot-symbols/normal/steak.png", special: "assets/slot-symbols/special/steak-special.png" }
+    ];
+    let symbols = baseSymbols.map((s) => ({ ...s }));
+    const tierStep = { 1: 1, 2: 2, 3: 3 };
+
+    const itemDefs = [
+      { id: "prismaticShard", name: "Prismatic Shard", rarity: "rare", type: "passive", icon: "assets/items/rare/prismatic-shard.png" },
+      { id: "runicDice", name: "Runic Dice", rarity: "rare", type: "passive", icon: "assets/items/rare/runic-dice.png" },
+      { id: "rubbishBin", name: "Rubbish Bin", rarity: "legendary", type: "usable", icon: "assets/items/legendary/rubbish-bin.png" },
+      { id: "hiddenMystery", name: "Hidden Mystery", rarity: "legendary", type: "usable", icon: "assets/items/legendary/hidden-mystery.png" },
+      { id: "greenFlame", name: "Green Flame", rarity: "uncommon", type: "usable", tier: 1, icon: "assets/items/uncommon/green-flame.png" },
+      { id: "blueFlame", name: "Blue Flame", rarity: "uncommon", type: "usable", tier: 2, icon: "assets/items/uncommon/blue-flame.png" },
+      { id: "redFlame", name: "Red Flame", rarity: "uncommon", type: "usable", tier: 3, icon: "assets/items/uncommon/red-flame.png" },
+      { id: "stupidCrown", name: "Stupid Crown", rarity: "legendary", type: "passive", icon: "assets/items/legendary/stupid-crown.png" },
+      { id: "devilsCoin", name: "Devils Coin", rarity: "legendary", type: "onAcquire", icon: "assets/items/legendary/devils-coin.png" },
+      { id: "normalKevin", name: "Normal Kevin", rarity: "common", type: "passive", icon: "assets/items/common/normal-kevin.png" }
+    ];
+    const itemMap = Object.fromEntries(itemDefs.map((i) => [i.id, i]));
+    const chestDefs = {
+      common: { cost: 10, rarities: { common: 70, uncommon: 20, rare: 9, legendary: 1 } },
+      uncommon: { cost: 70, rarities: { uncommon: 70, rare: 20, legendary: 10 } },
+      rare: { cost: 200, rarities: { rare: 80, legendary: 20 } },
+      legendary: { cost: 600, rarities: { legendary: 100 } }
+    };
+    const rarityOrder = ["common", "uncommon", "rare", "legendary"];
+
+    const reels = Array.from(document.querySelectorAll(".reel"));
+    const handle = document.getElementById("handle");
+    const knob = document.getElementById("knob");
+    const statusEl = document.getElementById("status");
+    const pages = Array.from(document.querySelectorAll(".page"));
+    const navItems = Array.from(document.querySelectorAll(".nav-item"));
+    const multiButtons = Array.from(document.querySelectorAll(".multi-spin-controls button"));
+    const infoList = document.getElementById("infoList");
+    const ownedList = document.getElementById("ownedList");
+    const goldAmt = document.getElementById("goldAmt");
+    const ticketAmt = document.getElementById("ticketAmt");
+    const patternBox = document.getElementById("patternBox");
+
+    const initialGold = parseInt((goldAmt?.textContent || "0").replace(/[^0-9]/g, ""), 10) || 0;
+    const initialTickets = parseInt((ticketAmt?.textContent || "0").replace(/[^0-9]/g, ""), 10) || 0;
+    const state = {
+      gold: initialGold,
+      tickets: initialTickets,
+      spinCount: 0,
+      inventory: {},
+      banned: new Set(),
+      queue: { active: false, remaining: 0, infinite: false, button: null },
+      spinning: false,
+      intervals: [],
+      pullProgress: 0,
+      startY: 0,
+      pulled: false
+    };
+
+    function formatNumber(n) {
+      return n.toLocaleString("en-US");
+    }
+
+    function updateBalances() {
+      if (goldAmt) goldAmt.textContent = formatNumber(state.gold);
+      if (ticketAmt) ticketAmt.textContent = formatNumber(state.tickets);
+    }
+
+    function setStatus(text, tone = "ok") {
+      if (!statusEl) return;
+      statusEl.textContent = text;
+      if (tone === "error") statusEl.style.color = "#fda4af";
+      else if (tone === "warn") statusEl.style.color = "#fbbf24";
+      else statusEl.style.color = "#9ae6b4";
+    }
+
+    navItems.forEach((item) => {
+      item.addEventListener("click", () => {
+        const target = item.dataset.target;
+        navItems.forEach((n) => n.classList.remove("active"));
+        item.classList.add("active");
+        pages.forEach((p) => p.classList.toggle("active", p.dataset.page === target));
+        if (state.queue.active && target !== "slots") cancelQueue();
+      });
+    });
+
+    function getSpecialChance() {
+      const shardCount = state.inventory.prismaticShard || 0;
+      return Math.min(1, SPECIAL_BASE + 0.001 * shardCount);
+    }
+
+    function randomSymbol() {
+      const total = symbols.reduce((s, x) => s + x.weight, 0);
+      let r = Math.random() * total;
+      for (const sym of symbols) {
+        r -= sym.weight;
+        if (r <= 0) return sym;
+      }
+      return symbols[symbols.length - 1];
+    }
+
+    function flashSpecial() {
+      const reelsEl = document.getElementById("reels");
+      if (!reelsEl) return;
+      reelsEl.classList.add("flash");
+      setTimeout(() => reelsEl.classList.remove("flash"), 280);
+    }
+
+    function renderSymbol(cell, sym) {
+      cell.innerHTML = "";
+      const img = document.createElement("img");
+      const isSpecial = Math.random() < getSpecialChance();
+      img.src = isSpecial ? sym.special : sym.src;
+      img.alt = sym.name + (isSpecial ? " special" : "");
+      if (isSpecial) flashSpecial();
+      cell.appendChild(img);
+    }
+
+    function fillReel(reel) {
+      reel.querySelectorAll(".cell").forEach((cell) => renderSymbol(cell, randomSymbol()));
+    }
+
+    function prepareOutcome() {
+      return reels.map(() => [randomSymbol(), randomSymbol(), randomSymbol()]);
+    }
+
+    function renderOutcome(reel, symbolsArr) {
+      const cells = Array.from(reel.querySelectorAll(".cell"));
+      cells.forEach((cell, idx) => {
+        renderSymbol(cell, symbolsArr[idx % symbolsArr.length]);
+      });
+    }
+
+    function renderInfoTable() {
+      if (!infoList) return;
+      infoList.innerHTML = "";
+      const head = document.createElement("div");
+      head.className = "info-head";
+      head.innerHTML = "<span>Symbol</span><span>Tier</span><span>Odds</span><span>Multiplikator</span>";
+      infoList.appendChild(head);
+      const total = symbols.reduce((s, x) => s + x.weight, 0);
+      symbols.forEach((sym) => {
+        const row = document.createElement("div");
+        row.className = "info-row";
+        const name = document.createElement("span");
+        name.className = "name";
+        const img = document.createElement("img");
+        img.src = sym.src;
+        img.alt = sym.name;
+        name.appendChild(img);
+        const label = document.createElement("span");
+        label.textContent = sym.name;
+        name.appendChild(label);
+        const tier = document.createElement("span");
+        tier.className = "tier";
+        tier.textContent = "Tier " + sym.tier;
+        const prob = document.createElement("span");
+        prob.className = "prob";
+        const pct = total ? (sym.weight / total) * 100 : 0;
+        prob.textContent = pct.toFixed(1).replace(/\.0$/, "") + "%";
+        const mult = document.createElement("span");
+        mult.className = "mult";
+        mult.textContent = "x" + sym.mult;
+        row.append(name, tier, prob, mult);
+        infoList.appendChild(row);
+      });
+    }
+
+    function renderInventory() {
+      if (!ownedList) return;
+      ownedList.innerHTML = "";
+      const entries = Object.entries(state.inventory).filter(([, count]) => count > 0);
+      if (!entries.length) {
+        const li = document.createElement("li");
+        li.style.color = "var(--muted)";
+        li.textContent = "Nothing owned yet";
+        ownedList.appendChild(li);
+        return;
+      }
+      entries
+        .map(([id, count]) => ({ def: itemMap[id], count }))
+        .sort((a, b) => a.def.name.localeCompare(b.def.name))
+        .forEach(({ def, count }) => {
+          const li = document.createElement("li");
+          li.style.display = "flex";
+          li.style.alignItems = "center";
+          li.style.gap = "8px";
+          const img = document.createElement("img");
+          img.src = def.icon;
+          img.alt = def.name;
+          img.style.width = "32px";
+          img.style.height = "32px";
+          img.style.objectFit = "contain";
+          const label = document.createElement("span");
+          label.textContent = `${def.name} x${count}`;
+          label.style.fontWeight = "700";
+          const rarity = document.createElement("span");
+          rarity.textContent = def.rarity;
+          rarity.style.color = "#94a3b8";
+          rarity.style.fontSize = "12px";
+          rarity.style.marginLeft = "auto";
+          li.append(img, label, rarity);
+          if (def.type === "usable") {
+            const btn = document.createElement("button");
+            btn.textContent = "Use";
+            btn.style.marginLeft = "8px";
+            btn.style.padding = "4px 10px";
+            btn.style.borderRadius = "999px";
+            btn.style.border = "1px solid rgba(255,255,255,0.15)";
+            btn.style.background = "rgba(255,255,255,0.06)";
+            btn.style.color = "var(--text)";
+            btn.style.cursor = "pointer";
+            btn.addEventListener("click", () => handleUseItem(def.id));
+            li.appendChild(btn);
+          }
+          ownedList.appendChild(li);
+        });
+    }
+
+    function renderPatterns(patterns) {
+      if (!patternBox) return;
+      if (!patterns.length) {
+        patternBox.textContent = "No pattern hit.";
+        return;
+      }
+      const lines = patterns.map((p) => `${p.symbol.name} (x${p.cells.length})`);
+      patternBox.textContent = lines.join(" | ");
+    }
+
+    function getItemCount(id) {
+      return state.inventory[id] || 0;
+    }
+
+    function applyDevilsCoin() {
+      const keepGold = Math.min(state.gold, SPIN_COST * 5);
+      state.gold = keepGold;
+      updateBalances();
+      const totalItems = Object.values(state.inventory).reduce((a, b) => a + b, 0);
+      const toDrop = Math.floor(totalItems / 2);
+      dropRandomItems(toDrop);
+      setStatus("Devils Coin triggered. Inventory halved!", "warn");
+    }
+
+    function addItem(id, count = 1) {
+      if (state.banned.has(id)) return null;
+      const def = itemMap[id];
+      if (!def) return null;
+      state.inventory[id] = (state.inventory[id] || 0) + count;
+      if (def.type === "onAcquire" && def.id === "devilsCoin") applyDevilsCoin();
+      renderInventory();
+      renderInfoTable();
+      return def;
+    }
+
+    function dropRandomItems(amount) {
+      if (amount <= 0) return;
+      const pool = Object.entries(state.inventory).flatMap(([id, count]) => Array(count).fill(id));
+      for (let i = 0; i < amount && pool.length; i++) {
+        const idx = Math.floor(Math.random() * pool.length);
+        const id = pool.splice(idx, 1)[0];
+        state.inventory[id] = Math.max(0, (state.inventory[id] || 0) - 1);
+      }
+      renderInventory();
+    }
+
+    function updateChestStatus(type, text) {
+      const el = document.querySelector(`.chest-status[data-chest="${type}"]`);
+      if (el) el.textContent = text;
+    }
+
+    function pickRarity(weights) {
+      const entries = Object.entries(weights);
+      const total = entries.reduce((s, [, w]) => s + w, 0);
+      let r = Math.random() * total;
+      for (const [rarity, weight] of entries) {
+        r -= weight;
+        if (r <= 0) return rarity;
+      }
+      return entries[entries.length - 1][0];
+    }
+
+    function pickItemByRarity(rarity) {
+      const candidates = itemDefs.filter((i) => i.rarity === rarity && !state.banned.has(i.id));
+      if (!candidates.length) return null;
+      const idx = Math.floor(Math.random() * candidates.length);
+      return candidates[idx];
+    }
+
+    function openChest(type) {
+      const def = chestDefs[type];
+      if (!def) return;
+      if (state.gold < def.cost) {
+        updateChestStatus(type, "Not enough gold");
+        return;
+      }
+      state.gold -= def.cost;
+      updateBalances();
+      const rarity = pickRarity(def.rarities);
+      const item = pickItemByRarity(rarity);
+      if (!item) {
+        updateChestStatus(type, "No item available");
+        return;
+      }
+      addItem(item.id, 1);
+      updateChestStatus(type, `Won: ${item.name} (${item.rarity})`);
+    }
+
+    document.querySelectorAll(".chest-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const type = btn.dataset.chest;
+        openChest(type);
+      });
+    });
+
+    function selectItemFromInventory(filterFn) {
+      const entries = Object.entries(state.inventory)
+        .filter(([, count]) => count > 0)
+        .map(([id, count]) => ({ def: itemMap[id], count }))
+        .filter((x) => (filterFn ? filterFn(x.def) : true));
+      if (!entries.length) return null;
+      const options = entries.map((e) => e.def.name).join(", ");
+      const pick = prompt("Choose item: " + options);
+      if (!pick) return null;
+      const match = entries.find((e) => e.def.name.toLowerCase() === pick.trim().toLowerCase());
+      return match ? match.def.id : null;
+    }
+
+    function useRubbishBin() {
+      const targetId = selectItemFromInventory((def) => def.id !== "rubbishBin");
+      if (!targetId) return;
+      state.banned.add(targetId);
+      state.inventory[targetId] = 0;
+      state.inventory.rubbishBin = Math.max(0, (state.inventory.rubbishBin || 0) - 1);
+      renderInventory();
+      setStatus("Item banned: " + itemMap[targetId].name, "warn");
+    }
+
+    function useHiddenMystery() {
+      const targetId = selectItemFromInventory();
+      if (!targetId) return;
+      addItem(targetId, 1);
+      if (Math.random() < 0.8) {
+        state.inventory.hiddenMystery = Math.max(0, (state.inventory.hiddenMystery || 0) - 1);
+      }
+      renderInventory();
+      setStatus("Hidden Mystery duplicated " + itemMap[targetId].name);
+    }
+
+    function applyFlame(tier) {
+      const names = symbols.filter((s) => s.tier === tier).map((s) => s.name).join(", ");
+      const pick = prompt("Choose Tier " + tier + " symbol: " + names);
+      if (!pick) return;
+      const target = symbols.find((s) => s.name.toLowerCase() === pick.trim().toLowerCase());
+      if (!target) return;
+      const targetOld = target.weight;
+      const total = symbols.reduce((s, x) => s + x.weight, 0);
+      const newTarget = Math.min(100, targetOld + 4);
+      const others = symbols.filter((s) => s !== target);
+      const othersTotal = total - targetOld;
+      others.forEach((sym) => {
+        const share = othersTotal > 0 ? sym.weight / othersTotal : 0;
+        sym.weight = Math.max(0, share * (100 - newTarget));
+      });
+      target.weight = newTarget;
+      const consumableId = tier === 1 ? "greenFlame" : tier === 2 ? "blueFlame" : "redFlame";
+      state.inventory[consumableId] = Math.max(0, (state.inventory[consumableId] || 0) - 1);
+      renderInfoTable();
+      setStatus(target.name + " odds boosted by 4%");
+    }
+
+    function handleUseItem(id) {
+      const def = itemMap[id];
+      if (!def || !getItemCount(id)) return;
+      if (id === "rubbishBin") useRubbishBin();
+      else if (id === "hiddenMystery") useHiddenMystery();
+      else if (id === "greenFlame") applyFlame(1);
+      else if (id === "blueFlame") applyFlame(2);
+      else if (id === "redFlame") applyFlame(3);
+      renderInventory();
+    }
+
+    function gridFromOutcome(outcome) {
+      const grid = [[], [], []];
+      outcome.forEach((reel, col) => {
+        reel.forEach((sym, row) => {
+          grid[row][col] = sym;
+        });
+      });
+      return grid;
+    }
+
+    function findPatterns(outcome) {
+      const grid = gridFromOutcome(outcome);
+      const patterns = [];
+      const winning = new Set();
+      for (let row = 0; row < 3; row++) {
+        let current = grid[row][0];
+        let runStart = 0;
+        let runLen = 1;
+        for (let col = 1; col < 5; col++) {
+          const cell = grid[row][col];
+          if (cell.name === current.name) {
+            runLen++;
+          } else {
+            if (runLen >= 3) {
+              const cells = [];
+              for (let c = runStart; c < runStart + runLen; c++) {
+                winning.add(`${row}-${c}`);
+                cells.push({ row, col: c });
+              }
+              patterns.push({ symbol: current, cells });
+            }
+            current = cell;
+            runStart = col;
+            runLen = 1;
+          }
+        }
+        if (runLen >= 3) {
+          const cells = [];
+          for (let c = runStart; c < runStart + runLen; c++) {
+            winning.add(`${row}-${c}`);
+            cells.push({ row, col: c });
+          }
+          patterns.push({ symbol: current, cells });
+        }
+      }
+      return { patterns, winning };
+    }
+
+    function rerollWithRunicDice(outcome, winningSet) {
+      const dice = getItemCount("runicDice");
+      if (!dice) return { outcome, triggered: false };
+      let rerolls = 0;
+      for (let i = 0; i < dice; i++) {
+        if (Math.random() < 0.1) rerolls++;
+      }
+      if (!rerolls) return { outcome, triggered: false };
+      for (let r = 0; r < rerolls; r++) {
+        for (let col = 0; col < outcome.length; col++) {
+          for (let row = 0; row < outcome[col].length; row++) {
+            if (winningSet.has(`${row}-${col}`)) continue;
+            outcome[col][row] = randomSymbol();
+          }
+        }
+      }
+      reels.forEach((reel, idx) => renderOutcome(reel, outcome[idx]));
+      return { outcome, triggered: true };
+    }
+
+    function applyStupidCrown(patterns) {
+      const crowns = getItemCount("stupidCrown");
+      if (!crowns) return;
+      patterns.forEach((p) => {
+        const bonus = tierStep[p.symbol.tier] * crowns;
+        p.symbol.mult += bonus;
+      });
+      renderInfoTable();
+    }
+
+    function calculatePayout(patterns) {
+      let payout = 0;
+      patterns.forEach((p) => {
+        payout += BASE_PAYOUT * p.cells.length * p.symbol.mult;
+      });
+      if (patterns.length && state.spinCount % 5 === 0) {
+        const kev = getItemCount("normalKevin");
+        if (kev) payout *= Math.pow(2, kev);
+      }
+      return Math.floor(payout);
+    }
+
+    function chargeSpin() {
+      if (state.gold < SPIN_COST) {
+        setStatus("Not enough gold to spin", "error");
+        return false;
+      }
+      state.gold -= SPIN_COST;
+      updateBalances();
+      return true;
+    }
+
+    function clearIntervals() {
+      state.intervals.forEach((iv) => clearInterval(iv));
+      state.intervals = [];
+    }
+
+    async function animateSpin(outcome, pull) {
+      return new Promise((resolve) => {
+        const baseStop = 1000;
+        const extra = Math.max(0, pull - 0.5) * 1200;
+        const intervalSpeed = 70 - Math.min(30, Math.max(0, pull - 0.5) * 60);
+        reels.forEach((reel) => reel.classList.add("spinning"));
+        reels.forEach((reel, i) => {
+          const iv = setInterval(() => fillReel(reel), intervalSpeed);
+          state.intervals.push(iv);
+          setTimeout(() => {
+            clearInterval(state.intervals[i]);
+            renderOutcome(reel, outcome[i]);
+            reel.classList.remove("spinning");
+            if (i === reels.length - 1) resolve();
+          }, baseStop + extra + i * 220);
+        });
+      }).finally(() => clearIntervals());
+    }
+
+    function finalizeSpin(outcome) {
+      const firstPass = findPatterns(outcome);
+      const runic = rerollWithRunicDice(outcome, firstPass.winning);
+      const { patterns } = findPatterns(runic.outcome);
+      applyStupidCrown(patterns);
+      state.spinCount += 1;
+      const payout = calculatePayout(patterns);
+      state.gold += payout;
+      updateBalances();
+      renderPatterns(patterns);
+      renderInfoTable();
+      if (payout > 0) setStatus(`Win: ${payout}`);
+      else setStatus(runic.triggered ? "Runic reroll, no win" : "No win");
+    }
+
+    async function spinOnce(autoPull = false) {
+      if (state.spinning) return false;
+      if (!chargeSpin()) return false;
+      const outcome = prepareOutcome();
+      state.spinning = true;
+      const pull = autoPull ? 0.9 : state.pullProgress;
+      await animateSpin(outcome, pull || 0.6);
+      state.spinning = false;
+      finalizeSpin(outcome);
+      return true;
+    }
+
+    async function runQueue(count) {
+      state.queue.active = true;
+      state.queue.infinite = count === Infinity;
+      state.queue.remaining = state.queue.infinite ? Infinity : count;
+      while (state.queue.active && (state.queue.infinite || state.queue.remaining > 0)) {
+        const ok = await spinOnce(true);
+        if (!ok) break;
+        if (!state.queue.infinite) state.queue.remaining -= 1;
+      }
+      cancelQueue();
+    }
+
+    function cancelQueue() {
+      state.queue.active = false;
+      state.queue.infinite = false;
+      state.queue.remaining = 0;
+      if (state.queue.button) state.queue.button.classList.remove("active");
+      state.queue.button = null;
+    }
+
+    multiButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const val = btn.dataset.count;
+        const count = val === "inf" ? Infinity : Number(val);
+        if (state.queue.active && state.queue.infinite && count === Infinity) {
+          cancelQueue();
+          setStatus("Auto-spin cancelled", "warn");
+          return;
+        }
+        if (state.queue.button) state.queue.button.classList.remove("active");
+        state.queue.button = btn;
+        btn.classList.add("active");
+        runQueue(count);
+      });
+    });
+
+    function resetHandle() {
+      knob.style.top = "0";
+      knob.classList.remove("wiggle");
+      state.pulled = false;
+      state.pullProgress = 0;
+    }
+
+    function onPointerDown(e) {
+      if (state.spinning || state.queue.active) return;
+      state.startY = e.clientY;
+      state.pulled = false;
+      handle.setPointerCapture(e.pointerId);
+      handle.addEventListener("pointermove", onPointerMove);
+      handle.addEventListener("pointerup", onPointerUp);
+      handle.addEventListener("pointercancel", onPointerUp);
+    }
+
+    function onPointerMove(e) {
+      const maxPull = 140;
+      const dy = Math.max(0, Math.min(maxPull, e.clientY - state.startY));
+      state.pullProgress = dy / maxPull;
+      knob.style.top = dy + "px";
+      knob.classList.toggle("wiggle", state.pullProgress > 0.9);
+      if (state.pullProgress > 0.5) state.pulled = true;
+    }
+
+    function onPointerUp(e) {
+      handle.releasePointerCapture(e.pointerId);
+      handle.removeEventListener("pointermove", onPointerMove);
+      handle.removeEventListener("pointerup", onPointerUp);
+      handle.removeEventListener("pointercancel", onPointerUp);
+      const shouldSpin = state.pulled && state.pullProgress > 0.5 && !state.spinning;
+      resetHandle();
+      if (shouldSpin) spinOnce(false);
+    }
+
+    if (handle) handle.addEventListener("pointerdown", onPointerDown);
+
+    reels.forEach(fillReel);
+    renderInfoTable();
+    renderInventory();
+    updateBalances();
+    setStatus("Ready");
+  })();
+</script>
+
+</body>
+</html>
