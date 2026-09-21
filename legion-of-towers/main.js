@@ -609,14 +609,15 @@ class MultiplayerManager {
             lastShot: 0,
             level: 1,
             upgrades: {
-                dmg: 0,
-                rate: 0,
-                range: 0,
-                slow: 0,
+                dmgLv: 0,
+                rateLv: 0,
+                rangeLv: 0,
+                slowLv: 0,
                 special: towerType.upgrades.special
                     ? {...towerType.upgrades.special, purchased: false}
                     : null
             },
+            goldInvested: towerType.cost,
             flameWidth: towerType.bulletType === "flame" ? 10 : 0,
             lastFreeze: 0,
             placedBy: data.playerId
@@ -1124,14 +1125,12 @@ const towerTypes = [
         name: "Archer",
         color: "#228b22",
         cost: 25,
-        dmg: 10,
-        rate: 300,
+        buildCost: 1,
+        dmg: 8,
+        rate: 400,
         range: 180,
         icon: towerIcons.archer,
         upgrades: {
-            dmg: 5,
-            rate: -50,
-            range: 20,
             special: {
                 name: "MultiShot!",
                 cost: 5,
@@ -1143,16 +1142,14 @@ const towerTypes = [
     },
     {   // Cannon - Expensive, AOE damage
         name: "Cannon",
-        cost: 100,
+        cost: 90,
+        buildCost: 3,
         color: "#696969",
         range: 150,
-        dmg: 35,
+        dmg: 45,
         rate: 1200,
         icon: towerIcons.cannon,
         upgrades: {
-            dmg: 15,
-            rate: -150,
-            range: 15,
             special: {
                 name: "Explode!",
                 cost: 5,
@@ -1161,20 +1158,18 @@ const towerTypes = [
             }
         },
         bulletType: "cannonball",
-        aoeRadius: 40
+        aoeRadius: 65
     },
     {   // Mage - Slow, high damage with zap upgrade
         name: "Mage",
-        cost: 120,
+        cost: 110,
+        buildCost: 3,
         color: "#5a006c",
         range: 130,
-        dmg: 80,
-        rate: 2000,
+        dmg: 145,
+        rate: 1400,
         icon: towerIcons.mage,
         upgrades: {
-            dmg: 20,
-            rate: -100,
-            range: 15,
             special: {
                 name: "Zap!",
                 cost: 5,
@@ -1186,16 +1181,14 @@ const towerTypes = [
     },
     {   // Fire - Short range, constant damage
         name: "Fire Tower",
-        cost: 80,
+        cost: 70,
+        buildCost: 2,
         color: "#FF4500",
         range: 60,
-        dmg: 20,
+        dmg: 8,
         rate: 100,
         icon: towerIcons.fire,
         upgrades: {
-            dmg: 5,
-            rate: -20,
-            size: 5,
             special: {
                 name: "AOE!",
                 cost: 5,
@@ -1208,16 +1201,14 @@ const towerTypes = [
     },
     {   // Ice Tower - Slows enemies
         name: "Ice Tower",
-        cost: 90,
+        cost: 60,
+        buildCost: 2,
         color: "#007acc",
         range: 140,
-        dmg: 15,
+        dmg: 12,
         rate: 800,
         icon: towerIcons.ice,
         upgrades: {
-            slow: 0.5,
-            rate: -100,
-            range: 15,
             special: {
                 name: "Freeze!",
                 cost: 5,
@@ -1227,20 +1218,18 @@ const towerTypes = [
             }
         },
         bulletType: "ice",
-        slowAmount: 0.5
+        slowFactor: 0.5
     },
     {   // Sniper Tower - Very long range, slow rate, high damage
         name: "Sniper",
         color: "#333333",
-        cost: 150,
-        range: 9999,
-        dmg: 100,
-        rate: 2500,
+        cost: 130,
+        buildCost: 4,
+        range: 300,
+        dmg: 105,
+        rate: 1500,
         icon: towerIcons.sniper,
         upgrades: {
-            dmg: 30,
-            rate: -200,
-            range: 25,
             special: {
                 name: "Pierce!",
                 cost: 5,
@@ -1343,6 +1332,22 @@ function startDragTower(e) {
         return;
     }
 
+    // Build points. Without a cap, building another tower beats upgrading an
+    // existing one at every level of every track, forever -- the ratio is
+    // 0.500 at best and 0.075 at worst -- so upgrades can never be worth the
+    // gold no matter how they are priced. Points are weighted by tower rather
+    // than a flat slot count, because under a flat cap the most expensive
+    // tower always wins: one slot holding a Mage absorbs 1,171 gold of
+    // upgrades, a slot holding an Archer absorbs 267.
+    if (usedPoints() + (towerType.buildCost || 1) > BUILD_POINTS) {
+        showDialog(
+            `Baupunkte voll: ${usedPoints()}/${BUILD_POINTS}. ` +
+            `${towerType.name} kostet ${towerType.buildCost} Punkte. ` +
+            `Bau einen Turm ab oder rüste vorhandene auf.`,
+            "Kein Platz mehr");
+        return;
+    }
+
     draggingTower = {
         type: {...towerType},
         typeIndex: index,
@@ -1419,13 +1424,14 @@ function dropTower(e) {
             lastShot: 0,
             level: 1,
             upgrades: {
-                dmg: 0,
-                rate: 0,
-                range: 0,
-                slow: 0,
+                dmgLv: 0,
+                rateLv: 0,
+                rangeLv: 0,
+                slowLv: 0,
                 special: draggingTower.type.upgrades.special ?
                     {...draggingTower.type.upgrades.special, purchased: false} : null
             },
+            goldInvested: draggingTower.type.cost,
             flameWidth: draggingTower.type.bulletType === "flame" ? 10 : 0,
             lastFreeze: 0,
             placedBy: gameConfig.isMultiplayer ? gameConfig.playerRole : 'single'
@@ -1593,6 +1599,45 @@ const WAVE_TIERS = [
     [  0,   0,  10,  40,  50],  // wave 10
 ];
 
+// ======================
+// TOWER STATS
+// ======================
+// Every read of a tower's damage, rate, range or slow goes through these.
+// The old code inlined `type.dmg + (upgrades.dmg || 0)` at eight separate
+// sites, and one of them -- the Fire Tower's only damage application -- is
+// easy to miss, which would have made its whole damage track a no-op.
+const UPG_MAX = 4;                       // levels per track
+const UPG_DMG_STEP   = 1.25;             // multiplicative
+const UPG_RATE_STEP  = 0.85;             // multiplicative: can never reach 0
+const UPG_RANGE_STEP = 15;               // flat
+const UPG_SLOW_STEP  = 0.85;             // multiplicative, downward
+
+function towerDamage(t) { return t.type.dmg   * Math.pow(UPG_DMG_STEP,  t.upgrades.dmgLv   || 0); }
+function towerRate(t)   { return t.type.rate  * Math.pow(UPG_RATE_STEP, t.upgrades.rateLv  || 0); }
+function towerRange(t)  { return t.type.range + UPG_RANGE_STEP * (t.upgrades.rangeLv || 0); }
+function towerSlowFactor(t) {
+    if (t.type.slowFactor === undefined) return 1;
+    return t.type.slowFactor * Math.pow(UPG_SLOW_STEP, t.upgrades.slowLv || 0);
+}
+
+// Price scales with the tower's own cost and the level being bought, so a
+// Mage upgrade costs Mage money. The flat `30 + wave * 5` it replaces was a
+// scam early and free late.
+function upgradePrice(t, track) {
+    const k = (track === 'range') ? 0.15 : 0.50;
+    const level = (t.upgrades[track + 'Lv'] || 0) + 1;
+    return Math.round(t.type.cost * k * Math.pow(1.6, level - 1));
+}
+
+// Build points. A flat slot cap would make the most expensive tower always
+// win, because one slot holding a Mage absorbs 1,171 gold of upgrades while a
+// slot holding an Archer absorbs 267. Weighted points make a slot cost roughly
+// what the tower costs, so damage per gold stays the operative metric.
+const BUILD_POINTS = 36;
+function usedPoints() {
+    return towers.reduce((n, t) => n + (t.type.buildCost || 1), 0);
+}
+
 // The one place the enemy HP scale is defined. spawnEnemy() and the tier
 // downgrade must agree exactly, or a downgraded enemy ends up tougher than a
 // freshly spawned one of the same tier.
@@ -1643,7 +1688,7 @@ function spawnEnemy() {
 
 // Freeze enemies in range (for Ice Tower special ability)
 function freezeEnemies(tower) {
-    const range = tower.type.range + (tower.upgrades.range || 0);
+    const range = towerRange(tower);
     enemies.forEach(e => {
         if (e.alive && Math.hypot(e.x - tower.x, e.y - tower.y) < range) {
             e.freezeTimer = tower.type.upgrades.special.duration; // 5 seconds
@@ -1668,13 +1713,20 @@ function stepSimulation(dt) {
         gameState.enemiesInWave--;
     }
 
+    // Ice is an AURA now, recomputed every step from the ice towers actually
+    // covering each enemy. The old code applied the slow from a bullet, to
+    // exactly one enemy per shot, for 2000 ms at an 800 ms fire rate -- so at
+    // most 2.5 enemies were slowed at a time out of the ~13.6 standing in an
+    // Ice tower's stretch at wave 10. That is not control, it is a rounding
+    // error. Overlapping towers take the strongest slow, they do not stack.
+    const iceTowers = towers.filter(t => t.type.slowFactor !== undefined);
+
     // Move enemies
     for (const e of enemies) {
-        // Handle slow effects
-        if (e.slowTimer > 0) {
-            e.slowTimer -= deltaTime;
-            if (e.slowTimer <= 0) {
-                e.slowAmount = 1; // Reset to normal speed
+        e.slowAmount = 1;
+        for (const t of iceTowers) {
+            if (Math.hypot(e.x - t.x, e.y - t.y) <= towerRange(t)) {
+                e.slowAmount = Math.min(e.slowAmount, towerSlowFactor(t));
             }
         }
 
@@ -1735,39 +1787,21 @@ function stepSimulation(dt) {
             }
         }
 
-        if (now - t.lastShot >= (t.type.rate + (t.upgrades.rate || 0))) {
+        if (now - t.lastShot >= towerRate(t)) {
             let target = null;
             let highestPathIndex = -1;
 
             // Find all enemies in range
             const enemiesInRange = enemies.filter(e => 
-                e.alive && Math.hypot(e.x - t.x, e.y - t.y) < (t.type.range + (t.upgrades.range || 0)));
+                e.alive && Math.hypot(e.x - t.x, e.y - t.y) < towerRange(t));
 
             // Special targeting for ice tower
-            if (t.type.name === "Ice Tower") {
-                // Find un-slowed enemies first
-                const unSlowedEnemies = enemiesInRange.filter(e => e.slowAmount >= 1);
-
-                // Find furthest un-slowed enemy
-                for (const e of unSlowedEnemies) {
-                    if (e.pathIndex > highestPathIndex) {
-                        highestPathIndex = e.pathIndex;
-                        target = e;
-                    }
-                }
-
-                // If no un-slowed enemies, find furthest enemy in range
-                if (!target) {
-                    for (const e of enemiesInRange) {
-                        if (e.pathIndex > highestPathIndex) {
-                            highestPathIndex = e.pathIndex;
-                            target = e;
-                        }
-                    }
-                }
-            }
-            // Standard targeting for other towers
-            else {
+            // Ice used to get its own targeting branch that preferred
+            // un-slowed enemies. The slow is an aura now, so there is nothing
+            // to prefer -- and the filter it used (`e.slowAmount >= 1`)
+            // silently disabled Ice's targeting entirely once the old upgrade
+            // pushed the value past 1.
+            {
                 // Find enemy furthest along path
                 for (const e of enemiesInRange) {
                     if (e.pathIndex > highestPathIndex) {
@@ -1794,7 +1828,7 @@ function stepSimulation(dt) {
                                 y: t.y,
                                 tx: tgt.x,
                                 ty: tgt.y,
-                                dmg: t.type.dmg + (t.upgrades.dmg || 0),
+                                dmg: towerDamage(t),
                                 target: tgt,
                                 color: t.type.color,
                                 speed: 12,
@@ -1811,7 +1845,7 @@ function stepSimulation(dt) {
                         y: t.y,
                         tx: target.x,
                         ty: target.y,
-                        dmg: t.type.dmg + (t.upgrades.dmg || 0),
+                        dmg: towerDamage(t),
                         target: target,
                         color: t.type.color,
                         speed: 20,
@@ -1828,7 +1862,7 @@ function stepSimulation(dt) {
                             y: t.y,
                             tx: target.x,
                             ty: target.y,
-                            dmg: t.type.dmg + (t.upgrades.dmg || 0),
+                            dmg: towerDamage(t),
                             target: target,
                             color: t.type.color,
                             speed: t.type.bulletType === "arrow" ? 12 :
@@ -1836,7 +1870,6 @@ function stepSimulation(dt) {
                             aoeRadius: t.type.aoeRadius || 0,
                             type: t.type.bulletType,
                             tower: t,
-                            slowAmount: t.type.slowAmount || 0
                         });
                     }
                 }
@@ -1865,7 +1898,7 @@ function stepSimulation(dt) {
 
                     // Create zap effects between targets
                     chainTargets.forEach((tgt, index) => {
-                        tgt.hp -= (t.type.dmg + (t.upgrades.dmg || 0)) * (1.0 - (index * 0.2));
+                        tgt.hp -= towerDamage(t) * (1.0 - (index * 0.2));
                         tgt.lastBlink = Date.now();
                         tgt.blinkColor = "#ffff00";
 
@@ -1875,7 +1908,7 @@ function stepSimulation(dt) {
                                 y: chainTargets[index-1].y,
                                 tx: tgt.x,
                                 ty: tgt.y,
-                                dmg: (t.type.dmg + (t.upgrades.dmg || 0)) * (1.0 - (index * 0.2)),
+                                dmg: towerDamage(t) * (1.0 - (index * 0.2)),
                                 color: "#FFFF00",
                                 speed: 20,
                                 type: "zap",
@@ -1886,7 +1919,7 @@ function stepSimulation(dt) {
                 }
                 else if (t.type.name === "Fire Tower") {
                     // Fire tower deals damage directly to the target
-                    target.hp -= (t.type.dmg + (t.upgrades.dmg || 0));
+                    target.hp -= towerDamage(t);
 
                     // If AOE is purchased, damage all enemies in flame path
                     if (t.upgrades.special?.purchased) {
@@ -1901,7 +1934,7 @@ function stepSimulation(dt) {
                                 ) / distance;
 
                                 if (pointLineDist < t.type.flameWidth + (t.upgrades.size || 0)) {
-                                    e.hp -= (t.type.dmg + (t.upgrades.dmg || 0)) * 0.5; // 50% damage for AOE
+                                    e.hp -= towerDamage(t) * 0.5; // 50% damage for AOE
                                 }
                             }
                         });
@@ -1963,11 +1996,18 @@ function stepSimulation(dt) {
             let dx = b.tx - b.x, dy = b.ty - b.y, dist = Math.hypot(dx, dy);
             if (dist < b.speed || !b.target?.alive) {
                 // Handle AOE damage (for Cannon's Explode!)
-                if (b.aoeRadius > 0 && b.tower?.upgrades.special?.purchased) {
+                // Splash is a BASE property of the Cannon, not a purchase --
+                // aoeRadius already sits on the type and the type's own
+                // comment calls it "AOE damage". The primary target is
+                // excluded: it is inside its own blast by definition, so it
+                // used to take 0.7x splash AND full damage, 170% total, which
+                // made the one area tower a single-target booster first.
+                if (b.aoeRadius > 0) {
                     const aoeTargets = enemies.filter(e =>
-                        e.alive && Math.hypot(e.x - b.x, e.y - b.y) < b.aoeRadius);
+                        e.alive && e !== b.target &&
+                        Math.hypot(e.x - b.x, e.y - b.y) < b.aoeRadius);
                     aoeTargets.forEach(e => {
-                        e.hp -= b.dmg * 0.7; // AOE does 70% damage
+                        e.hp -= b.dmg * 0.6;
                         e.lastBlink = Date.now(); // Visual feedback
                         e.blinkColor = "#ff0000";
                     });
@@ -1986,19 +2026,13 @@ function stepSimulation(dt) {
                 if (b.target && b.target.alive) {
                     b.target.hp -= b.dmg;
 
-                    // Apply slow effect for ice tower
-                    if (b.slowAmount > 0) {
-                        b.target.slowAmount = b.slowAmount;
-                        b.target.slowTimer = 2000; // 2 seconds slow
-                    }
-
                     // Handle piercing for sniper tower
                     if (b.pierce) {
                         // Find another target in range
                         const nextTarget = enemies.find(e => 
                             e.alive && 
                             e !== b.target &&
-                            Math.hypot(e.x - b.x, e.y - b.y) < (b.tower.type.range + (b.tower.upgrades.range || 0)));
+                            Math.hypot(e.x - b.x, e.y - b.y) < towerRange(b.tower));
 
                         if (nextTarget) {
                             bullets.push({
@@ -2143,7 +2177,10 @@ function showDialog(message, title = 'Hinweis', onOk = null) {
 // UI functions
 function updateUI() {
     // Core resources
-    goldEl.textContent = Math.max(0, Math.floor(gameState.gold));
+    // Gold, and the build budget beside it. A tower count would be the wrong
+    // readout -- points are weighted, so 12 Archers and 3 Snipers are the
+    // same spend of board.
+    goldEl.textContent = `${Math.max(0, Math.floor(gameState.gold))}  ·  ${usedPoints()}/${BUILD_POINTS}`;
     crystalEl.textContent = Math.max(0, Math.floor(gameState.crystals));
     lifeEl.textContent = `${Math.max(0, gameState.lives)}/${LIFE_MAX}`;
 
@@ -2185,115 +2222,137 @@ function syncUIFromState() {
 }
 
 // Upgrade menu
-function showUpgradeMenu(tower, clickX, clickY) {
-    const upgradeCost = 30 + gameState.wave * 5;
+// Which tracks a tower offers. Ice trades the damage track for slow -- its
+// job is control, and a damage track would only blur that.
+function towerTracks(t) {
+    return (t.type.slowFactor !== undefined)
+        ? ['slow', 'rate', 'range']
+        : ['dmg', 'rate', 'range'];
+}
 
-    // Create stats display section
+const TRACK_META = {
+    dmg:   { icon: '💥', label: 'Schaden' },
+    rate:  { icon: '⏱️', label: 'Feuerrate' },
+    range: { icon: '📏', label: 'Reichweite' },
+    slow:  { icon: '❄️', label: 'Verlangsamung' },
+};
+
+function dpsOf(t) { return towerDamage(t) / (towerRate(t) / 1000); }
+
+// What one more level of a track would actually do, as "before -> after".
+// The old panel showed the raw step value, which told you nothing about what
+// you were buying.
+function trackPreview(t, track) {
+    const lv = t.upgrades[track + 'Lv'] || 0;
+    const probe = { type: t.type, upgrades: Object.assign({}, t.upgrades, { [track + 'Lv']: lv + 1 }) };
+    if (track === 'dmg' || track === 'rate') {
+        return 'DPS ' + dpsOf(t).toFixed(1) + ' → ' + dpsOf(probe).toFixed(1);
+    }
+    if (track === 'range') {
+        return Math.round(towerRange(t)) + ' → ' + Math.round(towerRange(probe));
+    }
+    if (track === 'slow') {
+        const a = Math.round((1 - towerSlowFactor(t)) * 100);
+        const b = Math.round((1 - towerSlowFactor(probe)) * 100);
+        return a + '% → ' + b + '% langsamer';
+    }
+    return '';
+}
+
+function showUpgradeMenu(tower, clickX, clickY) {
+    const special = tower.type.upgrades.special;
+
     let statsHTML = `
     <div class="tower-stats">
-        <h3>${tower.type.name} (Level ${tower.level || 1})</h3>
+        <h3>${tower.type.name} (Stufe ${tower.level || 1})</h3>
         <div class="stat-row">
-            <span class="stat-name">Damage:</span>
-            <span class="stat-value">${tower.type.dmg + (tower.upgrades.dmg || 0)}</span>
+            <span class="stat-name">Schaden:</span>
+            <span class="stat-value">${towerDamage(tower).toFixed(1)}</span>
         </div>
         <div class="stat-row">
-            <span class="stat-name">Range:</span>
-            <span class="stat-value">${tower.type.range + (tower.upgrades.range || 0)}</span>
+            <span class="stat-name">DPS:</span>
+            <span class="stat-value">${dpsOf(tower).toFixed(1)}</span>
         </div>
         <div class="stat-row">
-            <span class="stat-name">Attack Speed:</span>
-            <span class="stat-value">${(1000/(tower.type.rate + (tower.upgrades.rate || 0))).toFixed(1)}/s</span>
+            <span class="stat-name">Reichweite:</span>
+            <span class="stat-value">${Math.round(towerRange(tower))}</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-name">Feuerrate:</span>
+            <span class="stat-value">${(1000 / towerRate(tower)).toFixed(2)}/s</span>
         </div>`;
 
-    // Add special stats if applicable
-    if ('slowAmount' in tower.type) {
+    if (tower.type.slowFactor !== undefined) {
+        // The REDUCTION, not the multiplier. The old panel printed the raw
+        // multiplier climbing past 100%, which read as an improvement while
+        // the upgrade was in fact removing the slow and then speeding
+        // enemies up.
         statsHTML += `
         <div class="stat-row">
-            <span class="stat-name">Slow:</span>
-            <span class="stat-value">${(tower.type.slowAmount * 100).toFixed(0)}%</span>
+            <span class="stat-name">Verlangsamung:</span>
+            <span class="stat-value">${Math.round((1 - towerSlowFactor(tower)) * 100)}% langsamer</span>
+        </div>`;
+    }
+
+    if (tower.type.aoeRadius) {
+        statsHTML += `
+        <div class="stat-row">
+            <span class="stat-name">Splash:</span>
+            <span class="stat-value">${tower.type.aoeRadius} px</span>
         </div>`;
     }
 
     if (tower.upgrades.special?.purchased) {
         statsHTML += `
         <div class="stat-row">
-            <span class="stat-name">Special:</span>
-            <span class="stat-value">${tower.type.upgrades.special.name} (Active)</span>
+            <span class="stat-name">Spezial:</span>
+            <span class="stat-value">${special.name} (aktiv)</span>
         </div>`;
     }
 
-    // Show who placed the tower in multiplayer
     if (gameConfig.isMultiplayer && tower.placedBy) {
-        const playerName = tower.placedBy === 'host' ? 'Host' : 'Guest';
         statsHTML += `
         <div class="stat-row">
-            <span class="stat-name">Placed by:</span>
-            <span class="stat-value">${playerName}</span>
+            <span class="stat-name">Gebaut von:</span>
+            <span class="stat-value">${tower.placedBy === 'host' ? 'Host' : 'Gast'}</span>
         </div>`;
     }
 
     statsHTML += `</div><div class="upgrade-options">`;
 
     let upgradeOptions = '';
-    // Damage Upgrade Button (if exists)
-    if ('dmg' in tower.type.upgrades) {
+    for (const track of towerTracks(tower)) {
+        const lv = tower.upgrades[track + 'Lv'] || 0;
+        const meta = TRACK_META[track];
+
+        if (lv >= UPG_MAX) {
+            upgradeOptions += `
+            <button class="upgrade-option" data-upgrade="${track}" disabled>
+                <span>${meta.icon}</span>
+                <span class="upgrade-name">${meta.label} ${lv}/${UPG_MAX}</span>
+                <span class="upgrade-description">ausgebaut</span>
+            </button>`;
+            continue;
+        }
+
+        const price = upgradePrice(tower, track);
         upgradeOptions += `
-        <button class="upgrade-option" data-upgrade="dmg" ${gameState.gold < upgradeCost ? "disabled" : ""}>
-            <span>💥</span>
-            <span class="upgrade-name">Attack Damage +${tower.type.upgrades.dmg}</span>
-            <span class="upgrade-cost">${upgradeCost} Gold</span>
+        <button class="upgrade-option" data-upgrade="${track}" ${gameState.gold < price ? 'disabled' : ''}>
+            <span>${meta.icon}</span>
+            <span class="upgrade-name">${meta.label} ${lv}/${UPG_MAX}</span>
+            <span class="upgrade-description">${trackPreview(tower, track)}</span>
+            <span class="upgrade-cost">${price} Gold</span>
         </button>`;
     }
 
-    // Attack Speed Upgrade Button (if exists)
-    if ('rate' in tower.type.upgrades) {
-        upgradeOptions += `
-        <button class="upgrade-option" data-upgrade="rate" ${gameState.gold < upgradeCost ? "disabled" : ""}>
-            <span>⏱️</span>
-            <span class="upgrade-name">Attack Speed (${-tower.type.upgrades.rate/1000}s)</span>
-            <span class="upgrade-cost">${upgradeCost} Gold</span>
-        </button>`;
-    }
-
-    // Attack Range Upgrade Button (if exists)
-    if ('range' in tower.type.upgrades) {
-        upgradeOptions += `
-        <button class="upgrade-option" data-upgrade="range" ${gameState.gold < upgradeCost ? "disabled" : ""}>
-            <span>📏</span>
-            <span class="upgrade-name">Attack Range +${tower.type.upgrades.range}</span>
-            <span class="upgrade-cost">${upgradeCost} Gold</span>
-        </button>`;
-    }
-
-    // Size Upgrade Button (for Fire Tower)
-    if ('size' in tower.type.upgrades) {
-        upgradeOptions += `
-        <button class="upgrade-option" data-upgrade="size" ${gameState.gold < upgradeCost ? "disabled" : ""}>
-            <span>🔥</span>
-            <span class="upgrade-name">Flame Size +${tower.type.upgrades.size}</span>
-            <span class="upgrade-cost">${upgradeCost} Gold</span>
-        </button>`;
-    }
-
-    // Slow Upgrade Button (if exists)
-    if ('slow' in tower.type.upgrades) {
-        upgradeOptions += `
-        <button class="upgrade-option" data-upgrade="slow" ${gameState.gold < upgradeCost ? "disabled" : ""}>
-            <span>❄️</span>
-            <span class="upgrade-name">Slow +${(tower.type.upgrades.slow*100).toFixed(0)}%</span>
-            <span class="upgrade-cost">${upgradeCost} Gold</span>
-        </button>`;
-    }
-
-    // Special Ability Button (if exists)
-    if (tower.type.upgrades.special) {
+    if (special) {
         upgradeOptions += `
         <button class="upgrade-option" data-upgrade="special"
-            ${(gameState.crystals < tower.type.upgrades.special.cost || tower.upgrades.special?.purchased) ? "disabled" : ""}>
+            ${(gameState.crystals < special.cost || tower.upgrades.special?.purchased) ? 'disabled' : ''}>
             <span>✨</span>
-            <span class="upgrade-name">${tower.type.upgrades.special.name}</span>
-            <span class="upgrade-description">${tower.type.upgrades.special.description}</span>
-            <span class="upgrade-cost">${tower.type.upgrades.special.cost} Crystals</span>
+            <span class="upgrade-name">${special.name}</span>
+            <span class="upgrade-description">${special.description}</span>
+            <span class="upgrade-cost">${special.cost} Kristalle</span>
         </button>`;
     }
 
@@ -2319,31 +2378,28 @@ function showUpgradeMenu(tower, clickX, clickY) {
                 tower.upgrades.special.purchased = true;
                 tower.level = (tower.level || 1) + 1;
             } else {
-                if (gameState.gold < upgradeCost) {
+                const lvKey = upgradeType + 'Lv';
+                const level = tower.upgrades[lvKey] || 0;
+
+                if (level >= UPG_MAX) {
+                    showDialog(`${upgradeType} ist auf Maximalstufe ${UPG_MAX}.`, "Ausgebaut");
+                    return;
+                }
+
+                const price = upgradePrice(tower, upgradeType);
+                if (gameState.gold < price) {
                     showDialog("Nicht genug Gold für dieses Upgrade.", "Zu teuer");
                     return;
                 }
 
-                gameState.gold -= upgradeCost;
+                gameState.gold -= price;
+                // Per-track levels. tower.level stays a total-purchases
+                // counter for the label, but it no longer drives any stat --
+                // it was incremented by every track including the special,
+                // which is why it could not be used as one.
+                tower.upgrades[lvKey] = level + 1;
                 tower.level = (tower.level || 1) + 1;
-
-                switch(upgradeType) {
-                    case 'dmg':
-                        tower.upgrades.dmg = (tower.upgrades.dmg || 0) + tower.type.upgrades.dmg;
-                        break;
-                    case 'rate':
-                        tower.upgrades.rate = (tower.upgrades.rate || 0) + tower.type.upgrades.rate;
-                        break;
-                    case 'range':
-                        tower.upgrades.range = (tower.upgrades.range || 0) + tower.type.upgrades.range;
-                        break;
-                    case 'size':
-                        tower.type.flameWidth += tower.type.upgrades.size;
-                        break;
-                    case 'slow':
-                        tower.type.slowAmount += tower.type.upgrades.slow;
-                        break;
-                }
+                tower.goldInvested = (tower.goldInvested || 0) + price;
             }
 
             // Send multiplayer message if in multiplayer mode
@@ -2616,11 +2672,11 @@ function draw() {
 
         // Fire tower effects
         if (t.type.name === "Fire Tower" && simTime - t.lastShot < 100) {
-            const tgt = enemies.find(e => e.alive && Math.hypot(e.x-t.x, e.y-t.y) < t.type.range);
+            const tgt = enemies.find(e => e.alive && Math.hypot(e.x-t.x, e.y-t.y) < towerRange(t));
             if (tgt) {
                 const angle = Math.atan2(tgt.y - t.y, tgt.x - t.x);
                 const distance = Math.hypot(tgt.x - t.x, tgt.y - t.y);
-                const flameLength = Math.min(t.type.range, distance);
+                const flameLength = Math.min(towerRange(t), distance);
 
                 ctx.save();
                 ctx.translate(t.x, t.y);
@@ -2659,7 +2715,7 @@ function draw() {
         ctx.strokeStyle = 'rgba(200, 200, 200, 0.5)';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(selectedTower.x, selectedTower.y, selectedTower.type.range + (selectedTower.upgrades.range || 0), 0, Math.PI * 2);
+        ctx.arc(selectedTower.x, selectedTower.y, towerRange(selectedTower), 0, Math.PI * 2);
         ctx.stroke();
     }
 
