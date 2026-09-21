@@ -69,15 +69,13 @@ class MultiplayerManager {
                                     this.peer.destroy();
                             }
 
-                            this.peer = new Peer({
-                                    debug: 3,
-                                    config: {
-                                            iceServers: [
-                                                    { urls: 'stun:stun.l.google.com:19302' },
-                                                    { urls: 'stun:stun1.l.google.com:19302' }
-                    ]
-                }
-            });
+                        // No config override. PeerJS 1.4.7 ships both STUN
+                        // servers AND a free TURN relay in its own
+                        // util.defaultConfig; replacing it with a STUN-only
+                        // list actively deleted the relay, so behind
+                        // symmetric NAT the connection simply could not be
+                        // made -- and it looked exactly like a code bug.
+                        this.peer = new Peer({ debug: 3 });
 
             const peerId = await new Promise((resolve, reject) => {
                 this.peer.on('open', resolve);
@@ -140,11 +138,16 @@ class MultiplayerManager {
     }
 
     setupConnection(conn) {
-        conn.on('open', () => {
-            console.log('Connection established with:', conn.peer);
+        // Register the connection unconditionally and immediately. This used
+        // to live inside conn.on('open'), but the guest calls setupConnection
+        // from inside its own already-fired 'open' handler, and PeerJS does
+        // not replay 'open' to a late subscriber. So the guest's send map
+        // stayed empty forever: it could receive, but broadcastMessage()
+        // iterated nothing and every message it sent vanished silently.
+        this.connections.set(conn.peer, conn);
 
-            // Add to connections map
-            this.connections.set(conn.peer, conn);
+        const onOpen = () => {
+            console.log('Connection established with:', conn.peer);
 
             // Send welcome message with our info
             this.sendMessageToConnection(conn, {
@@ -164,7 +167,11 @@ class MultiplayerManager {
                 });
                 this.updatePlayerList();
             }
-        });
+        };
+
+        // Covers both call sites: the host subscribes before 'open' fires,
+        // the guest arrives after it already has.
+        if (conn.open) onOpen(); else conn.on('open', onOpen);
 
         // Handle incoming messages
         conn.on('data', (data) => this.handleMessage(data, conn.peer));
@@ -214,16 +221,10 @@ class MultiplayerManager {
             }
 
             // Initialize PeerJS
+            // Same here: no config override, so the default TURN relay stays.
             this.peer = new Peer({
-                debug: 3, // Increased verbosity
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' }
-                    ]
-                },
-                iceTransportPolicy: 'all'
+                debug: 3,
+                iceTransportPolicy: "all"
             });
 
             const peerId = await new Promise((resolve, reject) => {
@@ -546,17 +547,19 @@ class MultiplayerManager {
                 document.getElementById('startButton').style.display = 'block';
                 document.getElementById('startButton').style.pointerEvents = 'auto';
 
-                // Sync game settings
+                // Sync game settings. These four reads used a bare `data`,
+                // which is not a parameter of handleMessage and is declared
+                // nowhere in the file -- so the guest threw a ReferenceError
+                // here, never reached initGame() below, and sat on a blank
+                // green canvas showing the uninitialised gameState.
                 gameConfig.isMultiplayer = true;
                 gameConfig.playerRole = 'guest';
-                gameConfig.map = data.map;
-                gameConfig.difficulty = data.difficulty;
+                gameConfig.map = message.data.map;
+                gameConfig.difficulty = message.data.difficulty;
 
-                // Sync game state
-                gameState.wave = data.wave;
-                gameState.gold = data.gold;
-
-                // Start game for guest
+                // Start game for guest. initGame() sets gold from the
+                // difficulty and resets the wave, so there is nothing to
+                // copy across here.
                 initGame();
                 startLoop();
                 break;
@@ -589,11 +592,20 @@ class MultiplayerManager {
     }
 
     handleTowerPlaced(data) {
-        // Add tower placed by other player
-        const tower = {
+        // Rebuild the type locally from its index; the wire only carries the
+        // index, because the type object holds a live HTMLImageElement.
+        const towerType = towerTypes[data.typeIndex];
+        if (!towerType) {
+            console.warn('towerPlaced with unknown typeIndex', data.typeIndex);
+            return;
+        }
+
+        towers.push({
+            id: data.id,
+            typeIndex: data.typeIndex,
             x: data.x,
             y: data.y,
-            type: {...data.type},
+            type: {...towerType},
             lastShot: 0,
             level: 1,
             upgrades: {
@@ -601,15 +613,14 @@ class MultiplayerManager {
                 rate: 0,
                 range: 0,
                 slow: 0,
-                special: data.type.upgrades.special ? 
-                    {...data.type.upgrades.special, purchased: false} : null
+                special: towerType.upgrades.special
+                    ? {...towerType.upgrades.special, purchased: false}
+                    : null
             },
-            flameWidth: data.type.bulletType === "flame" ? 10 : 0,
+            flameWidth: towerType.bulletType === "flame" ? 10 : 0,
             lastFreeze: 0,
             placedBy: data.playerId
-        };
-
-        towers.push(tower);
+        });
     }
 
     handleTowerUpgraded(data) {
@@ -659,11 +670,11 @@ class MultiplayerManager {
         gameConfig.playerRole = this.playerRole;
         gameConfig.connectedPlayers = this.connectedPlayers;
 
-        // Broadcast game start to all players
-        this.broadcastMessage({
-            type: 'gameStart',
-            wave: gameState.wave,
-            gold: gameState.gold,
+        // Broadcast game start. This went out raw, with the fields at top
+        // level, while every other message goes through sendMessage() and is
+        // wrapped as {type, data, timestamp} -- which is the envelope the
+        // handler was written for.
+        this.sendMessage('gameStart', {
             map: gameConfig.map,
             difficulty: gameConfig.difficulty
         });
@@ -1409,10 +1420,16 @@ function dropTower(e) {
 
         // Send multiplayer message if in multiplayer mode
         if (gameConfig.isMultiplayer) {
+            // Send the type INDEX, not the type object. towerTypes carries a
+            // live HTMLImageElement in iconImage; BinaryPack rejects it at its
+            // constructor check and throws, the throw is swallowed by the
+            // console-only catch in sendMessageToConnection, and the message
+            // was therefore never transmitted at all. ~2 KB down to ~40 bytes.
             multiplayerManager.sendMessage('towerPlaced', {
+                id: newTower.id,
+                typeIndex: newTower.typeIndex,
                 x: newTower.x,
                 y: newTower.y,
-                type: newTower.type,
                 playerId: gameConfig.playerRole
             });
         }
