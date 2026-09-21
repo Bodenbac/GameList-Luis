@@ -449,16 +449,13 @@ class MultiplayerManager {
         }
     }
 
-    // Network message handling (simplified for demo)
-    sendMessage(type, data) {
-        // In a real implementation, this would send over WebRTC
-        console.log('Sending message:', { type, data });
-
-        // Simulate receiving the message for demo
-        setTimeout(() => {
-            this.handleMessage({ type, data, fromPlayer: this.playerRole === 'host' ? 'guest' : 'host' });
-        }, 100);
-    }
+    // (Removed: a second sendMessage() used to sit here, shadowed by the real
+    // one further down the class. It faked a 100 ms local loopback of every
+    // message back into this peer's own handleMessage -- so reordering or
+    // deleting the real one would have made every tower placement duplicate
+    // itself and every wave start twice. Exactly the class of symptom that
+    // was being chased, sitting 230 lines from its replacement with nothing
+    // marking it obsolete.)
 
     sendChatMessage() {
         const input = document.getElementById('chatInput');
@@ -851,12 +848,7 @@ document.querySelector('.start-btn').addEventListener('click', function() {
     startLoop();
 });
 
-// Window resize handler
-window.addEventListener('resize', function() {
-    if (document.getElementById('titleScreen').style.display === 'none') {
-        resizeCanvas();
-    }
-});
+// Resize is handled by the single listener registered at the bottom of the file.
 
 // Initialize the game with selected settings
 async function initGame() {
@@ -1248,6 +1240,65 @@ let towers = [], enemies = [], bullets = [], lastSpawn = 0, waveInterval = 900;
 // refer to an enemy or a tower across two machines, and the sell button needs
 // them to name a tower without comparing floating-point coordinates.
 let nextEnemyId = 1, nextTowerId = 1;
+
+// The tier downgrade is the most distinctive idea in this game and the player
+// experienced it as a 100 ms white flash and nothing else -- no particle, no
+// number, no sound. These are purely presentational and live outside the
+// simulation's correctness, but they are what make the mechanic legible.
+let effects = [];
+
+function spawnBurst(x, y, color, count) {
+    for (let i = 0; i < count; i++) {
+        const a = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+        const sp = 60 + Math.random() * 120;          // px per second
+        effects.push({
+            kind: 'spark', x, y,
+            vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+            life: 450, maxLife: 450, color
+        });
+    }
+}
+
+function spawnFloatingText(x, y, text, color) {
+    effects.push({ kind: 'text', x, y, text, color, life: 900, maxLife: 900 });
+}
+
+function updateEffects(dt) {
+    for (const f of effects) {
+        f.life -= dt;
+        if (f.kind === 'spark') {
+            f.x += f.vx * dt / 1000;
+            f.y += f.vy * dt / 1000;
+            f.vy += 240 * dt / 1000;                  // a little gravity
+        } else {
+            f.y -= 30 * dt / 1000;
+        }
+    }
+    effects = effects.filter(f => f.life > 0);
+}
+
+function drawEffects() {
+    for (const f of effects) {
+        const t = Math.max(0, f.life / f.maxLife);
+        ctx.save();
+        ctx.globalAlpha = t;
+        if (f.kind === 'spark') {
+            ctx.fillStyle = f.color;
+            ctx.beginPath();
+            ctx.arc(f.x, f.y, 2 + 3 * t, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            ctx.fillStyle = f.color;
+            ctx.font = 'bold 18px Segoe UI, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.strokeStyle = 'rgba(0,0,0,0.65)';
+            ctx.lineWidth = 3;
+            ctx.strokeText(f.text, f.x, f.y);
+            ctx.fillText(f.text, f.x, f.y);
+        }
+        ctx.restore();
+    }
+}
 let lastUpdateTime = Date.now();
 
 // Initialization
@@ -1269,9 +1320,11 @@ function resizeCanvas() {
     canvas.style.width = `${GAME_WIDTH * gameScale}px`;
     canvas.style.height = `${GAME_HEIGHT * gameScale}px`;
 
-    // Recalculate path based on fixed game dimensions
-    setupPath();
-    generateMapElements();
+    // Deliberately NOT regenerating the path or the decorations here.
+    // GAME_WIDTH/HEIGHT are constants so the path never changes on resize,
+    // but two resize listeners were registered and each call regenerated the
+    // decorations, so one resize event reshuffled the whole forest six times
+    // -- continuously, while dragging a window edge. initGame() builds them.
 }
 
 function preloadTowerIcons() {
@@ -1377,6 +1430,29 @@ function startDragTower(e) {
     document.addEventListener('touchmove', dragTower, { passive: false });
     document.addEventListener('mouseup', dropTower);
     document.addEventListener('touchend', dropTower);
+    document.addEventListener('touchcancel', cancelDrag);
+    document.addEventListener('keydown', cancelDragOnEscape);
+}
+
+// An interrupted drag -- a phone call arriving, a swipe from the screen edge,
+// Escape -- used to leave draggingTower alive, and the next tap anywhere on
+// the page then bought a tower.
+function clearDragListeners() {
+    document.removeEventListener('mousemove', dragTower);
+    document.removeEventListener('touchmove', dragTower);
+    document.removeEventListener('mouseup', dropTower);
+    document.removeEventListener('touchend', dropTower);
+    document.removeEventListener('touchcancel', cancelDrag);
+    document.removeEventListener('keydown', cancelDragOnEscape);
+}
+
+function cancelDrag() {
+    draggingTower = null;
+    clearDragListeners();
+}
+
+function cancelDragOnEscape(e) {
+    if (e.key === 'Escape') cancelDrag();
 }
 
 function dragTower(e) {
@@ -1395,19 +1471,26 @@ function dragTower(e) {
     }
 
     // Convert to game coordinates
-    draggingTower.x = (clientX - rect.left) * (canvas.width / rect.width);
-    draggingTower.y = (clientY - rect.top) * (canvas.height / rect.height);
+    const nx = (clientX - rect.left) * (canvas.width / rect.width);
+    const ny = (clientY - rect.top) * (canvas.height / rect.height);
+    if (Math.hypot(nx - draggingTower.x, ny - draggingTower.y) > 4) draggingTower.moved = true;
+    draggingTower.x = nx;
+    draggingTower.y = ny;
 }
 
 function dropTower(e) {
     if (!draggingTower) return;
     e.preventDefault();
 
-    // Remove event listeners
-    document.removeEventListener('mousemove', dragTower);
-    document.removeEventListener('touchmove', dragTower);
-    document.removeEventListener('mouseup', dropTower);
-    document.removeEventListener('touchend', dropTower);
+    clearDragListeners();
+
+    // A plain click on a tower icon with no drag at all used to buy the tower
+    // and drop it wherever the icon happened to map to -- under the bar, or
+    // off the play field entirely. On touch that fired for every icon.
+    if (!draggingTower.moved) {
+        draggingTower = null;
+        return;
+    }
 
     // Check if position is valid (not on path or near tower bar)
     const validPosition = isValidTowerPosition(draggingTower.x, draggingTower.y);
@@ -1463,6 +1546,13 @@ function dropTower(e) {
 }
 
 function isValidTowerPosition(x, y) {
+    // Bounds. Without this, releasing a drag over the letterbox margin -- the
+    // drag listeners are on document, not the canvas -- bought an invisible,
+    // unclickable, never-firing tower at negative coordinates. In step 9 this
+    // same function becomes the network validator, so one check closes both.
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+    if (x < 0 || x > GAME_WIDTH || y < 0 || y > GAME_HEIGHT) return false;
+
     // Check if position is too close to path
     for (let i = 0; i < path.length - 1; i++) {
         const dist = pointLineDist(x, y, path[i].x, path[i].y, path[i+1].x, path[i+1].y);
@@ -1623,6 +1713,11 @@ function towerSlowFactor(t) {
 // Price scales with the tower's own cost and the level being bought, so a
 // Mage upgrade costs Mage money. The flat `30 + wave * 5` it replaces was a
 // scam early and free late.
+// 70% of everything sunk into the tower, build price included.
+function sellValue(t) {
+    return Math.floor((t.goldInvested || t.type.cost) * 0.7);
+}
+
 function upgradePrice(t, track) {
     const k = (track === 'range') ? 0.15 : 0.50;
     const level = (t.upgrades[track + 'Lv'] || 0) + 1;
@@ -1968,21 +2063,11 @@ function stepSimulation(dt) {
                 b.lifetime -= dt;
             }
         }
-        else if (b.type === "flame") {
-            // Flame just moves toward target
-            if (!b.target?.alive) {
-                b.hit = true;
-                continue;
-            }
-
-            let dx = b.tx - b.x, dy = b.ty - b.y, dist = Math.hypot(dx, dy);
-            if (dist < b.speed) {
-                b.hit = true;
-            } else {
-                b.x += b.speed * dx / dist;
-                b.y += b.speed * dy / dist;
-            }
-        } else {
+        // (Removed: a "flame" projectile branch. The Fire Tower is hitscan --
+        // the shot code explicitly skips bullet creation for bulletType
+        // "flame" -- so no bullet of that type has ever existed and neither
+        // this branch nor its draw counterpart could ever run.)
+        else {
             // Track the target instead of flying at a frozen snapshot of where
             // it stood when the shot was fired. Without this the projectile
             // lands behind a moving enemy while the damage lands on the enemy,
@@ -2059,6 +2144,8 @@ function stepSimulation(dt) {
         }
     }
 
+    updateEffects(dt);
+
     // Cleanup
     bullets = bullets.filter(b => !b.hit && (!b.lifetime || b.lifetime > 0));
 
@@ -2086,6 +2173,7 @@ function stepSimulation(dt) {
             //    big hit can punch through several tiers in a single step.
             while (e.hp <= 0 && e.currentTier > 1) {
                 const overkill = -e.hp;
+                const brokenTier = e.type;
 
                 totalGold += e.goldValue;                       // the tier just broken
 
@@ -2098,10 +2186,17 @@ function stepSimulation(dt) {
 
                 e.lastBlink = Date.now();
                 e.blinkColor = "#ffffff";
+
+                // Burst in the colour of the tier that just broke, so the
+                // player can see the ladder being walked down.
+                spawnBurst(e.x, e.y, brokenTier.color, 10);
+                spawnFloatingText(e.x, e.y - 14, '+' + brokenTier.goldValue, '#ffd479');
             }
 
             if (e.hp <= 0) {
                 e.alive = false;
+                spawnBurst(e.x, e.y, e.type.color, 14);
+                spawnFloatingText(e.x, e.y - 14, '+' + e.goldValue, '#ffd479');
                 totalGold += e.goldValue;
                 totalCrystals += Math.random() < 0.22 ? 1 : 0;
                 gameState.enemiesLeft--;
@@ -2356,6 +2451,19 @@ function showUpgradeMenu(tower, clickX, clickY) {
         </button>`;
     }
 
+    // Selling is mandatory once the board is capped: without it a misplaced
+    // Sniper is 4 of your 36 build points gone for the rest of the run. It is
+    // also what makes the opening Archer rush correct play rather than a
+    // trap -- on a full board, selling 12 Archers frees 12 points and 210
+    // gold, which buys 4 Mages for 440, and army damage goes 10,296 -> 14,280.
+    upgradeOptions += `
+    <button class="upgrade-option sell-option" data-upgrade="sell">
+        <span>💰</span>
+        <span class="upgrade-name">Verkaufen</span>
+        <span class="upgrade-description">gibt ${tower.type.buildCost} Baupunkte frei</span>
+        <span class="upgrade-cost">+${sellValue(tower)} Gold</span>
+    </button>`;
+
     // Combine stats and upgrade options
     upgradeMenu.innerHTML = statsHTML + upgradeOptions + '</div>';
     upgradeMenu.style.display = 'grid';
@@ -2368,6 +2476,16 @@ function showUpgradeMenu(tower, clickX, clickY) {
             e.stopPropagation();
 
             const upgradeType = this.getAttribute('data-upgrade');
+
+            if (upgradeType === 'sell') {
+                gameState.gold += sellValue(tower);
+                const i = towers.indexOf(tower);
+                if (i !== -1) towers.splice(i, 1);
+                selectedTower = null;
+                upgradeMenu.style.display = 'none';
+                updateUI();
+                return;
+            }
 
             if (upgradeType === 'special') {
                 if (gameState.crystals < tower.type.upgrades.special.cost) {
@@ -2432,10 +2550,15 @@ function showUpgradeMenu(tower, clickX, clickY) {
 function handleCanvasClick(evt) {
     evt.preventDefault();
 
-    // Calculate coordinates
+    // A TouchEvent has no clientX, so x and y were NaN and every hit test
+    // below failed silently: on a phone you could place towers but never open
+    // one to upgrade it, which made the whole upgrade system unreachable on
+    // mobile. The drag code has always done this correctly.
+    const p = evt.touches?.[0] ?? evt.changedTouches?.[0] ?? evt;
     const rect = canvas.getBoundingClientRect();
-    const x = (evt.clientX - rect.left) * (canvas.width / rect.width);
-    const y = (evt.clientY - rect.top) * (canvas.height / rect.height);
+    if (!rect.width || !rect.height) return;
+    const x = (p.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (p.clientY - rect.top) * (canvas.height / rect.height);
 
     // Check if an enemy was clicked
     for (let e of enemies) {
@@ -2846,38 +2969,7 @@ function draw() {
             ctx.fill();
             ctx.restore();
         }
-        else if (b.type === "flame") {
-            const angle = Math.atan2(b.ty - b.y, b.tx - b.x);
-            const distance = Math.hypot(b.tx - b.x, b.ty - b.y);
-
-            ctx.save();
-            ctx.translate(b.x, b.y);
-            ctx.rotate(angle);
-
-            const flameGradient = ctx.createLinearGradient(0, 0, distance, 0);
-            flameGradient.addColorStop(0, 'rgba(255, 200, 0, 0.8)');
-            flameGradient.addColorStop(0.7, 'rgba(255, 100, 0, 0.7)');
-            flameGradient.addColorStop(1, 'rgba(255, 50, 0, 0)');
-
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(distance, -b.tower.type.flameWidth);
-            ctx.lineTo(distance, b.tower.type.flameWidth);
-            ctx.closePath();
-            ctx.fillStyle = flameGradient;
-            ctx.fill();
-
-            // Inner brighter flame
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(distance, -b.tower.type.flameWidth * 0.6);
-            ctx.lineTo(distance, b.tower.type.flameWidth * 0.6);
-            ctx.closePath();
-            ctx.fillStyle = 'rgba(255, 255, 200, 0.6)';
-            ctx.fill();
-
-            ctx.restore();
-        }
+        // (Removed: the unreachable flame projectile draw path.)
         else if (b.type === "cannonball") {
             ctx.beginPath();
             ctx.arc(b.x, b.y, 8, 0, Math.PI * 2);
@@ -2994,9 +3086,12 @@ function draw() {
 
     // Start/end arrows
     drawArrow(path[0].x, path[0].y, Math.atan2(path[1].y-path[0].y, path[1].x-path[0].x), "#21c84c");
-    drawArrow(path[path.length-1].x, path[path.length-1].y, 
-              Math.atan2(path[path.length-1].y-path[path.length-2].y, 
+    drawArrow(path[path.length-1].x, path[path.length-1].y,
+              Math.atan2(path[path.length-1].y-path[path.length-2].y,
                         path[path.length-1].x-path[path.length-2].x), "#e32c1c");
+
+    // Sparks and floating numbers last, so they sit on top of everything.
+    drawEffects();
 }
 
 function drawArrow(x, y, angle, color) {
