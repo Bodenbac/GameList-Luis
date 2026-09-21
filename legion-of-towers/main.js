@@ -1109,7 +1109,7 @@ function chainGold(tier) {
 let gameState = {
     phase: 'title',          // 'title' | 'playing' | 'won' | 'over'
     gold: 300,               // was a 200000 debug value that showed on the HUD
-    crystals: 5,
+    crystals: 4,
     lives: LIFE_MAX,
     wave: 1,
     enemiesInWave: 0,
@@ -1136,7 +1136,11 @@ function resetGame() {
     nextEnemyId = 1;
     nextTowerId = 1;
 
-    gameState.crystals = 5;
+    doctrines = {
+        'Archer': false, 'Cannon': false, 'Mage': false,
+        'Fire Tower': false, 'Ice Tower': false, 'Sniper': false,
+    };
+    gameState.crystals = 4;      // deterministic income from here on
     gameState.lives = LIFE_MAX;
     gameState.wave = 1;
     gameState.enemiesInWave = 0;
@@ -1188,10 +1192,10 @@ const towerTypes = [
         icon: towerIcons.archer,
         upgrades: {
             special: {
-                name: "MultiShot!",
+                name: "Marksman",
                 cost: 5,
                 purchased: false,
-                description: "Attacks 3 units at the same time (2 bullets get fired at two different targets)"
+                description: "Bleibt auf seinem Ziel, bis es stirbt oder die Reichweite verlässt. Jeder Folgeschuss +15% Schaden, bis +60%."
             }
         },
         bulletType: "arrow"
@@ -1207,10 +1211,10 @@ const towerTypes = [
         icon: towerIcons.cannon,
         upgrades: {
             special: {
-                name: "Explode!",
-                cost: 5,
+                name: "Cluster Munition",
+                cost: 6,
                 purchased: false,
-                description: "Fires exploding bombs that deal damage to every unit in the explosion radius"
+                description: "Zielt auf die dichteste Ansammlung statt auf den Vordersten. Splash 80px, +12% je zusätzlichem Körper, bis +60%."
             }
         },
         bulletType: "cannonball",
@@ -1227,10 +1231,10 @@ const towerTypes = [
         icon: towerIcons.mage,
         upgrades: {
             special: {
-                name: "Zap!",
-                cost: 5,
+                name: "Curse",
+                cost: 4,
                 purchased: false,
-                description: "Bullets also deal an electric bolt that strikes the hit enemy and 4 additional enemies behind it"
+                description: "Gegner im 150px-Umkreis nehmen 40% mehr Schaden aus jeder Quelle. Stapelt sich nicht."
             }
         },
         bulletType: "magic"
@@ -1246,10 +1250,10 @@ const towerTypes = [
         icon: towerIcons.fire,
         upgrades: {
             special: {
-                name: "AOE!",
+                name: "Cinder",
                 cost: 5,
                 purchased: false,
-                description: "Flame deals AOE damage to all enemies in its path"
+                description: "Trifft mit 20% seiner DPS als Brand nach, 3 Sekunden lang, auch außerhalb der Reichweite."
             }
         },
         bulletType: "flame",
@@ -1266,11 +1270,11 @@ const towerTypes = [
         icon: towerIcons.ice,
         upgrades: {
             special: {
-                name: "Freeze!",
-                cost: 5,
+                name: "Permafrost",
+                cost: 3,
                 duration: 5000,
                 purchased: false,
-                description: "Freezes all enemies in range for 5 seconds every 30 seconds"
+                description: "Jede Sekunde in der Aura vertieft die Kälte um 12%, bis dreifach. Härtestes Tempo 30%."
             }
         },
         bulletType: "ice",
@@ -1287,10 +1291,10 @@ const towerTypes = [
         icon: towerIcons.sniper,
         upgrades: {
             special: {
-                name: "Pierce!",
+                name: "Executioner",
                 cost: 5,
                 purchased: false,
-                description: "Bullets jump to one additional enemy after hitting the first target"
+                description: "+30% Schaden je Stufe über T1. Gegen einen T5-Boss also das 2,2-fache."
             }
         },
         bulletType: "sniper"
@@ -1754,6 +1758,98 @@ const WAVE_TIERS = [
 ];
 
 // ======================
+// DOCTRINES
+// ======================
+// Six passives, bought ONCE PER TOWER TYPE rather than per tower. Per-tower
+// purchasing made price select a tower COUNT instead of an axis -- four
+// Archer doctrines at 3 crystals each beat any three different axes -- which
+// recreates the exact problem this replaces: six abilities that all said
+// "hit more targets".
+//
+// Each one reads a different input about the world:
+//   Archer  Marksman   the tower's own firing history
+//   Cannon  Cluster    the enemies' formation relative to each other
+//   Mage    Curse      where the tower stands on the board
+//   Fire    Cinder     time elapsed since contact
+//   Ice     Permafrost enemy speed
+//   Sniper  Executioner what the enemy IS
+let doctrines = {
+    'Archer': false, 'Cannon': false, 'Mage': false,
+    'Fire Tower': false, 'Ice Tower': false, 'Sniper': false,
+};
+
+const CURSE_RADIUS = 150;     // fixed on purpose: see below
+const CURSE_BONUS = 0.40;
+const MARKSMAN_STEP = 0.15, MARKSMAN_CAP = 4;
+const CLUSTER_RADIUS = 80, CLUSTER_STEP = 0.12, CLUSTER_CAP = 5;
+const EXECUTIONER_STEP = 0.30;
+const CINDER_SHARE = 0.20, CINDER_MS = 3000, CINDER_TICK = 250;
+const PERMAFROST_STEP = 0.88, PERMAFROST_STACKS = 3, SLOW_FLOOR = 0.30;
+
+// Curse does NOT stack: four Mages give +40%, never +160%. The radius is
+// fixed rather than read from the tower's range, because otherwise gold buys
+// 51% more coverage and, under per-type unlocking, coverage would scale with
+// Mage count. Build points are what bound it instead -- blanketing map 1
+// needs about nine Mages, which is 27 of your 36 points.
+function curseMultiplier(e) {
+    if (!doctrines['Mage']) return 1;
+    for (const t of towers) {
+        if (t.type.name !== 'Mage') continue;
+        if (Math.hypot(e.x - t.x, e.y - t.y) <= CURSE_RADIUS) return 1 + CURSE_BONUS;
+    }
+    return 1;
+}
+
+// The one place damage is applied, so Curse reaches every source without
+// being wired into each of them separately.
+function damageEnemy(e, amount, blinkColor) {
+    e.hp -= amount * curseMultiplier(e);
+    e.lastBlink = Date.now();
+    e.blinkColor = blinkColor || '#ff4444';
+}
+
+// Executioner reads what the enemy IS, re-evaluated as it walks down the
+// ladder. Applied per tier inside the kill loop too, so overkill crossing
+// from T5 into T4 is not spent at T5's rate.
+function executionerMultiplier(t, e) {
+    if (!doctrines['Sniper'] || t.type.name !== 'Sniper') return 1;
+    return 1 + EXECUTIONER_STEP * ((e.currentTier || 1) - 1);
+}
+
+function leaderOf(list) {
+    let best = null, bestIdx = -1;
+    for (const e of list) {
+        if (e.pathIndex > bestIdx) { bestIdx = e.pathIndex; best = e; }
+    }
+    return best;
+}
+
+// Cluster Munition reads enemy-to-enemy geometry -- the only targeting rule
+// in the game that does. It will ignore a leaker to hit the pack, which is a
+// real cost, so the chosen target gets a reticle in draw().
+function densestOf(list) {
+    let best = null, bestCount = -1, bestIdx = -1;
+    for (const e of list) {
+        let n = 0;
+        for (const o of enemies) {
+            if (o.alive && o !== e && Math.hypot(o.x - e.x, o.y - e.y) <= CLUSTER_RADIUS) n++;
+        }
+        if (n > bestCount || (n === bestCount && e.pathIndex > bestIdx)) {
+            bestCount = n; bestIdx = e.pathIndex; best = e;
+        }
+    }
+    return best;
+}
+
+// Cinder burns for 20% of this tower's DPS. The rate is floored: the old
+// unclamped accumulator could drive it to zero, and an Infinity burn is an
+// instant kill on everything in the lane rather than something the frame
+// gate limits.
+function cinderDps(t) {
+    return towerDamage(t) / (Math.max(50, towerRate(t)) / 1000) * CINDER_SHARE;
+}
+
+// ======================
 // TOWER STATS
 // ======================
 // Every read of a tower's damage, rate, range or slow goes through these.
@@ -1846,14 +1942,8 @@ function spawnEnemy() {
 }
 
 // Freeze enemies in range (for Ice Tower special ability)
-function freezeEnemies(tower) {
-    const range = towerRange(tower);
-    enemies.forEach(e => {
-        if (e.alive && Math.hypot(e.x - tower.x, e.y - tower.y) < range) {
-            e.freezeTimer = tower.type.upgrades.special.duration; // 5 seconds
-        }
-    });
-}
+// (Removed: freezeEnemies(). Ice's auto-firing 30 s freeze is replaced by
+// Permafrost, a passive the player can actually see working.)
 
 // One fixed simulation step. Contains no DOM access: the HUD is written once
 // per rendered frame by syncUIFromState(), not once per step, so five catch-up
@@ -1882,12 +1972,47 @@ function stepSimulation(dt) {
 
     // Move enemies
     for (const e of enemies) {
-        e.slowAmount = 1;
+        // CINDER burns on after the enemy has left the tower's 60 px range.
+        // Ticked here, at the top, because the loop `continue`s for frozen
+        // enemies further down and a burn that stops when an enemy is frozen
+        // would miss exactly the case it exists for.
+        if (e.burnTimer > 0) {
+            e.burnTimer -= dt;
+            e.burnAcc = (e.burnAcc || 0) + dt;
+            while (e.burnAcc >= CINDER_TICK) {
+                e.burnAcc -= CINDER_TICK;
+                damageEnemy(e, (e.burnDps || 0) * CINDER_TICK / 1000, '#ff6d00');
+            }
+            if (e.burnTimer <= 0) { e.burnDps = 0; e.burnAcc = 0; }
+        }
+
+        let slow = 1;
+        let inAnyIce = false;
         for (const t of iceTowers) {
             if (Math.hypot(e.x - t.x, e.y - t.y) <= towerRange(t)) {
-                e.slowAmount = Math.min(e.slowAmount, towerSlowFactor(t));
+                inAnyIce = true;
+                slow = Math.min(slow, towerSlowFactor(t));
             }
         }
+
+        // PERMAFROST reads enemy speed: every second spent inside an aura
+        // deepens the chill. The floor is a pacing budget, not a safety
+        // limit -- there is no soft-lock, a slowed enemy still walks and
+        // still reaches the exit -- but a T5 at 0.30 occupies the board for
+        // over four minutes and wave 10 has 28 of them.
+        if (doctrines['Ice Tower'] && inAnyIce) {
+            e.chillAcc = (e.chillAcc || 0) + dt;
+            while (e.chillAcc >= 1000 && (e.chillStacks || 0) < PERMAFROST_STACKS) {
+                e.chillAcc -= 1000;
+                e.chillStacks = (e.chillStacks || 0) + 1;
+            }
+        } else {
+            e.chillAcc = 0;
+            e.chillStacks = 0;
+        }
+        if (e.chillStacks) slow *= Math.pow(PERMAFROST_STEP, e.chillStacks);
+
+        e.slowAmount = Math.max(SLOW_FLOOR, slow);
 
         // Handle freeze effect
         if (e.freezeTimer > 0) {
@@ -1937,172 +2062,69 @@ function stepSimulation(dt) {
 
     // Towers shoot
     for (const t of towers) {
-        // Handle special ability cooldowns
-        if (t.type.name === "Ice Tower" && t.upgrades.special?.purchased) {
-            if (!t.lastFreeze) t.lastFreeze = 0;
-            if (now - t.lastFreeze >= 30000) { // 30 seconds
-                freezeEnemies(t);
-                t.lastFreeze = now;
-            }
+        if (now - t.lastShot < towerRate(t)) continue;
+
+        const range = towerRange(t);
+        const inRange = enemies.filter(e => e.alive && Math.hypot(e.x - t.x, e.y - t.y) < range);
+        if (!inRange.length) { t.focus = null; t.stacks = 0; continue; }
+
+        let target;
+        if (t.type.name === 'Archer' && doctrines['Archer']) {
+            // MARKSMAN is itself the targeting rule. Without that it reads an
+            // input the engine overwrites: spawn spacing is 0.9 s for every
+            // tier, so a new enemy inherits the leader slot every few shots
+            // and the stack never exceeds 2. Holding the target is also what
+            // makes it cost something -- this Archer stops defending against
+            // leakers.
+            target = (t.focus && t.focus.alive && inRange.includes(t.focus))
+                ? t.focus
+                : leaderOf(inRange);
+        } else if (t.type.name === 'Cannon' && doctrines['Cannon']) {
+            target = densestOf(inRange);
+        } else {
+            target = leaderOf(inRange);
+        }
+        if (!target) continue;
+
+        if (t.type.name === 'Archer' && doctrines['Archer']) {
+            t.stacks = (t.focus === target) ? Math.min((t.stacks || 0) + 1, MARKSMAN_CAP) : 0;
+        }
+        t.focus = target;
+
+        let dmg = towerDamage(t) * executionerMultiplier(t, target);
+        if (t.type.name === 'Archer' && doctrines['Archer']) {
+            dmg *= 1 + MARKSMAN_STEP * (t.stacks || 0);
         }
 
-        if (now - t.lastShot >= towerRate(t)) {
-            let target = null;
-            let highestPathIndex = -1;
-
-            // Find all enemies in range
-            const enemiesInRange = enemies.filter(e => 
-                e.alive && Math.hypot(e.x - t.x, e.y - t.y) < towerRange(t));
-
-            // Special targeting for ice tower
-            // Ice used to get its own targeting branch that preferred
-            // un-slowed enemies. The slow is an aura now, so there is nothing
-            // to prefer -- and the filter it used (`e.slowAmount >= 1`)
-            // silently disabled Ice's targeting entirely once the old upgrade
-            // pushed the value past 1.
-            {
-                // Find enemy furthest along path
-                for (const e of enemiesInRange) {
-                    if (e.pathIndex > highestPathIndex) {
-                        highestPathIndex = e.pathIndex;
-                        target = e;
-                    }
-                }
+        if (t.type.bulletType === 'flame') {
+            // Fire is hitscan and pushes no bullet.
+            damageEnemy(target, dmg, '#ff8c00');
+            if (doctrines['Fire Tower']) {
+                // CINDER: refresh, never stack.
+                const burn = cinderDps(t);
+                target.burnDps = Math.max(target.burnDps || 0, burn);
+                target.burnTimer = CINDER_MS;
+                target.burnTower = t;
             }
-
-            if (target) {
-                // Handle special abilities
-                if (t.type.name === "Archer" && t.upgrades.special?.purchased) {
-                    // MultiShot - find 2 additional targets
-                    const additionalTargets = enemiesInRange
-                        .filter(e => e !== target)
-                        .sort((a, b) => b.pathIndex - a.pathIndex) // Sort by furthest along path
-                        .slice(0, 2); // Take top 2
-
-                    // Shoot at main target and additional targets
-                    [target, ...additionalTargets].forEach(tgt => {
-                        if (tgt) {
-                            bullets.push({
-                                x: t.x,
-                                y: t.y,
-                                tx: tgt.x,
-                                ty: tgt.y,
-                                dmg: towerDamage(t),
-                                target: tgt,
-                                color: t.type.color,
-                                speed: 12,
-                                type: t.type.bulletType,
-                                tower: t
-                            });
-                        }
-                    });
-                }
-                else if (t.type.name === "Sniper" && t.upgrades.special?.purchased) {
-                    // Piercing shot - find secondary target
-                    bullets.push({
-                        x: t.x,
-                        y: t.y,
-                        tx: target.x,
-                        ty: target.y,
-                        dmg: towerDamage(t),
-                        target: target,
-                        color: t.type.color,
-                        speed: 20,
-                        type: t.type.bulletType,
-                        tower: t,
-                        pierce: true // Mark as piercing bullet
-                    });
-                }
-                else {
-                    // Standard projectile for all towers except fire tower
-                    if (t.type.bulletType !== "flame") {
-                        bullets.push({
-                            x: t.x,
-                            y: t.y,
-                            tx: target.x,
-                            ty: target.y,
-                            dmg: towerDamage(t),
-                            target: target,
-                            color: t.type.color,
-                            speed: t.type.bulletType === "arrow" ? 12 :
-                                t.type.bulletType === "sniper" ? 20 : 6,
-                            aoeRadius: t.type.aoeRadius || 0,
-                            type: t.type.bulletType,
-                            tower: t,
-                        });
-                    }
-                }
-
-                // Special effects based on tower type
-                if (t.type.name === "Mage" && t.upgrades.special?.purchased) {
-                    // Chain lightning effect
-                    let chainTargets = [target];
-                    let currentTarget = target;
-
-                    for (let i = 0; i < 4; i++) { // 4 additional targets
-                        let nextTarget = enemies.find(e =>
-                            e.alive &&
-                            e !== currentTarget &&
-                            !chainTargets.includes(e) &&
-                            Math.hypot(e.x - currentTarget.x, e.y - currentTarget.y) < 100
-                        );
-
-                        if (nextTarget) {
-                            chainTargets.push(nextTarget);
-                            currentTarget = nextTarget;
-                        } else {
-                            break;
-                        }
-                    }
-
-                    // Create zap effects between targets
-                    chainTargets.forEach((tgt, index) => {
-                        tgt.hp -= towerDamage(t) * (1.0 - (index * 0.2));
-                        tgt.lastBlink = Date.now();
-                        tgt.blinkColor = "#ffff00";
-
-                        if (index > 0) {
-                            bullets.push({
-                                x: chainTargets[index-1].x,
-                                y: chainTargets[index-1].y,
-                                tx: tgt.x,
-                                ty: tgt.y,
-                                dmg: towerDamage(t) * (1.0 - (index * 0.2)),
-                                color: "#FFFF00",
-                                speed: 20,
-                                type: "zap",
-                                lifetime: 500   // ms (was a 30-frame counter)
-                            });
-                        }
-                    });
-                }
-                else if (t.type.name === "Fire Tower") {
-                    // Fire tower deals damage directly to the target
-                    target.hp -= towerDamage(t);
-
-                    // If AOE is purchased, damage all enemies in flame path
-                    if (t.upgrades.special?.purchased) {
-                        const angle = Math.atan2(target.y - t.y, target.x - t.x);
-                        const distance = Math.hypot(target.x - t.x, target.y - t.y);
-
-                        enemies.forEach(e => {
-                            if (e.alive && e !== target) {
-                                // Check if enemy is within flame width of the line
-                                const pointLineDist = Math.abs(
-                                    (target.y - t.y) * e.x - (target.x - t.x) * e.y + target.x * t.y - target.y * t.x
-                                ) / distance;
-
-                                if (pointLineDist < t.type.flameWidth + (t.upgrades.size || 0)) {
-                                    e.hp -= towerDamage(t) * 0.5; // 50% damage for AOE
-                                }
-                            }
-                        });
-                    }
-                }
-
-                t.lastShot = now;
-            }
+        } else {
+            bullets.push({
+                x: t.x,
+                y: t.y,
+                tx: target.x,
+                ty: target.y,
+                dmg: dmg,
+                target: target,
+                color: t.type.color,
+                speed: t.type.bulletType === 'arrow' ? 12 :
+                       t.type.bulletType === 'sniper' ? 20 : 6,
+                aoeRadius: t.type.aoeRadius || 0,
+                clusterBonus: (t.type.name === 'Cannon' && doctrines['Cannon']),
+                type: t.type.bulletType,
+                tower: t,
+            });
         }
+
+        t.lastShot = now;
     }
 
     // Projectile movement and collision
@@ -2120,7 +2142,7 @@ function stepSimulation(dt) {
             if (b.lifetime <= 0) {
                 // Apply damage when zap expires
                 if (b.target && b.target.alive) {
-                    b.target.hp -= b.dmg;
+                    damageEnemy(b.target, b.dmg, "#ffff66");
                 }
                 b.hit = true;
             } else {
@@ -2152,14 +2174,19 @@ function stepSimulation(dt) {
                 // used to take 0.7x splash AND full damage, 170% total, which
                 // made the one area tower a single-target booster first.
                 if (b.aoeRadius > 0) {
+                    const radius = b.clusterBonus ? CLUSTER_RADIUS : b.aoeRadius;
                     const aoeTargets = enemies.filter(e =>
                         e.alive && e !== b.target &&
-                        Math.hypot(e.x - b.x, e.y - b.y) < b.aoeRadius);
-                    aoeTargets.forEach(e => {
-                        e.hp -= b.dmg * 0.6;
-                        e.lastBlink = Date.now(); // Visual feedback
-                        e.blinkColor = "#ff0000";
-                    });
+                        Math.hypot(e.x - b.x, e.y - b.y) < radius);
+
+                    // CLUSTER MUNITION: the more bodies caught, the harder
+                    // each one is hit -- the only effect in the game keyed to
+                    // how the enemies are arranged relative to each other.
+                    const bonus = b.clusterBonus
+                        ? 1 + CLUSTER_STEP * Math.min(aoeTargets.length, CLUSTER_CAP)
+                        : 1;
+
+                    aoeTargets.forEach(e => damageEnemy(e, b.dmg * 0.6 * bonus, '#ff7043'));
 
                     // Create explosion effect
                     bullets.push({
@@ -2173,7 +2200,13 @@ function stepSimulation(dt) {
 
                 // Handle direct damage
                 if (b.target && b.target.alive) {
-                    b.target.hp -= b.dmg;
+                    const clusterBonus = b.clusterBonus
+                        ? 1 + CLUSTER_STEP * Math.min(
+                            enemies.filter(e => e.alive && e !== b.target &&
+                                Math.hypot(e.x - b.x, e.y - b.y) < CLUSTER_RADIUS).length,
+                            CLUSTER_CAP)
+                        : 1;
+                    damageEnemy(b.target, b.dmg * clusterBonus);
 
                     // Handle piercing for sniper tower
                     if (b.pierce) {
@@ -2262,7 +2295,6 @@ function stepSimulation(dt) {
                 spawnBurst(e.x, e.y, e.type.color, 14);
                 spawnFloatingText(e.x, e.y - 14, '+' + e.goldValue, '#ffd479');
                 totalGold += e.goldValue;
-                totalCrystals += Math.random() < 0.22 ? 1 : 0;
                 gameState.enemiesLeft--;
                 gameState.enemiesKilled++;
             }
@@ -2280,6 +2312,14 @@ function stepSimulation(dt) {
     // wave counter and the Start button from gameState once per frame.
     if (gameState.enemiesInWave == 0 && enemies.length == 0 && gameState.waveActive) {
         gameState.waveActive = false;
+
+        // Crystals are deterministic: random income cannot support a price
+        // ladder. With sigma ~4.3 a lucky run buys all six doctrines and the
+        // choice disappears. +1 per wave, +1 more for a clean wave from 3 on,
+        // which gives 13 spendable by wave 10 on a leaky run and 20 flawless
+        // -- three doctrines, or four if you play well, never five.
+        gameState.crystals += 1;
+        if (gameState.wave >= 3 && gameState.enemiesLeaked === 0) gameState.crystals += 1;
 
         if (gameState.wave < MAX_WAVE) {
             gameState.wave++;
@@ -2462,10 +2502,10 @@ function showUpgradeMenu(tower, clickX, clickY) {
         </div>`;
     }
 
-    if (tower.upgrades.special?.purchased) {
+    if (special && doctrines[tower.type.name]) {
         statsHTML += `
         <div class="stat-row">
-            <span class="stat-name">Spezial:</span>
+            <span class="stat-name">Doktrin:</span>
             <span class="stat-value">${special.name} (aktiv)</span>
         </div>`;
     }
@@ -2508,10 +2548,10 @@ function showUpgradeMenu(tower, clickX, clickY) {
     if (special) {
         upgradeOptions += `
         <button class="upgrade-option" data-upgrade="special"
-            ${(gameState.crystals < special.cost || tower.upgrades.special?.purchased) ? 'disabled' : ''}>
+            ${(gameState.crystals < special.cost || doctrines[tower.type.name]) ? 'disabled' : ''}>
             <span>✨</span>
-            <span class="upgrade-name">${special.name}</span>
-            <span class="upgrade-description">${special.description}</span>
+            <span class="upgrade-name">${special.name}${doctrines[tower.type.name] ? ' ✓' : ''}</span>
+            <span class="upgrade-description">${special.description}<br><em>Gilt für alle ${tower.type.name}, auch später gebaute.</em></span>
             <span class="upgrade-cost">${special.cost} Kristalle</span>
         </button>`;
     }
@@ -2553,13 +2593,15 @@ function showUpgradeMenu(tower, clickX, clickY) {
             }
 
             if (upgradeType === 'special') {
+                if (doctrines[tower.type.name]) return;
                 if (gameState.crystals < tower.type.upgrades.special.cost) {
                     showDialog("Nicht genug Kristalle.", "Zu teuer");
                     return;
                 }
                 gameState.crystals -= tower.type.upgrades.special.cost;
-                tower.upgrades.special.purchased = true;
-                tower.level = (tower.level || 1) + 1;
+                // Per TYPE, so every tower of this kind gets it -- including
+                // the ones you build afterwards.
+                doctrines[tower.type.name] = true;
             } else {
                 const lvKey = upgradeType + 'Lv';
                 const level = tower.upgrades[lvKey] || 0;
@@ -3045,7 +3087,7 @@ function draw() {
             ctx.fillStyle = cannonGrad;
             ctx.fill();
 
-            if (b.hit && b.tower?.upgrades.special?.purchased) {
+            if (b.hit && b.aoeRadius > 0) {
                 ctx.beginPath();
                 ctx.arc(b.x, b.y, b.aoeRadius, 0, Math.PI * 2);
                 ctx.fillStyle = `rgba(255, 165, 0, 0.3)`;
@@ -3154,6 +3196,47 @@ function draw() {
     drawArrow(path[path.length-1].x, path[path.length-1].y,
               Math.atan2(path[path.length-1].y-path[path.length-2].y,
                         path[path.length-1].x-path[path.length-2].x), "#e32c1c");
+
+    // Curse zones. Without a visible radius this is an invisible purchase
+    // and therefore a trap -- the player cannot tell whether a Mage is
+    // covering the corner they care about.
+    if (doctrines['Mage']) {
+        for (const t of towers) {
+            if (t.type.name !== 'Mage') continue;
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(t.x, t.y, CURSE_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(156, 39, 176, 0.07)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(186, 104, 200, 0.35)';
+            ctx.setLineDash([6, 6]);
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+
+    // Cluster Munition deliberately ignores the leader to hit the pack. Mark
+    // the enemy it chose, or the first time that costs a life it reads as a
+    // malfunction rather than a decision.
+    if (doctrines['Cannon']) {
+        for (const t of towers) {
+            if (t.type.name !== 'Cannon' || !t.focus?.alive) continue;
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255, 112, 67, 0.9)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(t.focus.x, t.focus.y, 20, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(t.focus.x - 26, t.focus.y); ctx.lineTo(t.focus.x - 14, t.focus.y);
+            ctx.moveTo(t.focus.x + 14, t.focus.y); ctx.lineTo(t.focus.x + 26, t.focus.y);
+            ctx.moveTo(t.focus.x, t.focus.y - 26); ctx.lineTo(t.focus.x, t.focus.y - 14);
+            ctx.moveTo(t.focus.x, t.focus.y + 14); ctx.lineTo(t.focus.x, t.focus.y + 26);
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
 
     // Sparks and floating numbers last, so they sit on top of everything.
     drawEffects();
