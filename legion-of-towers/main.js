@@ -1025,7 +1025,7 @@ const towerBar = document.getElementById('towerBar');
 
 // Game variables
 let mapElements = [];
-const LIFE_MAX = 20;
+const LIFE_MAX = 25;   // has to cover ten waves, not five
 const MAX_WAVE = 5;
 let enemiesPerWave = 10;
 let selectedTower = null;
@@ -1036,6 +1036,19 @@ let dragOffsetY = 0;
 // Game state
 // phase drives the lifecycle: nothing simulates outside 'playing', and the
 // HUD derives the Start button from it.
+// A leak costs 1 life for T1-T2, 2 for T3-T4, 3 for a T5 Boss.
+function leakCost(tier) { return tier >= 5 ? 3 : (tier >= 3 ? 2 : 1); }
+
+// Total gold an enemy still pays from its current tier all the way down.
+// The inspector used to show only the current tier's value, advertising
+// "Gold Reward: 55" for a T4 that in fact pays 120 across the whole chain --
+// and, before the kill pipeline was fixed, actually paid 10.
+function chainGold(tier) {
+    let sum = 0;
+    for (let t = tier; t >= 1; t--) sum += enemyTiers[t - 1].goldValue;
+    return sum;
+}
+
 let gameState = {
     phase: 'title',          // 'title' | 'playing' | 'won' | 'over'
     gold: 300,               // was a 200000 debug value that showed on the HUD
@@ -1045,6 +1058,7 @@ let gameState = {
     enemiesInWave: 0,
     enemiesLeft: 0,
     enemiesKilled: 0,
+    enemiesLeaked: 0,
     enemiesTotal: 0,
     waveActive: false,
     nextWaveEnemies: 10
@@ -1071,6 +1085,7 @@ function resetGame() {
     gameState.enemiesInWave = 0;
     gameState.enemiesLeft = 0;
     gameState.enemiesKilled = 0;
+    gameState.enemiesLeaked = 0;
     gameState.enemiesTotal = 0;
     gameState.waveActive = false;
     gameState.nextWaveEnemies = enemiesPerWave;
@@ -1541,19 +1556,13 @@ function startWave() {
     gameState.enemiesInWave = gameState.nextWaveEnemies;
     gameState.enemiesLeft = gameState.enemiesInWave;
     gameState.enemiesKilled = 0;
+    gameState.enemiesLeaked = 0;
     gameState.enemiesTotal = gameState.enemiesInWave;
 
-    // Calculate enemies for next wave
+    // Calculate enemies for next wave. No DOM here either -- updateUI()
+    // derives the wave counter and the Start button from state each frame.
     gameState.nextWaveEnemies = 8 + gameState.wave * 3;
-    if (gameState.wave < MAX_WAVE) {
-        waveNumEl.textContent = `${gameState.wave}/${MAX_WAVE}`;
-        enemiesKilledEl.textContent = `${gameState.nextWaveEnemies} next`;
-    } else {
-        waveNumEl.textContent = `${gameState.wave}/${MAX_WAVE}`;
-        enemiesKilledEl.textContent = `${gameState.enemiesKilled}/${gameState.enemiesTotal}`;
-    }
 
-    startButton.disabled = true;
     lastSpawn = simTime - waveInterval;
 
     // Send multiplayer message if in multiplayer mode
@@ -1664,8 +1673,16 @@ function stepSimulation(dt) {
 
             if (e.pathIndex >= path.length - 1) {
                 e.alive = false;
-                gameState.lives = Math.max(0, gameState.lives - e.type.tier);
-                gameState.enemiesKilled++;
+                // Leak cost used to be the raw tier, so a T5 cost 5 of 20
+                // lives -- under a wave-10 mix that is 4.4 lives per leak and
+                // four and a half leaks end a full-health run, across ten
+                // waves rather than five. Banded 1 / 2 / 3 instead.
+                gameState.lives = Math.max(0, gameState.lives - leakCost(e.type.tier));
+                // Counted separately: this used to increment enemiesKilled, so
+                // the HUD could read "10/10 enemies" on a wave where you killed
+                // four and lost the rest.
+                gameState.enemiesLeaked++;
+                gameState.enemiesLeft--;
 
                 // Send multiplayer update for shared lives
                 if (gameConfig.isMultiplayer) {
@@ -1993,29 +2010,40 @@ function stepSimulation(dt) {
         let totalGold = 0;
         let totalCrystals = 0;
 
+        const hpMultiplier = gameConfig.difficulties[gameConfig.difficulty].enemyHpMultiplier
+                           * (1 + (gameState.wave - 1) * 0.1);
+
         for (const e of killed) {
-            if (e.currentTier > 1) {
-                // Downgrade the enemy to the next lower tier
-                const newTierIndex = e.currentTier - 2;
-                const newTier = enemyTiers[newTierIndex];
+            // Walk the tier ladder down in one go. Two losses are fixed here:
+            //
+            //  - Gold. The old code overwrote e.goldValue with the LOWER tier's
+            //    value on every downgrade and only paid out on the final
+            //    tier-1 death, so every enemy in the game paid exactly 10 gold
+            //    and the 20/35/55/80 values on T2-T5 were unreachable dead
+            //    data. Paying the tier you just broke makes the cumulative
+            //    payouts 10 / 30 / 65 / 120 / 200.
+            //
+            //  - Overkill. Damage above the enemy's remaining HP was discarded,
+            //    so a T3 took exactly three shots whether you dealt 700 damage
+            //    or 10,000. The surplus now carries into the next tier, so one
+            //    big hit can punch through several tiers in a single step.
+            while (e.hp <= 0 && e.currentTier > 1) {
+                const overkill = -e.hp;
 
-                if (newTier && newTier.tier < e.currentTier) {
-                    e.type = newTier;
-                    e.currentTier = newTier.tier;
-                    e.hp = newTier.hp * gameConfig.difficulties[gameConfig.difficulty].enemyHpMultiplier * (1 + (gameState.wave-1)*0.1);
-                    e.maxHp = e.hp;
-                    e.goldValue = newTier.goldValue;
+                totalGold += e.goldValue;                       // the tier just broken
 
-                    // Make the enemy blink when downgraded
-                    e.lastBlink = Date.now();
-                    e.blinkColor = "#ffffff";
-                } else {
-                    e.alive = false;
-                    totalGold += e.goldValue;
-                    gameState.enemiesLeft--;
-                    gameState.enemiesKilled++;
-                }
-            } else {
+                const newTier = enemyTiers[e.currentTier - 2];
+                e.type = newTier;
+                e.currentTier = newTier.tier;
+                e.maxHp = newTier.hp * hpMultiplier;            // full, so the bar is honest
+                e.hp = e.maxHp - overkill;
+                e.goldValue = newTier.goldValue;
+
+                e.lastBlink = Date.now();
+                e.blinkColor = "#ffffff";
+            }
+
+            if (e.hp <= 0) {
                 e.alive = false;
                 totalGold += e.goldValue;
                 totalCrystals += Math.random() < 0.22 ? 1 : 0;
@@ -2378,7 +2406,7 @@ function showEnemyInfo(enemy) {
             </div>
             <div class="stat-row">
                 <span class="stat-name">Gold Reward:</span>
-                <span class="stat-value">${enemy.type.goldValue}</span>
+                <span class="stat-value">${chainGold(enemy.currentTier)}</span>
             </div>
             ${enemy.currentTier !== enemy.originalTier ? `
             <div class="stat-row">
