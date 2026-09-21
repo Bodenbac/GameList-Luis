@@ -701,7 +701,7 @@ const multiplayerManager = new MultiplayerManager();
 let gameConfig = {
     difficulty: 'easy',
     map: 1,
-    unlockedMaps: [1, 2, 3, 4, 5, 6],
+    unlockedMaps: [1],
     unlockedDifficulties: ['easy'],
     isMultiplayer: false,
     playerRole: null,
@@ -768,9 +768,73 @@ document.querySelector('.multiplayer-btn').addEventListener('click', function() 
 });
 
 // Title screen logic (difficulty and map selection)
+// ======================
+// PROGRESSION
+// ======================
+// index.html used to hardcode class="locked" on five maps and two
+// difficulties, and NOTHING in the project ever removed it -- so setupMap2
+// through setupMap6 were complete, dispatched from two switch statements,
+// and permanently unreachable. Lock state is derived from config now, and
+// the config is persisted.
+const SAVE_KEY = 'lot-progress-v1';
+
+function loadProgress() {
+    try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return;
+        const p = JSON.parse(raw);
+        if (Array.isArray(p.maps) && p.maps.length) gameConfig.unlockedMaps = p.maps;
+        if (Array.isArray(p.diffs) && p.diffs.length) gameConfig.unlockedDifficulties = p.diffs;
+    } catch (e) {
+        // file:// or a private window throws; an unlocked-nothing run is fine
+    }
+}
+
+function saveProgress() {
+    try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify({
+            maps: gameConfig.unlockedMaps,
+            diffs: gameConfig.unlockedDifficulties
+        }));
+    } catch (e) { /* storage unavailable; progress is just not kept */ }
+}
+
+// Clearing a map unlocks the next one, and clearing anything on easy unlocks
+// medium. Hard stays locked until medium is cleared -- nobody has ever played
+// either, so they are gated behind evidence rather than handed out.
+function recordWin() {
+    const next = gameConfig.map + 1;
+    if (next <= 6 && !gameConfig.unlockedMaps.includes(next)) gameConfig.unlockedMaps.push(next);
+
+    const d = gameConfig.unlockedDifficulties;
+    if (gameConfig.difficulty === 'easy'   && !d.includes('medium')) d.push('medium');
+    if (gameConfig.difficulty === 'medium' && !d.includes('hard'))   d.push('hard');
+
+    saveProgress();
+    refreshLockUI();
+}
+
+function refreshLockUI() {
+    document.querySelectorAll('[data-map]').forEach(b => {
+        const open = gameConfig.unlockedMaps.includes(parseInt(b.dataset.map));
+        b.classList.toggle('locked', !open);
+        b.disabled = !open;                       // styles.css gives .locked only
+        b.setAttribute('aria-disabled', String(!open));  // cursor:not-allowed, so the
+    });                                           // hover glow still fired without this
+    document.querySelectorAll('[data-difficulty]').forEach(b => {
+        const open = gameConfig.unlockedDifficulties.includes(b.dataset.difficulty);
+        b.classList.toggle('locked', !open);
+        b.disabled = !open;
+        b.setAttribute('aria-disabled', String(!open));
+    });
+}
+
+loadProgress();
+refreshLockUI();
+
 document.querySelectorAll('[data-difficulty]').forEach(btn => {
     btn.addEventListener('click', function() {
-        if (this.classList.contains('locked')) return;
+        if (!gameConfig.unlockedDifficulties.includes(this.dataset.difficulty)) return;
         document.querySelectorAll('[data-difficulty]').forEach(b => b.classList.remove('selected'));
         this.classList.add('selected');
         gameConfig.difficulty = this.dataset.difficulty;
@@ -780,7 +844,7 @@ document.querySelectorAll('[data-difficulty]').forEach(btn => {
 document.querySelectorAll('[data-map]').forEach(btn => {
     btn.addEventListener('click', function() {
         const mapNum = parseInt(this.dataset.map);
-        if (this.classList.contains('locked') || !gameConfig.unlockedMaps.includes(mapNum)) return;
+        if (!gameConfig.unlockedMaps.includes(mapNum)) return;
 
         document.querySelectorAll('[data-map]').forEach(b => b.classList.remove('selected'));
         this.classList.add('selected');
@@ -2225,6 +2289,7 @@ function stepSimulation(dt) {
             // replayed forever -- an endless gold and crystal farm that made
             // the lifetime budget meaningless. This is the missing win state.
             gameState.phase = 'won';
+            recordWin();
             showDialog(
                 `Alle ${MAX_WAVE} Wellen geschafft. ${gameState.lives}/${LIFE_MAX} Leben übrig, ${Math.floor(gameState.gold)} Gold auf der Hand.`,
                 'Gewonnen',
