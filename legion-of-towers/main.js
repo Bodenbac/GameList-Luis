@@ -76,6 +76,7 @@ class MultiplayerManager {
                         // symmetric NAT the connection simply could not be
                         // made -- and it looked exactly like a code bug.
                         this.peer = new Peer({ debug: 3 });
+                        this.registerPeerEvents();
 
             const peerId = await new Promise((resolve, reject) => {
                 this.peer.on('open', resolve);
@@ -137,6 +138,36 @@ class MultiplayerManager {
         return lobbyCode.trim();
     }
 
+    // 'disconnected' means the SIGNALLING server dropped while the
+    // peer-to-peer DataChannel is very probably still fine, so reconnect
+    // quietly and do NOT pause the game. Neither event was registered
+    // anywhere before, so a broker drop was completely silent.
+    registerPeerEvents() {
+        if (!this.peer || this._peerEventsBound) return;
+        this._peerEventsBound = true;
+
+        this.peer.on('disconnected', () => {
+            console.warn('Signalling server dropped; reconnecting');
+            try { this.peer.reconnect(); } catch (e) { /* already destroyed */ }
+        });
+
+        this.peer.on('close', () => {
+            this.handlePeerLost(null);
+        });
+    }
+
+    handlePeerLost(peerId) {
+        if (!gameConfig.isMultiplayer) return;
+        if (this.connections.size > 0) return;      // someone is still here
+
+        gameConfig.isMultiplayer = false;
+        gameConfig.playerRole = 'single';           // whoever is left continues alone
+        showDialog(
+            'Der andere Spieler ist weg. Der Durchlauf geht allein weiter, Gold und Leben bleiben wie sie sind.',
+            'Verbindung verloren');
+        updateUI();
+    }
+
     setupConnection(conn) {
         // Register the connection unconditionally and immediately. This used
         // to live inside conn.on('open'), but the guest calls setupConnection
@@ -181,6 +212,9 @@ class MultiplayerManager {
             this.connections.delete(conn.peer);
             this.connectedPlayers.delete(conn.peer);
             this.updatePlayerList();
+            // A closed DataChannel is the one that actually pauses the run.
+            // Losing the signalling server does not -- see registerPeerEvents.
+            this.handlePeerLost(conn.peer);
         });
 
         conn.on('error', (err) => {
@@ -226,6 +260,7 @@ class MultiplayerManager {
                 debug: 3,
                 iceTransportPolicy: "all"
             });
+            this.registerPeerEvents();
 
             const peerId = await new Promise((resolve, reject) => {
                 let resolved = false;
@@ -258,7 +293,8 @@ class MultiplayerManager {
 
             // Convert lobby code back to host peer ID
             //const hostPeerId = this.lobbyCodeToPeerId(lobbyCode);
-                            const hostPeerId = lobbyCodeInput; // Expect full ID
+                            this.hostPeerId = lobbyCodeInput;
+            const hostPeerId = lobbyCodeInput; // Expect full ID
                             console.log("Connecting to:", hostPeerId); // Debug log
 
             // Connect to host
@@ -498,17 +534,34 @@ class MultiplayerManager {
     displayChatMessage(sender, message) {
         const chatMessages = document.getElementById('chatMessages');
         const messageElement = document.createElement('div');
-        messageElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
+
+        // Both halves used to be interpolated straight into innerHTML, so
+        // anything a peer sent was parsed as markup on the other machine.
+        const who = document.createElement('strong');
+        who.textContent = sender + ':';
+        messageElement.appendChild(who);
+        messageElement.appendChild(document.createTextNode(' ' + message));
+
         chatMessages.appendChild(messageElement);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
     handleMessage(message, fromPeer) {
-        console.log('Received message from', fromPeer, ':', message);
+        // Only peers we actually hold a connection to.
+        if (!this.connections.has(fromPeer)) return;
+        // The guest accepts truth only from the host.
+        if (!this.isHost && this.hostPeerId && fromPeer !== this.hostPeerId) return;
 
+        // Removed entirely, because each was a hole rather than a feature:
+        //   towerPlaced   pushed a remote tower with no validation and no cost
+        //                 -- a free tower anywhere, including on the path.
+        //   towerUpgraded blanket-assigned upgrades with no cost and no cap,
+        //                 finding the tower by float coordinate equality.
+        //   waveStarted   instructed the guest to run its own startWave().
+        //   gameState     set lives to an arbitrary number with no bound and
+        //                 no direction check, which is why lives could go UP.
         switch (message.type) {
             case 'playerInfo':
-                // Update player info
                 this.connectedPlayers.set(message.peerId, {
                     id: message.peerId,
                     name: message.playerName,
@@ -522,41 +575,53 @@ class MultiplayerManager {
                 this.displayChatMessage(message.sender, message.message);
                 break;
 
-            case 'towerPlaced':
-                this.handleTowerPlaced(message.data);
+            case 'intent':
+                // Host only, and only from a peer it recognises as a guest.
+                if (!this.isHost) break;
+                {
+                    const res = applyIntent(message.data.type, message.data.data, 'guest');
+                    const conn = this.connections.get(fromPeer);
+                    if (conn) this.sendMessageToConnection(conn, { type: 'intentResult', data: res });
+                }
                 break;
 
-            case 'towerUpgraded':
-                this.handleTowerUpgraded(message.data);
+            case 'intentResult':
+                if (!message.data.ok && message.data.reason) {
+                    showDialog(message.data.reason, 'Geht nicht');
+                }
                 break;
 
-            case 'waveStarted':
-                this.handleWaveStarted(message.data);
+            case 'towerState':
+                if (this.isHost) break;
+                applyTowerState(message.data);
                 break;
 
-            case 'gameState':
-                this.handleGameStateUpdate(message.data);
+            case 'snapshot':
+                if (this.isHost) break;
+                applySnapshot(message.data);
                 break;
+
+            case 'gameOver':
+                if (this.isHost) break;
+                gameState.phase = message.data.won ? 'won' : 'over';
+                showDialog(message.data.text, message.data.won ? 'Gewonnen' : 'Verloren', resetToTitle);
+                break;
+
             case 'gameStart':
-                // Hide menus for guest
                 document.getElementById('multiplayerMenu').style.display = 'none';
                 document.getElementById('titleScreen').style.display = 'none';
                 document.getElementById('startButton').style.display = 'block';
                 document.getElementById('startButton').style.pointerEvents = 'auto';
 
-                // Sync game settings. These four reads used a bare `data`,
-                // which is not a parameter of handleMessage and is declared
-                // nowhere in the file -- so the guest threw a ReferenceError
-                // here, never reached initGame() below, and sat on a blank
-                // green canvas showing the uninitialised gameState.
+                // These four reads used a bare `data`, which is not a
+                // parameter of handleMessage and is declared nowhere in the
+                // file -- so the guest threw a ReferenceError here, never
+                // reached initGame() below, and sat on a blank green canvas.
                 gameConfig.isMultiplayer = true;
                 gameConfig.playerRole = 'guest';
                 gameConfig.map = message.data.map;
                 gameConfig.difficulty = message.data.difficulty;
 
-                // Start game for guest. initGame() sets gold from the
-                // difficulty and resets the wave, so there is nothing to
-                // copy across here.
                 initGame();
                 startLoop();
                 break;
@@ -588,60 +653,9 @@ class MultiplayerManager {
         document.body.appendChild(alertBox);
     }
 
-    handleTowerPlaced(data) {
-        // Rebuild the type locally from its index; the wire only carries the
-        // index, because the type object holds a live HTMLImageElement.
-        const towerType = towerTypes[data.typeIndex];
-        if (!towerType) {
-            console.warn('towerPlaced with unknown typeIndex', data.typeIndex);
-            return;
-        }
 
-        towers.push({
-            id: data.id,
-            typeIndex: data.typeIndex,
-            x: data.x,
-            y: data.y,
-            type: {...towerType},
-            lastShot: 0,
-            level: 1,
-            upgrades: {
-                dmgLv: 0,
-                rateLv: 0,
-                rangeLv: 0,
-                slowLv: 0,
-                special: towerType.upgrades.special
-                    ? {...towerType.upgrades.special, purchased: false}
-                    : null
-            },
-            goldInvested: towerType.cost,
-            flameWidth: towerType.bulletType === "flame" ? 10 : 0,
-            lastFreeze: 0,
-            placedBy: data.playerId
-        });
-    }
 
-    handleTowerUpgraded(data) {
-        // Find and upgrade tower
-        const tower = towers.find(t => t.x === data.x && t.y === data.y);
-        if (tower) {
-            Object.assign(tower.upgrades, data.upgrades);
-            tower.level = data.level;
-        }
-    }
 
-    handleWaveStarted(data) {
-        if (!gameState.waveActive) {
-            startWave();
-        }
-    }
-
-    handleGameStateUpdate(data) {
-        // Sync shared game state (lives, wave number, etc.)
-        if (data.lives !== undefined) gameState.lives = data.lives;
-        if (data.wave !== undefined) gameState.wave = data.wave;
-        updateUI();
-    }
 
     startGame() {
         if (!this.isHost) {
@@ -880,7 +894,15 @@ function mainLoop(frameTime) {
 
     let steps = 0;
     while (accumulator >= STEP_MS && steps++ < 5) {
-        stepSimulation(STEP_MS);
+        if (isAuthority()) {
+            stepSimulation(STEP_MS);
+            simTick++;
+            // 15 Hz, scheduled by the simulation clock rather than a second
+            // timer that could drift against it.
+            if (simTick % SNAPSHOT_EVERY === 0) sendSnapshot();
+        } else {
+            updateGuest(STEP_MS);
+        }
         accumulator -= STEP_MS;
     }
 
@@ -905,6 +927,10 @@ function stopLoop() {
 
 // Update function to handle game logic
 document.querySelector('.start-btn').addEventListener('click', function() {
+    // Explicit, rather than relying on null falling through to the host
+    // branch -- playerRole was only ever assigned 'host' or 'guest'.
+    gameConfig.isMultiplayer = false;
+    gameConfig.playerRole = 'single';
     document.getElementById('titleScreen').style.display = 'none';
     document.getElementById('startButton').style.display = 'block';
     document.getElementById('startButton').style.pointerEvents = 'auto';
@@ -1132,6 +1158,10 @@ function resetGame() {
     draggingTower = null;
 
     simTime = 0;
+    simTick = 0;
+    snapA = snapB = null;
+    playoutOffset = null;
+    guestStalled = false;
     lastSpawn = 0;
     nextEnemyId = 1;
     nextTowerId = 1;
@@ -1560,56 +1590,19 @@ function dropTower(e) {
         return;
     }
 
-    // Check if position is valid (not on path or near tower bar)
-    const validPosition = isValidTowerPosition(draggingTower.x, draggingTower.y);
+    // Everything below used to happen here: the gold deduction, the object
+    // literal, the push. It all moved behind submitIntent(), so a click on
+    // the host and a message from the guest take the identical path.
+    submitIntent('placeTower', {
+        typeIndex: draggingTower.typeIndex,
+        x: draggingTower.x,
+        y: draggingTower.y
+    });
 
-    if (validPosition) {
-        // Place the tower
-        gameState.gold -= draggingTower.type.cost;
-        const newTower = {
-            id: nextTowerId++,
-            typeIndex: draggingTower.typeIndex,
-            x: draggingTower.x,
-            y: draggingTower.y,
-            type: {...draggingTower.type},
-            lastShot: 0,
-            level: 1,
-            upgrades: {
-                dmgLv: 0,
-                rateLv: 0,
-                rangeLv: 0,
-                slowLv: 0,
-                special: draggingTower.type.upgrades.special ?
-                    {...draggingTower.type.upgrades.special, purchased: false} : null
-            },
-            goldInvested: draggingTower.type.cost,
-            flameWidth: draggingTower.type.bulletType === "flame" ? 10 : 0,
-            lastFreeze: 0,
-            placedBy: gameConfig.isMultiplayer ? gameConfig.playerRole : 'single'
-        };
+    selectedTower = null;
+    upgradeMenu.style.display = 'none';
+    updateUI();
 
-        towers.push(newTower);
-
-        // Send multiplayer message if in multiplayer mode
-        if (gameConfig.isMultiplayer) {
-            // Send the type INDEX, not the type object. towerTypes carries a
-            // live HTMLImageElement in iconImage; BinaryPack rejects it at its
-            // constructor check and throws, the throw is swallowed by the
-            // console-only catch in sendMessageToConnection, and the message
-            // was therefore never transmitted at all. ~2 KB down to ~40 bytes.
-            multiplayerManager.sendMessage('towerPlaced', {
-                id: newTower.id,
-                typeIndex: newTower.typeIndex,
-                x: newTower.x,
-                y: newTower.y,
-                playerId: gameConfig.playerRole
-            });
-        }
-
-        selectedTower = null;
-        upgradeMenu.style.display = 'none';
-        updateUI();
-    }
     draggingTower = null;
 }
 
@@ -1756,6 +1749,303 @@ const WAVE_TIERS = [
     [  0,  15,  30,  30,  25],  // wave 9
     [  0,   0,  10,  40,  50],  // wave 10
 ];
+
+// ======================
+// SNAPSHOTS
+// ======================
+// The host sends the world at 15 Hz -- every 4th fixed step, so the schedule
+// is the simulation clock itself and there is no second timer to drift.
+const SNAPSHOT_EVERY = 4;
+const INTERP_DELAY_MS = 2 * SNAPSHOT_EVERY * (1000 / 60);   // one snapshot of slack
+const MAX_EXTRAPOLATE_MS = 250;
+const STALL_MS = 3000;
+
+let simTick = 0;
+let snapA = null, snapB = null;      // the two snapshots we interpolate between
+let playoutOffset = null;            // running minimum of (recvAt - k*STEP_MS)
+let lastSnapshotAt = 0;
+let guestStalled = false;
+
+function broadcastGameOver(won, text) {
+    if (!gameConfig.isMultiplayer || !isAuthority()) return;
+    multiplayerManager.sendMessage('gameOver', { won, text });
+}
+
+function sendSnapshot() {
+    if (!gameConfig.isMultiplayer || !isAuthority()) return;
+    multiplayerManager.sendMessage('snapshot', {
+        k: simTick,
+        lives: gameState.lives,
+        gold: gameState.gold,
+        crystals: gameState.crystals,
+        wave: gameState.wave,
+        waveActive: gameState.waveActive,
+        enemiesLeft: gameState.enemiesLeft,
+        enemiesInWave: gameState.enemiesInWave,
+        enemiesKilled: gameState.enemiesKilled,
+        enemiesLeaked: gameState.enemiesLeaked,
+        // Flat tuples. maxHp, colour, type and speed are all derivable on the
+        // guest from tier plus difficulty, so none of them go on the wire.
+        e: enemies.map(e => [
+            e.id, Math.round(e.x), Math.round(e.y), Math.round(e.hp),
+            e.currentTier, e.pathIndex, Math.round(e.freezeTimer || 0),
+            Number((e.slowAmount || 1).toFixed(2))
+        ]),
+    });
+}
+
+function applySnapshot(data) {
+    const now = performance.now();
+    lastSnapshotAt = now;
+    guestStalled = false;
+
+    // Interpolate on SIM TIME, not arrival time. On a reliable ordered
+    // channel a retransmit head-of-line-blocks, so the pattern after any loss
+    // is gap-then-burst -- and arrival-time lerp then replays 130-200 ms of
+    // motion in a few milliseconds, which looks like enemies sprinting and
+    // stalling. k * STEP_MS is an exact, drift-free sender clock.
+    const offset = now - data.k * STEP_MS;
+    playoutOffset = (playoutOffset === null) ? offset : Math.min(playoutOffset, offset);
+
+    snapA = snapB;
+    snapB = data;
+
+    // Scalars snap; they are not positions and lerping them would lie.
+    gameState.lives = data.lives;
+    gameState.gold = data.gold;
+    gameState.crystals = data.crystals;
+    gameState.wave = data.wave;
+    gameState.waveActive = data.waveActive;
+    gameState.enemiesLeft = data.enemiesLeft;
+    gameState.enemiesInWave = data.enemiesInWave;
+    gameState.enemiesKilled = data.enemiesKilled;
+    gameState.enemiesLeaked = data.enemiesLeaked;
+}
+
+// Rebuild the guest's enemy list for this frame. Runs in place of
+// stepSimulation(), which the guest never calls.
+function updateGuest(dt) {
+    updateEffects(dt);
+
+    if (!snapB) return;
+
+    const now = performance.now();
+    if (now - lastSnapshotAt > STALL_MS) guestStalled = true;
+
+    // Where in the host's sim clock we want to be right now.
+    const renderTick = (now - playoutOffset - INTERP_DELAY_MS) / STEP_MS;
+
+    const A = snapA || snapB, B = snapB;
+    const span = B.k - A.k;
+    let alpha = span > 0 ? (renderTick - A.k) / span : 1;
+
+    // Extrapolation is capped; past that we freeze rather than invent.
+    const aheadMs = (renderTick - B.k) * STEP_MS;
+    if (aheadMs > MAX_EXTRAPOLATE_MS) alpha = (B.k + MAX_EXTRAPOLATE_MS / STEP_MS - A.k) / (span || 1);
+    alpha = Math.max(0, alpha);
+
+    const prev = new Map((A.e || []).map(t => [t[0], t]));
+    enemies.length = 0;
+    for (const t of B.e || []) {
+        const [id, x, y, hp, tier, pathIndex, freezeMs, slow] = t;
+        const type = enemyTiers[tier - 1] || enemyTiers[0];
+        const p = prev.get(id);
+
+        let px = x, py = y;
+        if (p && alpha !== 1) {
+            // Lerp along the segment we actually have. hp and tier SNAP: a
+            // lerped health bar lies about when the hit landed.
+            px = p[1] + (x - p[1]) * alpha;
+            py = p[2] + (y - p[2]) * alpha;
+        }
+
+        enemies.push({
+            id, x: px, y: py, pathIndex,
+            hp, maxHp: type.hp * waveHpScale(),
+            speed: type.speed, alive: true, type,
+            goldValue: type.goldValue, currentTier: tier, originalTier: tier,
+            slowTimer: 0, slowAmount: slow, freezeTimer: freezeMs,
+            lastBlink: 0, blinkColor: null
+        });
+    }
+}
+
+// ======================
+// INTENTS
+// ======================
+// Exactly one machine decides what is true. Anything that changes enemies,
+// bullets, towers, lives, gold, crystals or the wave runs ONLY on the host;
+// everything that reads those to paint pixels runs on both.
+//
+// The discipline that makes this testable: the host has NO privileged
+// mutation path. A click on the host and a message from the guest both land
+// in the same applyX() function, so single player exercises the entire
+// pipeline on every tower placement, in one tab, before a second machine is
+// involved.
+function isAuthority() {
+    return !gameConfig.isMultiplayer || gameConfig.playerRole === 'host'
+                                     || gameConfig.playerRole === 'single';
+}
+
+function submitIntent(type, data) {
+    if (isAuthority()) {
+        const res = applyIntent(type, data, gameConfig.playerRole || 'single');
+        if (!res.ok) showDialog(res.reason, 'Geht nicht');
+        return res;
+    }
+    multiplayerManager.sendMessage('intent', { type, data });
+    return { ok: true, pending: true };
+}
+
+// Host-side. `who` is 'host' | 'guest' | 'single'.
+function applyIntent(type, data, who) {
+    switch (type) {
+        case 'placeTower':   return applyPlaceTower(data, who);
+        case 'upgradeTower': return applyUpgradeTower(data, who);
+        case 'sellTower':    return applySellTower(data, who);
+        case 'startWave':    return applyStartWave(data, who);
+        default:             return { ok: false, reason: 'Unbekannte Aktion.' };
+    }
+}
+
+function applyPlaceTower(data, who) {
+    const typeIndex = data.typeIndex | 0;
+    const towerType = towerTypes[typeIndex];
+    if (!towerType) return { ok: false, reason: 'Unbekannter Turmtyp.' };
+
+    const x = Number(data.x), y = Number(data.y);
+    // Re-run on the host's own towers array. The old towerPlaced message
+    // pushed a remote tower with no validation and no cost at all -- a free
+    // tower anywhere, including directly on the path.
+    if (!isValidTowerPosition(x, y)) return { ok: false, reason: 'Da passt kein Turm hin.' };
+
+    if (usedPoints() + (towerType.buildCost || 1) > BUILD_POINTS) {
+        return { ok: false, reason: `Baupunkte voll: ${usedPoints()}/${BUILD_POINTS}.` };
+    }
+    // Checked at APPLY time, not at request time: two simultaneous requests
+    // can each individually pass an earlier check.
+    if (gameState.gold < towerType.cost) return { ok: false, reason: 'Nicht genug Gold.' };
+
+    gameState.gold -= towerType.cost;
+    const tower = {
+        id: nextTowerId++,
+        typeIndex: typeIndex,
+        x: x,
+        y: y,
+        type: { ...towerType },
+        lastShot: 0,
+        level: 1,
+        upgrades: {
+            dmgLv: 0, rateLv: 0, rangeLv: 0, slowLv: 0,
+            special: towerType.upgrades.special
+                ? { ...towerType.upgrades.special, purchased: false } : null
+        },
+        goldInvested: towerType.cost,
+        flameWidth: towerType.bulletType === 'flame' ? 10 : 0,
+        lastFreeze: 0,
+        placedBy: who
+    };
+    towers.push(tower);
+    broadcastTowers();
+    updateUI();
+    return { ok: true, id: tower.id };
+}
+
+function applyUpgradeTower(data, who) {
+    const tower = towers.find(t => t.id === data.id);
+    if (!tower) return { ok: false, reason: 'Turm gibt es nicht mehr.' };
+
+    if (data.track === 'special') {
+        const sp = tower.type.upgrades.special;
+        if (!sp) return { ok: false, reason: 'Dieser Turm hat keine Doktrin.' };
+        if (doctrines[tower.type.name]) return { ok: false, reason: 'Doktrin ist schon aktiv.' };
+        if (gameState.crystals < sp.cost) return { ok: false, reason: 'Nicht genug Kristalle.' };
+        gameState.crystals -= sp.cost;
+        doctrines[tower.type.name] = true;
+        broadcastTowers();
+        updateUI();
+        return { ok: true };
+    }
+
+    if (!towerTracks(tower).includes(data.track)) return { ok: false, reason: 'Diesen Ausbau gibt es hier nicht.' };
+    const lvKey = data.track + 'Lv';
+    if ((tower.upgrades[lvKey] || 0) >= UPG_MAX) return { ok: false, reason: 'Schon auf Maximalstufe.' };
+
+    const price = upgradePrice(tower, data.track);
+    if (gameState.gold < price) return { ok: false, reason: 'Nicht genug Gold.' };
+
+    gameState.gold -= price;
+    tower.upgrades[lvKey] = (tower.upgrades[lvKey] || 0) + 1;
+    tower.level = (tower.level || 1) + 1;
+    tower.goldInvested = (tower.goldInvested || 0) + price;
+    broadcastTowers();
+    updateUI();
+    return { ok: true };
+}
+
+function applySellTower(data, who) {
+    const i = towers.findIndex(t => t.id === data.id);
+    if (i === -1) return { ok: false, reason: 'Turm gibt es nicht mehr.' };
+    gameState.gold += sellValue(towers[i]);
+    towers.splice(i, 1);
+    broadcastTowers();
+    updateUI();
+    return { ok: true };
+}
+
+function applyStartWave(data, who) {
+    if (gameState.phase !== 'playing') return { ok: false, reason: 'Das Spiel läuft gerade nicht.' };
+    if (gameState.waveActive) return { ok: false, reason: 'Die Welle läuft schon.' };
+    startWave();
+    return { ok: true };
+}
+
+// Towers change rarely, so they are sent whole rather than diffed. Identity
+// is by id; coordinates are floats and the old code matched towers by
+// comparing them for equality.
+function broadcastTowers() {
+    if (!gameConfig.isMultiplayer || !isAuthority()) return;
+    multiplayerManager.sendMessage('towerState', {
+        towers: towers.map(t => ({
+            id: t.id, typeIndex: t.typeIndex, x: t.x, y: t.y,
+            level: t.level, placedBy: t.placedBy,
+            dmgLv: t.upgrades.dmgLv | 0, rateLv: t.upgrades.rateLv | 0,
+            rangeLv: t.upgrades.rangeLv | 0, slowLv: t.upgrades.slowLv | 0,
+        })),
+        doctrines: doctrines,
+    });
+}
+
+// Guest-side: rebuild the tower list from the host's truth. The type object
+// is rebuilt locally because it carries a live HTMLImageElement.
+function applyTowerState(data) {
+    const byId = new Map(towers.map(t => [t.id, t]));
+    towers.length = 0;
+    for (const w of data.towers) {
+        const towerType = towerTypes[w.typeIndex];
+        if (!towerType) continue;
+        const existing = byId.get(w.id);
+        towers.push({
+            id: w.id,
+            typeIndex: w.typeIndex,
+            x: w.x, y: w.y,
+            type: { ...towerType },
+            lastShot: existing ? existing.lastShot : 0,
+            focus: existing ? existing.focus : null,
+            level: w.level,
+            upgrades: {
+                dmgLv: w.dmgLv, rateLv: w.rateLv, rangeLv: w.rangeLv, slowLv: w.slowLv,
+                special: towerType.upgrades.special
+                    ? { ...towerType.upgrades.special, purchased: false } : null
+            },
+            goldInvested: 0,
+            flameWidth: towerType.bulletType === 'flame' ? 10 : 0,
+            lastFreeze: 0,
+            placedBy: w.placedBy
+        });
+    }
+    if (data.doctrines) doctrines = data.doctrines;
+}
 
 // ======================
 // DOCTRINES
@@ -1950,6 +2240,8 @@ function spawnEnemy() {
 // steps do not mean five DOM writes.
 function stepSimulation(dt) {
     if (gameState.phase !== 'playing') return;
+    // The guest does not simulate. It renders what the host tells it.
+    if (!isAuthority()) return;
 
     simTime += dt;
     const now = simTime;
@@ -2330,6 +2622,8 @@ function stepSimulation(dt) {
             // the lifetime budget meaningless. This is the missing win state.
             gameState.phase = 'won';
             recordWin();
+            broadcastGameOver(true,
+                `Alle ${MAX_WAVE} Wellen geschafft. ${gameState.lives}/${LIFE_MAX} Leben übrig.`);
             showDialog(
                 `Alle ${MAX_WAVE} Wellen geschafft. ${gameState.lives}/${LIFE_MAX} Leben übrig, ${Math.floor(gameState.gold)} Gold auf der Hand.`,
                 'Gewonnen',
@@ -2342,6 +2636,8 @@ function stepSimulation(dt) {
     // Game over
     if (gameState.lives <= 0) {
         gameState.phase = 'over';
+        broadcastGameOver(false,
+            `Die Basis ist gefallen in Welle ${gameState.wave}.`);
         showDialog(
             `Die Basis ist gefallen in Welle ${gameState.wave}. ${gameState.enemiesKilled} Gegner erledigt.`,
             'Verloren',
@@ -2582,60 +2878,17 @@ function showUpgradeMenu(tower, clickX, clickY) {
 
             const upgradeType = this.getAttribute('data-upgrade');
 
+            // Same discipline as placement: no privileged mutation path. The
+            // host's click and the guest's message both land in applyX().
             if (upgradeType === 'sell') {
-                gameState.gold += sellValue(tower);
-                const i = towers.indexOf(tower);
-                if (i !== -1) towers.splice(i, 1);
+                submitIntent('sellTower', { id: tower.id });
                 selectedTower = null;
                 upgradeMenu.style.display = 'none';
                 updateUI();
                 return;
             }
 
-            if (upgradeType === 'special') {
-                if (doctrines[tower.type.name]) return;
-                if (gameState.crystals < tower.type.upgrades.special.cost) {
-                    showDialog("Nicht genug Kristalle.", "Zu teuer");
-                    return;
-                }
-                gameState.crystals -= tower.type.upgrades.special.cost;
-                // Per TYPE, so every tower of this kind gets it -- including
-                // the ones you build afterwards.
-                doctrines[tower.type.name] = true;
-            } else {
-                const lvKey = upgradeType + 'Lv';
-                const level = tower.upgrades[lvKey] || 0;
-
-                if (level >= UPG_MAX) {
-                    showDialog(`${upgradeType} ist auf Maximalstufe ${UPG_MAX}.`, "Ausgebaut");
-                    return;
-                }
-
-                const price = upgradePrice(tower, upgradeType);
-                if (gameState.gold < price) {
-                    showDialog("Nicht genug Gold für dieses Upgrade.", "Zu teuer");
-                    return;
-                }
-
-                gameState.gold -= price;
-                // Per-track levels. tower.level stays a total-purchases
-                // counter for the label, but it no longer drives any stat --
-                // it was incremented by every track including the special,
-                // which is why it could not be used as one.
-                tower.upgrades[lvKey] = level + 1;
-                tower.level = (tower.level || 1) + 1;
-                tower.goldInvested = (tower.goldInvested || 0) + price;
-            }
-
-            // Send multiplayer message if in multiplayer mode
-            if (gameConfig.isMultiplayer) {
-                multiplayerManager.sendMessage('towerUpgraded', {
-                    x: tower.x,
-                    y: tower.y,
-                    upgrades: tower.upgrades,
-                    level: tower.level
-                });
-            }
+            submitIntent('upgradeTower', { id: tower.id, track: upgradeType });
 
             updateUI();
             showUpgradeMenu(tower, clickX, clickY);
@@ -3269,9 +3522,7 @@ window.addEventListener('load', function() {
     canvas.addEventListener('touchstart', handleCanvasClick, { passive: false });
 
     startButton.addEventListener('click', function() {
-        if (!gameState.waveActive && gameState.wave <= MAX_WAVE) {
-            startWave();
-        }
+        submitIntent('startWave', {});
     });
 
     window.addEventListener('resize', resizeCanvas);
