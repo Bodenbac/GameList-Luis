@@ -945,6 +945,10 @@ async function initGame() {
     resetGame();
 
     const difficulty = gameConfig.difficulties[gameConfig.difficulty];
+    // Both players start with the full amount; the run is not made twice as
+    // rich because the enemies are shared and each purse only buys its own
+    // towers onto one board.
+    purses = { host: difficulty.gold, guest: difficulty.gold, single: difficulty.gold };
     gameState.gold = difficulty.gold;
     gameState.phase = 'playing';
 
@@ -1751,6 +1755,186 @@ const WAVE_TIERS = [
 ];
 
 // ======================
+// SOUND
+// ======================
+// Synthesised with WebAudio: no asset files, nothing to load, nothing to go
+// 404 on Pages. The game had no audio at all, which mattered most for the
+// tier downgrade -- its best idea was communicated by a colour change the
+// player was usually not looking at.
+//
+// Browsers refuse to start an AudioContext until the user has interacted, so
+// it is created lazily on the first click and the first call before that is
+// simply dropped.
+let audioCtx = null;
+let masterGain = null;
+let soundOn = true;
+
+function initAudio() {
+    if (audioCtx) return audioCtx;
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    try {
+        audioCtx = new Ctx();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.25;
+        masterGain.connect(audioCtx.destination);
+    } catch (e) {
+        audioCtx = null;
+    }
+    return audioCtx;
+}
+
+// One voice: an oscillator sweeping from f0 to f1 over ms, shaped by a short
+// attack and an exponential release so nothing clicks.
+function blip(f0, f1, ms, type, gain) {
+    if (!soundOn || !audioCtx || audioCtx.state === 'suspended') return;
+    const t = audioCtx.currentTime;
+    const dur = ms / 1000;
+
+    const osc = audioCtx.createOscillator();
+    osc.type = type || 'square';
+    osc.frequency.setValueAtTime(f0, t);
+    if (f1 && f1 !== f0) osc.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t + dur);
+
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain ?? 0.3, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+    osc.connect(g); g.connect(masterGain);
+    osc.start(t); osc.stop(t + dur + 0.02);
+}
+
+// Filtered noise, for impacts that a tone cannot carry.
+function noiseBurst(ms, cutoff, gain) {
+    if (!soundOn || !audioCtx || audioCtx.state === 'suspended') return;
+    const t = audioCtx.currentTime;
+    const n = Math.floor(audioCtx.sampleRate * ms / 1000);
+    const buf = audioCtx.createBuffer(1, n, audioCtx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+
+    const src = audioCtx.createBufferSource();
+    src.buffer = buf;
+
+    const filt = audioCtx.createBiquadFilter();
+    filt.type = 'lowpass';
+    filt.frequency.value = cutoff || 1200;
+
+    const g = audioCtx.createGain();
+    g.gain.value = gain ?? 0.25;
+
+    src.connect(filt); filt.connect(g); g.connect(masterGain);
+    src.start(t);
+}
+
+// Shots are the most frequent sound by far, so they are rate-limited: at 22
+// towers firing several times a second the mix turns to mush and, worse, each
+// voice costs a node graph.
+let lastShotSound = 0;
+const SHOT_SOUND_GAP = 60;
+
+const SFX = {
+    shoot(kind) {
+        const now = performance.now();
+        if (now - lastShotSound < SHOT_SOUND_GAP) return;
+        lastShotSound = now;
+        switch (kind) {
+            case 'arrow':      blip(900, 420, 60, 'triangle', 0.16); break;
+            case 'sniper':     blip(1600, 300, 110, 'sawtooth', 0.18); break;
+            case 'cannonball': blip(180, 70, 130, 'square', 0.22); break;
+            case 'magic':      blip(660, 1180, 90, 'sine', 0.16); break;
+            case 'ice':        blip(1400, 1900, 70, 'sine', 0.12); break;
+            default:           blip(800, 400, 50, 'triangle', 0.14);
+        }
+    },
+    // The tier downgrade: pitch RISES with each tier broken, so a boss walking
+    // down the ladder is an audible four-note run and you hear how deep the
+    // hit went without watching the numbers.
+    downgrade(tier) {
+        blip(220 * Math.pow(1.26, 5 - tier), 0, 120, 'square', 0.22);
+        noiseBurst(90, 2200, 0.16);
+    },
+    kill()      { blip(520, 180, 150, 'square', 0.2); noiseBurst(120, 900, 0.18); },
+    leak()      { blip(160, 90, 320, 'sawtooth', 0.3); },
+    build()     { blip(300, 620, 110, 'square', 0.22); },
+    sell()      { blip(620, 300, 110, 'square', 0.2); },
+    upgrade()   { blip(500, 900, 90, 'triangle', 0.22); blip(750, 1200, 120, 'triangle', 0.16); },
+    doctrine()  { [0, 90, 180].forEach((d, i) => setTimeout(() => blip(520 * (1 + i * 0.26), 0, 200, 'sine', 0.22), d)); },
+    waveStart() { blip(300, 500, 180, 'sawtooth', 0.2); },
+    refused()   { blip(200, 150, 140, 'square', 0.18); },
+    won()       { [0, 130, 260, 430].forEach((d, i) => setTimeout(() => blip([523, 659, 784, 1047][i], 0, 320, 'triangle', 0.24), d)); },
+    lost()      { [0, 180, 380].forEach((d, i) => setTimeout(() => blip([330, 262, 196][i], 0, 420, 'sawtooth', 0.24), d)); },
+};
+
+function setSound(on) {
+    soundOn = on;
+    try { localStorage.setItem('lot-sound', on ? '1' : '0'); } catch (e) {}
+    const btn = document.getElementById('toggleSound');
+    if (btn) {
+        btn.textContent = on ? '🔊' : '🔇';
+        btn.setAttribute('aria-pressed', String(on));
+    }
+}
+
+try { soundOn = localStorage.getItem('lot-sound') !== '0'; } catch (e) {}
+
+document.addEventListener('DOMContentLoaded', () => {
+    setSound(soundOn);
+    document.getElementById('toggleSound')?.addEventListener('click', () => setSound(!soundOn));
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'm' || e.key === 'M') setSound(!soundOn);
+});
+
+// The context can only be created from a real gesture.
+['pointerdown', 'keydown', 'touchstart'].forEach(ev =>
+    window.addEventListener(ev, () => {
+        const c = initAudio();
+        if (c && c.state === 'suspended') c.resume();
+    }, { once: false, passive: true }));
+
+// ======================
+// PURSES
+// ======================
+// Each player has their own gold. Lives, crystals and the board stay shared:
+// lives because you defend one base together, crystals because a doctrine is
+// bought per tower TYPE and therefore benefits both of you.
+//
+// The authority owns the purses. gameState.gold is only ever the LOCAL
+// player's view of their own, so every existing read -- the HUD, the "can I
+// afford this" checks, the upgrade panel -- keeps working unchanged.
+let purses = { host: 0, guest: 0, single: 0 };
+
+function myRole() {
+    return gameConfig.isMultiplayer ? (gameConfig.playerRole || 'guest') : 'single';
+}
+
+function setPurse(role, value) {
+    purses[role] = value;
+    if (role === myRole()) gameState.gold = value;
+}
+
+function addPurse(role, amount) {
+    setPurse(role, (purses[role] || 0) + amount);
+}
+
+// Gold from a kill goes to whoever landed the last hit on that enemy. Damage
+// with no identifiable owner -- a Curse amplification with no tower behind
+// it, anything added later -- is split, so no income can quietly vanish.
+function creditGold(enemy, amount) {
+    if (!gameConfig.isMultiplayer) { addPurse('single', amount); return; }
+    const owner = enemy && enemy.lastDamageBy;
+    if (owner === 'host' || owner === 'guest') {
+        addPurse(owner, amount);
+    } else {
+        addPurse('host', amount / 2);
+        addPurse('guest', amount / 2);
+    }
+}
+
+// ======================
 // SNAPSHOTS
 // ======================
 // The host sends the world at 15 Hz -- every 4th fixed step, so the schedule
@@ -1761,6 +1945,13 @@ const MAX_EXTRAPOLATE_MS = 250;
 const STALL_MS = 3000;
 
 let simTick = 0;
+// [towerId, enemyId] per shot since the last snapshot. Bullets are never
+// simulated on the guest -- three of the six towers deal damage with no
+// bullet object at all (Fire is hitscan, and the burn and splash have no
+// projectile), so predicting them locally would mean reproducing the host's
+// targeting exactly, ties included. About 12 bytes a shot is cheaper.
+let pendingShots = [];
+let pendingGuestShots = [];
 let snapA = null, snapB = null;      // the two snapshots we interpolate between
 let playoutOffset = null;            // running minimum of (recvAt - k*STEP_MS)
 let lastSnapshotAt = 0;
@@ -1776,7 +1967,7 @@ function sendSnapshot() {
     multiplayerManager.sendMessage('snapshot', {
         k: simTick,
         lives: gameState.lives,
-        gold: gameState.gold,
+        purses: purses,
         crystals: gameState.crystals,
         wave: gameState.wave,
         waveActive: gameState.waveActive,
@@ -1784,6 +1975,7 @@ function sendSnapshot() {
         enemiesInWave: gameState.enemiesInWave,
         enemiesKilled: gameState.enemiesKilled,
         enemiesLeaked: gameState.enemiesLeaked,
+        shots: pendingShots,
         // Flat tuples. maxHp, colour, type and speed are all derivable on the
         // guest from tier plus difficulty, so none of them go on the wire.
         e: enemies.map(e => [
@@ -1792,6 +1984,45 @@ function sendSnapshot() {
             Number((e.slowAmount || 1).toFixed(2))
         ]),
     });
+    pendingShots = [];
+}
+
+// Guest-side visual bullets. They carry no damage and no authority; they
+// exist so the player can see what the towers are doing.
+function updateGuestBullets(dt) {
+    for (const b of bullets) {
+        if (b.target?.alive) { b.tx = b.target.x; b.ty = b.target.y; }
+        const dx = b.tx - b.x, dy = b.ty - b.y, dist = Math.hypot(dx, dy);
+        const step = b.speed * dt / STEP_MS;
+        if (dist < step || !Number.isFinite(dist)) { b.hit = true; }
+        else { b.x += step * dx / dist; b.y += step * dy / dist; }
+    }
+    bullets = bullets.filter(b => !b.hit);
+}
+
+function spawnGuestShots(shots) {
+    for (const [towerId, enemyId] of shots || []) {
+        const t = towers.find(x => x.id === towerId);
+        if (!t) continue;
+
+        // Drives the Fire Tower's beam and any other elapsed-time visual.
+        t.lastShot = simTime;
+        t.focus = enemies.find(x => x.id === enemyId) || t.focus;
+
+        SFX.shoot(t.type.bulletType);
+        if (t.type.bulletType === 'flame') continue;   // hitscan, no projectile
+        const target = enemies.find(x => x.id === enemyId);
+        if (!target) continue;
+
+        bullets.push({
+            x: t.x, y: t.y, tx: target.x, ty: target.y,
+            dmg: 0, target: target, color: t.type.color,
+            speed: t.type.bulletType === 'arrow' ? 12 :
+                   t.type.bulletType === 'sniper' ? 20 : 6,
+            aoeRadius: 0,
+            type: t.type.bulletType, tower: t,
+        });
+    }
 }
 
 function applySnapshot(data) {
@@ -1799,20 +2030,46 @@ function applySnapshot(data) {
     lastSnapshotAt = now;
     guestStalled = false;
 
-    // Interpolate on SIM TIME, not arrival time. On a reliable ordered
-    // channel a retransmit head-of-line-blocks, so the pattern after any loss
-    // is gap-then-burst -- and arrival-time lerp then replays 130-200 ms of
-    // motion in a few milliseconds, which looks like enemies sprinting and
-    // stalling. k * STEP_MS is an exact, drift-free sender clock.
+    // Interpolate on SIM TIME, not arrival time: on a reliable ordered channel
+    // a retransmit head-of-line-blocks, so the pattern after a loss is
+    // gap-then-burst and arrival-time lerp replays 130-200 ms of motion in a
+    // few milliseconds.
+    //
+    // But the offset has to TRACK the sender rather than latch to its minimum.
+    // k * STEP_MS is only an exact wall clock if the host renders a perfect 60
+    // fps; the moment it drops a frame or is backgrounded, its sim clock falls
+    // behind real time, (recvAt - k*STEP) grows monotonically, and a running
+    // minimum pins the render clock to the very first sample. Measured: the
+    // render tick ran 76 ticks -- 1267 ms -- ahead of the newest snapshot, so
+    // every frame was capped extrapolation and enemies moved 10, 1, 10, 6, 1
+    // pixels per snapshot. Snap down immediately (a faster packet means we can
+    // afford less latency), drift up slowly (follow the sender's real rate).
     const offset = now - data.k * STEP_MS;
-    playoutOffset = (playoutOffset === null) ? offset : Math.min(playoutOffset, offset);
+    if (playoutOffset === null || offset < playoutOffset) {
+        playoutOffset = offset;
+    } else {
+        playoutOffset += (offset - playoutOffset) * 0.08;
+    }
 
     snapA = snapB;
     snapB = data;
+    // Append rather than replace: snapshots arrive on the network thread and
+    // are consumed on the render thread, so any hitch on the guest would
+    // otherwise silently drop a whole snapshot's worth of shots. Capped so a
+    // long stall cannot spawn a burst of hundreds at once.
+    if (data.shots && data.shots.length) {
+        pendingGuestShots.push(...data.shots);
+        if (pendingGuestShots.length > 40) {
+            pendingGuestShots = pendingGuestShots.slice(-40);
+        }
+    }
 
     // Scalars snap; they are not positions and lerping them would lie.
     gameState.lives = data.lives;
-    gameState.gold = data.gold;
+    if (data.purses) {
+        purses = data.purses;
+        gameState.gold = purses[myRole()] ?? gameState.gold;
+    }
     gameState.crystals = data.crystals;
     gameState.wave = data.wave;
     gameState.waveActive = data.waveActive;
@@ -1825,7 +2082,14 @@ function applySnapshot(data) {
 // Rebuild the guest's enemy list for this frame. Runs in place of
 // stepSimulation(), which the guest never calls.
 function updateGuest(dt) {
+    // The guest never runs stepSimulation, so simTime never advanced -- and
+    // every visual keyed to elapsed time was therefore stuck. The Fire Tower's
+    // beam is gated on `simTime - t.lastShot < 100`, which with both at 0 was
+    // permanently true, which is why the guest saw that one beam and nothing
+    // else.
+    simTime += dt;
     updateEffects(dt);
+    updateGuestBullets(dt);
 
     if (!snapB) return;
 
@@ -1837,12 +2101,13 @@ function updateGuest(dt) {
 
     const A = snapA || snapB, B = snapB;
     const span = B.k - A.k;
-    let alpha = span > 0 ? (renderTick - A.k) / span : 1;
 
-    // Extrapolation is capped; past that we freeze rather than invent.
-    const aheadMs = (renderTick - B.k) * STEP_MS;
-    if (aheadMs > MAX_EXTRAPOLATE_MS) alpha = (B.k + MAX_EXTRAPOLATE_MS / STEP_MS - A.k) / (span || 1);
-    alpha = Math.max(0, alpha);
+    // Clamp the render tick into [A, B + cap]. Past the cap we hold position
+    // rather than inventing one -- an enemy extrapolated far enough visibly
+    // walks off the road, because the guest paints the road itself.
+    const maxTick = B.k + MAX_EXTRAPOLATE_MS / STEP_MS;
+    const tick = Math.min(Math.max(renderTick, A.k), maxTick);
+    let alpha = span > 0 ? (tick - A.k) / span : 1;
 
     const prev = new Map((A.e || []).map(t => [t[0], t]));
     enemies.length = 0;
@@ -1868,6 +2133,11 @@ function updateGuest(dt) {
             lastBlink: 0, blinkColor: null
         });
     }
+
+    if (pendingGuestShots.length) {
+        spawnGuestShots(pendingGuestShots);
+        pendingGuestShots = [];
+    }
 }
 
 // ======================
@@ -1890,7 +2160,7 @@ function isAuthority() {
 function submitIntent(type, data) {
     if (isAuthority()) {
         const res = applyIntent(type, data, gameConfig.playerRole || 'single');
-        if (!res.ok) showDialog(res.reason, 'Geht nicht');
+        if (!res.ok) { SFX.refused(); showDialog(res.reason, 'Geht nicht'); }
         return res;
     }
     multiplayerManager.sendMessage('intent', { type, data });
@@ -1924,9 +2194,9 @@ function applyPlaceTower(data, who) {
     }
     // Checked at APPLY time, not at request time: two simultaneous requests
     // can each individually pass an earlier check.
-    if (gameState.gold < towerType.cost) return { ok: false, reason: 'Nicht genug Gold.' };
+    if ((purses[who] || 0) < towerType.cost) return { ok: false, reason: 'Nicht genug Gold.' };
 
-    gameState.gold -= towerType.cost;
+    addPurse(who, -towerType.cost);
     const tower = {
         id: nextTowerId++,
         typeIndex: typeIndex,
@@ -1946,6 +2216,7 @@ function applyPlaceTower(data, who) {
         placedBy: who
     };
     towers.push(tower);
+    SFX.build();
     broadcastTowers();
     updateUI();
     return { ok: true, id: tower.id };
@@ -1962,6 +2233,7 @@ function applyUpgradeTower(data, who) {
         if (gameState.crystals < sp.cost) return { ok: false, reason: 'Nicht genug Kristalle.' };
         gameState.crystals -= sp.cost;
         doctrines[tower.type.name] = true;
+        SFX.doctrine();
         broadcastTowers();
         updateUI();
         return { ok: true };
@@ -1972,12 +2244,13 @@ function applyUpgradeTower(data, who) {
     if ((tower.upgrades[lvKey] || 0) >= UPG_MAX) return { ok: false, reason: 'Schon auf Maximalstufe.' };
 
     const price = upgradePrice(tower, data.track);
-    if (gameState.gold < price) return { ok: false, reason: 'Nicht genug Gold.' };
+    if ((purses[who] || 0) < price) return { ok: false, reason: 'Nicht genug Gold.' };
 
-    gameState.gold -= price;
+    addPurse(who, -price);
     tower.upgrades[lvKey] = (tower.upgrades[lvKey] || 0) + 1;
     tower.level = (tower.level || 1) + 1;
     tower.goldInvested = (tower.goldInvested || 0) + price;
+    SFX.upgrade();
     broadcastTowers();
     updateUI();
     return { ok: true };
@@ -1986,7 +2259,8 @@ function applyUpgradeTower(data, who) {
 function applySellTower(data, who) {
     const i = towers.findIndex(t => t.id === data.id);
     if (i === -1) return { ok: false, reason: 'Turm gibt es nicht mehr.' };
-    gameState.gold += sellValue(towers[i]);
+    SFX.sell();
+    addPurse(who, sellValue(towers[i]));
     towers.splice(i, 1);
     broadcastTowers();
     updateUI();
@@ -1996,6 +2270,7 @@ function applySellTower(data, who) {
 function applyStartWave(data, who) {
     if (gameState.phase !== 'playing') return { ok: false, reason: 'Das Spiel läuft gerade nicht.' };
     if (gameState.waveActive) return { ok: false, reason: 'Die Welle läuft schon.' };
+    SFX.waveStart();
     startWave();
     return { ok: true };
 }
@@ -2092,10 +2367,12 @@ function curseMultiplier(e) {
 
 // The one place damage is applied, so Curse reaches every source without
 // being wired into each of them separately.
-function damageEnemy(e, amount, blinkColor) {
+function damageEnemy(e, amount, blinkColor, owner) {
     e.hp -= amount * curseMultiplier(e);
     e.lastBlink = Date.now();
     e.blinkColor = blinkColor || '#ff4444';
+    // Last hit decides who gets paid for this enemy.
+    if (owner) e.lastDamageBy = owner;
 }
 
 // Executioner reads what the enemy IS, re-evaluated as it walks down the
@@ -2273,7 +2550,7 @@ function stepSimulation(dt) {
             e.burnAcc = (e.burnAcc || 0) + dt;
             while (e.burnAcc >= CINDER_TICK) {
                 e.burnAcc -= CINDER_TICK;
-                damageEnemy(e, (e.burnDps || 0) * CINDER_TICK / 1000, '#ff6d00');
+                damageEnemy(e, (e.burnDps || 0) * CINDER_TICK / 1000, '#ff6d00', e.burnTower?.placedBy);
             }
             if (e.burnTimer <= 0) { e.burnDps = 0; e.burnAcc = 0; }
         }
@@ -2333,6 +2610,7 @@ function stepSimulation(dt) {
                 // Counted separately: this used to increment enemiesKilled, so
                 // the HUD could read "10/10 enemies" on a wave where you killed
                 // four and lost the rest.
+                SFX.leak();
                 gameState.enemiesLeaked++;
                 gameState.enemiesLeft--;
 
@@ -2388,9 +2666,12 @@ function stepSimulation(dt) {
             dmg *= 1 + MARKSMAN_STEP * (t.stacks || 0);
         }
 
+        if (gameConfig.isMultiplayer) pendingShots.push([t.id, target.id]);
+        SFX.shoot(t.type.bulletType);
+
         if (t.type.bulletType === 'flame') {
             // Fire is hitscan and pushes no bullet.
-            damageEnemy(target, dmg, '#ff8c00');
+            damageEnemy(target, dmg, '#ff8c00', t.placedBy);
             if (doctrines['Fire Tower']) {
                 // CINDER: refresh, never stack.
                 const burn = cinderDps(t);
@@ -2434,7 +2715,7 @@ function stepSimulation(dt) {
             if (b.lifetime <= 0) {
                 // Apply damage when zap expires
                 if (b.target && b.target.alive) {
-                    damageEnemy(b.target, b.dmg, "#ffff66");
+                    damageEnemy(b.target, b.dmg, "#ffff66", b.tower?.placedBy);
                 }
                 b.hit = true;
             } else {
@@ -2478,7 +2759,7 @@ function stepSimulation(dt) {
                         ? 1 + CLUSTER_STEP * Math.min(aoeTargets.length, CLUSTER_CAP)
                         : 1;
 
-                    aoeTargets.forEach(e => damageEnemy(e, b.dmg * 0.6 * bonus, '#ff7043'));
+                    aoeTargets.forEach(e => damageEnemy(e, b.dmg * 0.6 * bonus, '#ff7043', b.tower?.placedBy));
 
                     // Create explosion effect
                     bullets.push({
@@ -2498,7 +2779,7 @@ function stepSimulation(dt) {
                                 Math.hypot(e.x - b.x, e.y - b.y) < CLUSTER_RADIUS).length,
                             CLUSTER_CAP)
                         : 1;
-                    damageEnemy(b.target, b.dmg * clusterBonus);
+                    damageEnemy(b.target, b.dmg * clusterBonus, undefined, b.tower?.placedBy);
 
                     // Handle piercing for sniper tower
                     if (b.pierce) {
@@ -2564,7 +2845,8 @@ function stepSimulation(dt) {
                 const overkill = -e.hp;
                 const brokenTier = e.type;
 
-                totalGold += e.goldValue;                       // the tier just broken
+                creditGold(e, e.goldValue);                     // the tier just broken
+                totalGold += e.goldValue;
 
                 const newTier = enemyTiers[e.currentTier - 2];
                 e.type = newTier;
@@ -2578,21 +2860,26 @@ function stepSimulation(dt) {
 
                 // Burst in the colour of the tier that just broke, so the
                 // player can see the ladder being walked down.
+                SFX.downgrade(brokenTier.tier);
                 spawnBurst(e.x, e.y, brokenTier.color, 10);
                 spawnFloatingText(e.x, e.y - 14, '+' + brokenTier.goldValue, '#ffd479');
             }
 
             if (e.hp <= 0) {
                 e.alive = false;
+                SFX.kill();
                 spawnBurst(e.x, e.y, e.type.color, 14);
                 spawnFloatingText(e.x, e.y - 14, '+' + e.goldValue, '#ffd479');
+                creditGold(e, e.goldValue);
                 totalGold += e.goldValue;
                 gameState.enemiesLeft--;
                 gameState.enemiesKilled++;
             }
         }
 
-        gameState.gold += totalGold;
+        // totalGold was accumulated across every enemy resolved this step;
+        // it is credited per enemy inside the loop instead, so the kills go
+        // to the right purse.
         gameState.crystals += totalCrystals;
         // HUD is written once per frame by syncUIFromState()
     }
@@ -2621,6 +2908,7 @@ function stepSimulation(dt) {
             // replayed forever -- an endless gold and crystal farm that made
             // the lifetime budget meaningless. This is the missing win state.
             gameState.phase = 'won';
+            SFX.won();
             recordWin();
             broadcastGameOver(true,
                 `Alle ${MAX_WAVE} Wellen geschafft. ${gameState.lives}/${LIFE_MAX} Leben übrig.`);
@@ -2636,6 +2924,7 @@ function stepSimulation(dt) {
     // Game over
     if (gameState.lives <= 0) {
         gameState.phase = 'over';
+        SFX.lost();
         broadcastGameOver(false,
             `Die Basis ist gefallen in Welle ${gameState.wave}.`);
         showDialog(
@@ -2676,7 +2965,14 @@ function updateUI() {
     // Gold, and the build budget beside it. A tower count would be the wrong
     // readout -- points are weighted, so 12 Archers and 3 Snipers are the
     // same spend of board.
-    goldEl.textContent = `${Math.max(0, Math.floor(gameState.gold))}  ·  ${usedPoints()}/${BUILD_POINTS}`;
+    let goldText = `${Math.max(0, Math.floor(gameState.gold))}`;
+    if (gameConfig.isMultiplayer) {
+        // Your purse first, then theirs -- you need to know whether your
+        // partner can afford the tower you are about to ask them for.
+        const other = myRole() === 'host' ? 'guest' : 'host';
+        goldText += ` (${Math.max(0, Math.floor(purses[other] || 0))})`;
+    }
+    goldEl.textContent = `${goldText}  ·  ${usedPoints()}/${BUILD_POINTS}`;
     crystalEl.textContent = Math.max(0, Math.floor(gameState.crystals));
     lifeEl.textContent = `${Math.max(0, gameState.lives)}/${LIFE_MAX}`;
 
