@@ -1026,7 +1026,7 @@ const towerBar = document.getElementById('towerBar');
 // Game variables
 let mapElements = [];
 const LIFE_MAX = 25;   // has to cover ten waves, not five
-const MAX_WAVE = 5;
+const MAX_WAVE = 10;
 let enemiesPerWave = 10;
 let selectedTower = null;
 let draggingTower = null;
@@ -1561,7 +1561,7 @@ function startWave() {
 
     // Calculate enemies for next wave. No DOM here either -- updateUI()
     // derives the wave counter and the Start button from state each frame.
-    gameState.nextWaveEnemies = 8 + gameState.wave * 3;
+    gameState.nextWaveEnemies = 10 + gameState.wave * 2;   // sets the NEXT wave: 10,12,14...28 = 190 total
 
     lastSpawn = simTime - waveInterval;
 
@@ -1575,34 +1575,58 @@ function startWave() {
 }
 
 // Spawn an enemy based on the current wave
-function spawnEnemy() {
-    // Determine enemy tier based on wave number
-    let tierIndex = Math.min(
-        Math.floor((gameState.wave - 1) / 2), // Slowly increase tiers every 2 waves
-        4 // Never go beyond T5
-    );
+// Tier mix per wave, in percent; each row sums to 100. This replaces a step
+// function that flipped the entire wave up a tier at once, which is what
+// produced the x4.24 and x2.98 difficulty cliffs. The mix now shifts
+// gradually, so wave-to-wave HP growth stays between x1.56 and x1.63.
+const WAVE_TIERS = [
+//   T1   T2   T3   T4   T5
+    [100,   0,   0,   0,   0],  // wave 1
+    [ 85,  15,   0,   0,   0],  // wave 2
+    [ 65,  35,   0,   0,   0],  // wave 3
+    [ 45,  50,   5,   0,   0],  // wave 4
+    [ 30,  50,  20,   0,   0],  // wave 5
+    [ 15,  50,  30,   5,   0],  // wave 6
+    [ 15,  40,  30,  10,   5],  // wave 7  <- first T5 Boss
+    [  5,  25,  40,  20,  10],  // wave 8
+    [  0,  15,  30,  30,  25],  // wave 9
+    [  0,   0,  10,  40,  50],  // wave 10
+];
 
-    // Ensure we never spawn higher tiers than intended for the wave
-    if (gameState.wave < 3) tierIndex = 0; // Only T1 in waves 1-2
-    else if (gameState.wave < 5) tierIndex = 1; // Up to T2 in waves 3-4
-    else if (gameState.wave < 7) tierIndex = 2; // Up to T3 in waves 5-6
-    else if (gameState.wave < 9) tierIndex = 3; // Up to T4 in waves 7-8
+// The one place the enemy HP scale is defined. spawnEnemy() and the tier
+// downgrade must agree exactly, or a downgraded enemy ends up tougher than a
+// freshly spawned one of the same tier.
+function waveHpScale() {
+    return gameConfig.difficulties[gameConfig.difficulty].enemyHpMultiplier
+         * (1 + (gameState.wave - 1) * 0.1);
+}
 
-    // Small chance to spawn one tier higher (but not beyond T5)
-    if (Math.random() < 0.15 && gameState.wave > 1) {
-        tierIndex = Math.min(tierIndex + 1, 4);
+function rollTier(wave) {
+    const row = WAVE_TIERS[Math.min(wave, WAVE_TIERS.length) - 1];
+    let r = Math.random() * 100;
+    for (let i = 0; i < 5; i++) {
+        r -= row[i];
+        if (r < 0) return i;
     }
+    return 4;
+}
 
-    const enemyType = enemyTiers[tierIndex];
-    const hpMultiplier = gameConfig.difficulties[gameConfig.difficulty].enemyHpMultiplier;
+function spawnEnemy() {
+    const enemyType = enemyTiers[rollTier(gameState.wave)];
+
+    // The tier mix and the per-wave scale BOTH carry the ramp, and both are
+    // needed. Mix alone gives x1.44-x1.53 per wave while income grows x1.52,
+    // so the run would get easier as it went; together they give x1.53-x1.63
+    // and 0.074 gold per HP over the run, against a 0.071 target.
+    const hpMultiplier = waveHpScale();
 
     enemies.push({
         id: nextEnemyId++,
         x: path[0].x,
         y: path[0].y,
         pathIndex: 0,
-        hp: enemyType.hp * hpMultiplier * (1 + (gameState.wave-1)*0.1),
-        maxHp: enemyType.hp * hpMultiplier * (1 + (gameState.wave-1)*0.1),
+        hp: enemyType.hp * hpMultiplier,
+        maxHp: enemyType.hp * hpMultiplier,
         speed: enemyType.speed,
         alive: true,
         type: enemyType,
@@ -2010,8 +2034,7 @@ function stepSimulation(dt) {
         let totalGold = 0;
         let totalCrystals = 0;
 
-        const hpMultiplier = gameConfig.difficulties[gameConfig.difficulty].enemyHpMultiplier
-                           * (1 + (gameState.wave - 1) * 0.1);
+        const hpMultiplier = waveHpScale();
 
         for (const e of killed) {
             // Walk the tier ladder down in one go. Two losses are fixed here:
