@@ -188,7 +188,7 @@ class MultiplayerManager {
     }
 
     joinRandomLobby() {
-        alert('Random lobby joining is not implemented in this demo. Please use a specific lobby code.');
+        showDialog('Zufälliges Beitreten gibt es noch nicht. Nutze einen Lobby-Code.', 'Noch nicht da');
     }
 
     async joinLobby() {
@@ -351,7 +351,7 @@ class MultiplayerManager {
         });
 
         this.updateUI();
-        alert(`Joined lobby: ${lobbyCode}`);
+        showDialog(`Lobby beigetreten: ${lobbyCode}`, "Verbunden");
     }
 
     backToMain() {
@@ -558,7 +558,7 @@ class MultiplayerManager {
 
                 // Start game for guest
                 initGame();
-                mainLoop();
+                startLoop();
                 break;
         }
     }
@@ -670,7 +670,7 @@ class MultiplayerManager {
 
         // Start game for host
         initGame();
-        mainLoop();
+        startLoop();
     }
 
     // Send multiplayer game events
@@ -779,11 +779,55 @@ document.querySelectorAll('[data-map]').forEach(btn => {
     });
 });
 
-// Main game loop function
-function mainLoop() {
-    update();
+// ======================
+// FIXED TIMESTEP LOOP
+// ======================
+// The simulation advances in fixed 1/60 s steps, so the game runs at the same
+// speed on a 60 Hz and a 144 Hz monitor. Rendering still happens once per
+// animation frame, at whatever rate the display offers.
+//
+// Every cooldown in the game is measured against simTime, which only advances
+// inside a step. Nothing in the simulation reads Date.now() any more.
+const STEP_MS = 1000 / 60;
+let simTime = 0;
+let accumulator = 0;
+let lastFrameTime = null;   // null, not 0 -- a timestamp of 0 is legitimate
+let rafHandle = null;
+
+function mainLoop(frameTime) {
+    rafHandle = requestAnimationFrame(mainLoop);
+
+    const now = (frameTime === undefined) ? performance.now() : frameTime;
+    if (lastFrameTime === null) lastFrameTime = now;
+
+    // Clamp so an alt-tab or a breakpoint does not teleport the wave forward
+    // on resume; the 5-step cap bounds catch-up work per frame.
+    accumulator += Math.min(now - lastFrameTime, 250);
+    lastFrameTime = now;
+
+    let steps = 0;
+    while (accumulator >= STEP_MS && steps++ < 5) {
+        stepSimulation(STEP_MS);
+        accumulator -= STEP_MS;
+    }
+
+    syncUIFromState();
     draw();
-    requestAnimationFrame(mainLoop);
+}
+
+// Guarded so a second Start click cannot spawn a parallel rAF chain.
+function startLoop() {
+    if (rafHandle !== null) return;
+    lastFrameTime = null;
+    accumulator = 0;
+    rafHandle = requestAnimationFrame(mainLoop);
+}
+
+function stopLoop() {
+    if (rafHandle !== null) cancelAnimationFrame(rafHandle);
+    rafHandle = null;
+    lastFrameTime = null;
+    accumulator = 0;
 }
 
 // Update function to handle game logic
@@ -792,7 +836,7 @@ document.querySelector('.start-btn').addEventListener('click', function() {
     document.getElementById('startButton').style.display = 'block';
     document.getElementById('startButton').style.pointerEvents = 'auto';
     initGame();
-    mainLoop(); // Now this will work
+    startLoop();
 });
 
 // Window resize handler
@@ -804,8 +848,11 @@ window.addEventListener('resize', function() {
 
 // Initialize the game with selected settings
 async function initGame() {
+    resetGame();
+
     const difficulty = gameConfig.difficulties[gameConfig.difficulty];
     gameState.gold = difficulty.gold;
+    gameState.phase = 'playing';
 
     document.body.classList.remove('in-title-screen');
 
@@ -976,8 +1023,11 @@ let dragOffsetX = 0;
 let dragOffsetY = 0;
 
 // Game state
+// phase drives the lifecycle: nothing simulates outside 'playing', and the
+// HUD derives the Start button from it.
 let gameState = {
-    gold: 200000,
+    phase: 'title',          // 'title' | 'playing' | 'won' | 'over'
+    gold: 300,               // was a 200000 debug value that showed on the HUD
     crystals: 5,
     lives: LIFE_MAX,
     wave: 1,
@@ -988,6 +1038,43 @@ let gameState = {
     waveActive: false,
     nextWaveEnemies: 10
 };
+
+// initGame() only ever reset gold, which was invisible because the one restart
+// path in the game was a full page reload. With a real win/lose screen the
+// board has to actually come back to a clean state.
+function resetGame() {
+    towers.length = 0;
+    enemies.length = 0;
+    bullets.length = 0;
+    selectedTower = null;
+    draggingTower = null;
+
+    simTime = 0;
+    lastSpawn = 0;
+    nextEnemyId = 1;
+    nextTowerId = 1;
+
+    gameState.crystals = 5;
+    gameState.lives = LIFE_MAX;
+    gameState.wave = 1;
+    gameState.enemiesInWave = 0;
+    gameState.enemiesLeft = 0;
+    gameState.enemiesKilled = 0;
+    gameState.enemiesTotal = 0;
+    gameState.waveActive = false;
+    gameState.nextWaveEnemies = enemiesPerWave;
+}
+
+function resetToTitle() {
+    stopLoop();
+    resetGame();
+    gameState.phase = 'title';
+    document.body.classList.add('in-title-screen');
+    document.getElementById('titleScreen').style.display = 'flex';
+    document.getElementById('startButton').style.display = 'none';
+    document.getElementById('gameContainer').style.display = '';
+    if (gameConfig.isMultiplayer) multiplayerManager.backToMain();
+}
 
 // UI elements
 const goldEl = document.getElementById('goldAmount');
@@ -1141,6 +1228,11 @@ const towerTypes = [
 
 // Game objects
 let towers = [], enemies = [], bullets = [], lastSpawn = 0, waveInterval = 900;
+
+// Stable identities. Nothing observable changes today; co-op needs them to
+// refer to an enemy or a tower across two machines, and the sell button needs
+// them to name a tower without comparing floating-point coordinates.
+let nextEnemyId = 1, nextTowerId = 1;
 let lastUpdateTime = Date.now();
 
 // Initialization
@@ -1221,12 +1313,13 @@ function startDragTower(e) {
     const towerType = towerTypes[index];
 
     if (gameState.gold < towerType.cost) {
-        alert("Not enough gold!");
+        showDialog("Nicht genug Gold für diesen Turm.", "Zu teuer");
         return;
     }
 
     draggingTower = {
         type: {...towerType},
+        typeIndex: index,
         x: 0,
         y: 0,
         width: 48,
@@ -1292,6 +1385,8 @@ function dropTower(e) {
         // Place the tower
         gameState.gold -= draggingTower.type.cost;
         const newTower = {
+            id: nextTowerId++,
+            typeIndex: draggingTower.typeIndex,
             x: draggingTower.x,
             y: draggingTower.y,
             type: {...draggingTower.type},
@@ -1442,7 +1537,7 @@ function startWave() {
     }
 
     startButton.disabled = true;
-    lastSpawn = Date.now() - waveInterval;
+    lastSpawn = simTime - waveInterval;
 
     // Send multiplayer message if in multiplayer mode
     if (gameConfig.isMultiplayer && gameConfig.playerRole === 'host') {
@@ -1476,6 +1571,7 @@ function spawnEnemy() {
     const hpMultiplier = gameConfig.difficulties[gameConfig.difficulty].enemyHpMultiplier;
 
     enemies.push({
+        id: nextEnemyId++,
         x: path[0].x,
         y: path[0].y,
         pathIndex: 0,
@@ -1505,15 +1601,20 @@ function freezeEnemies(tower) {
     });
 }
 
-function update() {
-    const now = Date.now();
-    const deltaTime = now - lastUpdateTime;
-    lastUpdateTime = now;
+// One fixed simulation step. Contains no DOM access: the HUD is written once
+// per rendered frame by syncUIFromState(), not once per step, so five catch-up
+// steps do not mean five DOM writes.
+function stepSimulation(dt) {
+    if (gameState.phase !== 'playing') return;
+
+    simTime += dt;
+    const now = simTime;
+    const deltaTime = dt;
 
     // Spawn enemies
-    if (gameState.waveActive && gameState.enemiesInWave > 0 && Date.now() - lastSpawn > waveInterval) {
+    if (gameState.waveActive && gameState.enemiesInWave > 0 && now - lastSpawn > waveInterval) {
         spawnEnemy();
-        lastSpawn = Date.now();
+        lastSpawn = now;
         gameState.enemiesInWave--;
     }
 
@@ -1557,7 +1658,7 @@ function update() {
                     });
                 }
 
-                updateUI();
+                // HUD is written once per frame by syncUIFromState()
             }
         } else {
             e.x += moveSpeed * dx / dist;
@@ -1576,7 +1677,7 @@ function update() {
             }
         }
 
-        if (Date.now() - t.lastShot >= (t.type.rate + (t.upgrades.rate || 0))) {
+        if (now - t.lastShot >= (t.type.rate + (t.upgrades.rate || 0))) {
             let target = null;
             let highestPathIndex = -1;
 
@@ -1720,7 +1821,7 @@ function update() {
                                 color: "#FFFF00",
                                 speed: 20,
                                 type: "zap",
-                                lifetime: 30
+                                lifetime: 500   // ms (was a 30-frame counter)
                             });
                         }
                     });
@@ -1749,13 +1850,22 @@ function update() {
                     }
                 }
 
-                t.lastShot = Date.now();
+                t.lastShot = now;
             }
         }
     }
 
     // Projectile movement and collision
     for (const b of bullets) {
+        // Explosions are pure visuals with no target. Without their own branch
+        // they fall through to the projectile case, where b.tx is undefined,
+        // dist is NaN and the miss test marks them hit on the same step they
+        // are created -- which is why "Explode!" never drew a single pixel.
+        if (b.type === "explosion") {
+            b.lifetime -= dt;
+            if (b.lifetime <= 0) b.hit = true;
+            continue;
+        }
         if (b.type === "zap") {
             if (b.lifetime <= 0) {
                 // Apply damage when zap expires
@@ -1764,7 +1874,7 @@ function update() {
                 }
                 b.hit = true;
             } else {
-                b.lifetime--;
+                b.lifetime -= dt;
             }
         }
         else if (b.type === "flame") {
@@ -1782,6 +1892,16 @@ function update() {
                 b.y += b.speed * dy / dist;
             }
         } else {
+            // Track the target instead of flying at a frozen snapshot of where
+            // it stood when the shot was fired. Without this the projectile
+            // lands behind a moving enemy while the damage lands on the enemy,
+            // which reads as broken hit detection. Keep the last known point
+            // when the target dies mid-flight so the shot still completes.
+            if (b.target?.alive) {
+                b.tx = b.target.x;
+                b.ty = b.target.y;
+            }
+
             let dx = b.tx - b.x, dy = b.ty - b.y, dist = Math.hypot(dx, dy);
             if (dist < b.speed || !b.target?.alive) {
                 // Handle AOE damage (for Cannon's Explode!)
@@ -1800,7 +1920,7 @@ function update() {
                         y: b.y,
                         radius: b.aoeRadius,
                         type: "explosion",
-                        lifetime: 30
+                        lifetime: 300   // ms (was a 30-frame counter)
                     });
                 }
 
@@ -1889,35 +2009,67 @@ function update() {
 
         gameState.gold += totalGold;
         gameState.crystals += totalCrystals;
-        updateUI();
+        // HUD is written once per frame by syncUIFromState()
     }
 
     // Clean up dead enemies (only T1 enemies can actually die)
     enemies = enemies.filter(e => e.alive);
 
-    // Check if wave is complete
+    // Check if wave is complete. No DOM here: updateUI() already derives the
+    // wave counter and the Start button from gameState once per frame.
     if (gameState.enemiesInWave == 0 && enemies.length == 0 && gameState.waveActive) {
+        gameState.waveActive = false;
+
         if (gameState.wave < MAX_WAVE) {
             gameState.wave++;
-            waveNumEl.textContent = `${gameState.wave}/${MAX_WAVE}`;
-            enemiesKilledEl.textContent = `${gameState.nextWaveEnemies} next`;
         } else {
-            waveNumEl.textContent = `${gameState.wave}/${MAX_WAVE}`;
-            enemiesKilledEl.textContent = `${gameState.enemiesKilled}/${gameState.enemiesTotal}`;
+            // Final wave cleared. The old code fell into an else that only
+            // relabelled two text nodes and re-enabled Start, so the last wave
+            // replayed forever -- an endless gold and crystal farm that made
+            // the lifetime budget meaningless. This is the missing win state.
+            gameState.phase = 'won';
+            showDialog(
+                `Alle ${MAX_WAVE} Wellen geschafft. ${gameState.lives}/${LIFE_MAX} Leben übrig, ${Math.floor(gameState.gold)} Gold auf der Hand.`,
+                'Gewonnen',
+                resetToTitle
+            );
+            return;
         }
-        gameState.waveActive = false;
-        startButton.disabled = false;
     }
 
     // Game over
     if (gameState.lives <= 0) {
-        alert("Game Over!");
-        if (gameConfig.isMultiplayer) {
-            multiplayerManager.backToMain();
-        } else {
-            window.location.reload();
-        }
+        gameState.phase = 'over';
+        showDialog(
+            `Die Basis ist gefallen in Welle ${gameState.wave}. ${gameState.enemiesKilled} Gegner erledigt.`,
+            'Verloren',
+            resetToTitle
+        );
     }
+}
+
+// Modal dialog. A native alert() blocks the animation frame chain, and fired
+// from inside the loop it re-opens every frame forever -- which is exactly
+// what the old Game Over did. Text goes in via textContent, not innerHTML.
+function showDialog(message, title = 'Hinweis', onOk = null) {
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-alert-overlay';
+
+    const box = document.createElement('div');
+    box.className = 'custom-alert';
+    box.innerHTML = '<h3></h3><p></p><div class="custom-alert-buttons">' +
+                    '<button class="custom-alert-btn retry">OK</button></div>';
+    box.querySelector('h3').textContent = title;
+    box.querySelector('p').textContent = message;
+
+    box.querySelector('.retry').addEventListener('click', () => {
+        overlay.remove();
+        box.remove();
+        if (onOk) onOk();
+    });
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(box);
 }
 
 // UI functions
@@ -1939,6 +2091,10 @@ function updateUI() {
         enemiesKilledEl.textContent = `${gameState.enemiesKilled}/${total}`;
     }
 
+    // Derived, not commanded: a wave ending, a win and a loss all agree,
+    // and there is no code path that can leave the button in a stale state.
+    startButton.disabled = gameState.waveActive || gameState.phase !== 'playing';
+
     // Multiplayer indicators
     const indicator = document.getElementById('playerIndicators');
     if (gameConfig.isMultiplayer) {
@@ -1952,6 +2108,12 @@ function updateUI() {
     } else {
         indicator.style.display = 'none';
     }
+}
+
+// Called once per rendered frame from mainLoop. The simulation writes no DOM
+// of its own, so five catch-up steps cost one HUD update, not five.
+function syncUIFromState() {
+    updateUI();
 }
 
 // Upgrade menu
@@ -2082,7 +2244,7 @@ function showUpgradeMenu(tower, clickX, clickY) {
 
             if (upgradeType === 'special') {
                 if (gameState.crystals < tower.type.upgrades.special.cost) {
-                    alert("Not enough crystals!");
+                    showDialog("Nicht genug Kristalle.", "Zu teuer");
                     return;
                 }
                 gameState.crystals -= tower.type.upgrades.special.cost;
@@ -2090,7 +2252,7 @@ function showUpgradeMenu(tower, clickX, clickY) {
                 tower.level = (tower.level || 1) + 1;
             } else {
                 if (gameState.gold < upgradeCost) {
-                    alert("Not enough gold!");
+                    showDialog("Nicht genug Gold für dieses Upgrade.", "Zu teuer");
                     return;
                 }
 
@@ -2385,7 +2547,7 @@ function draw() {
         ctx.restore();
 
         // Fire tower effects
-        if (t.type.name === "Fire Tower" && Date.now() - t.lastShot < 100) {
+        if (t.type.name === "Fire Tower" && simTime - t.lastShot < 100) {
             const tgt = enemies.find(e => e.alive && Math.hypot(e.x-t.x, e.y-t.y) < t.type.range);
             if (tgt) {
                 const angle = Math.atan2(tgt.y - t.y, tgt.x - t.x);
@@ -2695,7 +2857,7 @@ function draw() {
             ctx.fillStyle = 'rgba(255, 255, 200, 0.6)';
             ctx.fill();
 
-            b.lifetime--;
+            // aged in stepSimulation, not here -- the renderer must not drive the clock
         }
         else {
             // Default projectile (magic)
